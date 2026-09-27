@@ -1,8 +1,8 @@
 {
   "name": "rpg-typescript",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
-  "description": "Endless turn-based RPG for the terminal — TypeScript port (Bun + Ink)",
+  "description": "Endless turn-based RPG for the terminal \u2014 TypeScript port (Bun + Ink)",
   "license": "MIT",
   "type": "module",
   "scripts": {

@@ -6,6 +6,15 @@ import { RunConfig } from "../src/application/run-state";
 import type { GameData, ItemDef } from "../src/domain/definitions";
 import type { JsonObject } from "../src/domain/json-types";
 import { loadGameData } from "../src/infrastructure/data-loader";
+import {
+	FileHistoryRepository,
+	FileProfileRepository,
+	FileSaveRepository,
+	SettingsRepository,
+	SystemClock,
+} from "../src/infrastructure/repositories";
+import type { Services } from "../src/presentation/controller";
+import { VERSION } from "../src/version";
 
 export const SHARED_DIR = join(import.meta.dir, "..", "..", "shared");
 export const GOLDEN_DIR = join(SHARED_DIR, "golden");
@@ -90,4 +99,18 @@ export function withTestItems(data: GameData): GameData {
 		},
 	];
 	return data.with({ items: [...data.items, ...extra] });
+}
+
+export function makeServices(dir: string): Services {
+	return {
+		data: DATA,
+		settings: new SettingsRepository(dir),
+		repositories: {
+			saves: new FileSaveRepository(dir),
+			history: new FileHistoryRepository(dir),
+			profile: new FileProfileRepository(dir),
+		},
+		clock: new SystemClock(),
+		version: VERSION,
+	};
 }

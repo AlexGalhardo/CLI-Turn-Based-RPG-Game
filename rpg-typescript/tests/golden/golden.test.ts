@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { GreedyBot } from "../../src/application/bot";
 import { commandFromJson, commandToJson } from "../../src/application/commands";
 import { GameEngine } from "../../src/application/engine";
-import { RunConfig } from "../../src/application/run-state";
+import { RunConfig, RunState } from "../../src/application/run-state";
 import { jsonInt, jsonList, jsonObj } from "../../src/domain/json-types";
 import { Rng } from "../../src/domain/rng";
 import { loadGameData } from "../../src/infrastructure/data-loader";
@@ -53,6 +53,9 @@ describe("golden scenarios", () => {
 				}
 			});
 			expect(finalState(engine)).toEqual(golden.finalState as never);
+			// Save-format parity: the TypeScript run state serialises exactly like the Python one, both ways.
+			expect(JSON.parse(JSON.stringify(engine.state.toJson()))).toEqual(golden.finalRun as never);
+			expect(RunState.fromJson(golden.finalRun ?? null).toJson()).toEqual(golden.finalRun as never);
 		});
 	}
 });

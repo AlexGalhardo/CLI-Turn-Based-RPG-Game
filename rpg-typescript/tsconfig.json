@@ -14,7 +14,10 @@
 		"resolveJsonModule": true,
 		"skipLibCheck": true,
 		"noEmit": true,
-		"types": ["bun"]
+		"types": ["bun"],
+		"paths": {
+			"react-devtools-core": ["./src/stubs/react-devtools-core.ts"]
+		}
 	},
 	"include": ["src", "tests"]
 }
