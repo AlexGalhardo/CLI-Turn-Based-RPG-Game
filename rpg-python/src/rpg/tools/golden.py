@@ -87,6 +87,7 @@ def record(data: GameData, scenario: Scenario) -> JsonObject:
 		"commands": commands,
 		"events": events,
 		"finalState": final_state(engine),
+		"finalRun": engine.state.to_dict(),
 	}
 
 

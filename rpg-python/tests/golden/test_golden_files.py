@@ -7,7 +7,7 @@ import pytest
 
 from rpg.application.commands import command_from_dict
 from rpg.application.engine import GameEngine
-from rpg.application.run_state import RunConfig
+from rpg.application.run_state import RunConfig, RunState
 from rpg.domain.definitions import GameData
 from rpg.domain.json_types import JsonObject, json_int, json_list, json_obj
 from rpg.infrastructure.paths import find_shared_dir
@@ -34,6 +34,8 @@ def test_replay_matches_golden(data: GameData, path: Path) -> None:
 	for index, raw_command in enumerate(json_list(golden["commands"]), start=1):
 		assert engine.step(command_from_dict(raw_command)) == expected_events[index], f"command #{index}"
 	assert final_state(engine) == golden["finalState"]
+	assert json.loads(json.dumps(engine.state.to_dict())) == golden["finalRun"]
+	assert RunState.from_dict(golden["finalRun"]).to_dict() == golden["finalRun"]
 
 
 def test_golden_files_are_up_to_date(data: GameData) -> None:
