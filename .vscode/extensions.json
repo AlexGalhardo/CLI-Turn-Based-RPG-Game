@@ -1,3 +1,11 @@
 {
-	"recommendations": ["editorconfig.editorconfig", "biomejs.biome", "charliermarsh.ruff", "golang.go"]
+	"recommendations": [
+		"editorconfig.editorconfig",
+		"biomejs.biome",
+		"ms-python.python",
+		"ms-python.vscode-pylance",
+		"ms-python.mypy-type-checker",
+		"charliermarsh.ruff",
+		"golang.go"
+	]
 }

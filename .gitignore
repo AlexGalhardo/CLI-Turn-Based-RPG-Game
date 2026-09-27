@@ -1,6 +1,10 @@
 # Local-only material (docs of other projects, old nested git repos, old binaries). Never published.
 .local/
 
+# Scratch files (screenshots, exports) and browser-automation logs
+.tmp/
+.playwright-mcp/
+
 # OS / editors
 .DS_Store
 Thumbs.db
@@ -42,3 +46,4 @@ rpg-golang/rpg-golang
 
 # Game saves generated during local runs/tests
 .rpg-data/
+TODO.md
