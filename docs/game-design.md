@@ -207,3 +207,17 @@ merchant is entered.
   (`achievements.json`) and the Hall of Fame (top 10 by round, then level, then earliest end).
 - Achievements and timestamps are **not** part of the deterministic engine; they are computed by the application layer
   from engine events.
+
+## 12. Balance targets (simulator)
+
+`uv run rpg --simulate 30` (greedy bot, seeds 1–30). Target: NORMAL median between rounds 30 and 60, vocations within
+±20% of each other. Snapshot for v0.4.0:
+
+| Vocation | EASY median | NORMAL median | HARD median |
+|---|---|---|---|
+| Warrior | 200 | 50 | 39 |
+| Archer | 195 | 40 | 30 |
+| Mage | 90 | 44 | 29 |
+
+The bot is a floor, not a ceiling: a human who defends on boss telegraphs and plans potions goes further. Re-run the
+simulator after any balance change and update this table in the same commit.

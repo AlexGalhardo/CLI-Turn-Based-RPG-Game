@@ -5,9 +5,30 @@
 	"cycleRewardPct": 50,
 	"positionPct": 4,
 	"difficulties": [
-		{ "id": "easy", "hpPct": 70, "damagePct": 70, "goldPct": 100, "xpPct": 100, "nonCommonWeightPct": 100 },
-		{ "id": "normal", "hpPct": 100, "damagePct": 100, "goldPct": 100, "xpPct": 100, "nonCommonWeightPct": 100 },
-		{ "id": "hard", "hpPct": 140, "damagePct": 140, "goldPct": 125, "xpPct": 125, "nonCommonWeightPct": 150 }
+		{
+			"id": "easy",
+			"hpPct": 80,
+			"damagePct": 80,
+			"goldPct": 100,
+			"xpPct": 100,
+			"nonCommonWeightPct": 100
+		},
+		{
+			"id": "normal",
+			"hpPct": 100,
+			"damagePct": 100,
+			"goldPct": 100,
+			"xpPct": 100,
+			"nonCommonWeightPct": 100
+		},
+		{
+			"id": "hard",
+			"hpPct": 125,
+			"damagePct": 125,
+			"goldPct": 125,
+			"xpPct": 125,
+			"nonCommonWeightPct": 150
+		}
 	],
 	"critMultiplierPct": 150,
 	"defendDamagePct": 50,
@@ -20,27 +41,93 @@
 		"leech": 25,
 		"protection": 75
 	},
-	"magicLevel": { "base": 100, "growthPct": 160 },
+	"magicLevel": {
+		"base": 100,
+		"growthPct": 160
+	},
 	"spellLevels": [
-		{ "level": 1, "uses": 0, "effectPct": 100, "manaPct": 100 },
-		{ "level": 2, "uses": 20, "effectPct": 125, "manaPct": 90 },
-		{ "level": 3, "uses": 50, "effectPct": 150, "manaPct": 80 }
+		{
+			"level": 1,
+			"uses": 0,
+			"effectPct": 100,
+			"manaPct": 100
+		},
+		{
+			"level": 2,
+			"uses": 20,
+			"effectPct": 125,
+			"manaPct": 90
+		},
+		{
+			"level": 3,
+			"uses": 50,
+			"effectPct": 150,
+			"manaPct": 80
+		}
 	],
 	"startingGold": 100,
-	"startingPotions": [{ "potionId": "health_potion", "quantity": 5 }, { "potionId": "mana_potion", "quantity": 5 }],
+	"startingPotions": [
+		{
+			"potionId": "health_potion",
+			"quantity": 5
+		},
+		{
+			"potionId": "mana_potion",
+			"quantity": 5
+		}
+	],
 	"bagCapacity": 20,
 	"dropChancePct": 30,
 	"bossDrops": 2,
 	"rarities": [
-		{ "id": "common", "statPct": 100, "valuePct": 100, "affixMin": 0, "affixMax": 0 },
-		{ "id": "rare", "statPct": 115, "valuePct": 250, "affixMin": 1, "affixMax": 2 },
-		{ "id": "epic", "statPct": 130, "valuePct": 500, "affixMin": 3, "affixMax": 3 },
-		{ "id": "legendary", "statPct": 150, "valuePct": 1000, "affixMin": 4, "affixMax": 4 }
+		{
+			"id": "common",
+			"statPct": 100,
+			"valuePct": 100,
+			"affixMin": 0,
+			"affixMax": 0
+		},
+		{
+			"id": "rare",
+			"statPct": 115,
+			"valuePct": 250,
+			"affixMin": 1,
+			"affixMax": 2
+		},
+		{
+			"id": "epic",
+			"statPct": 130,
+			"valuePct": 500,
+			"affixMin": 3,
+			"affixMax": 3
+		},
+		{
+			"id": "legendary",
+			"statPct": 150,
+			"valuePct": 1000,
+			"affixMin": 4,
+			"affixMax": 4
+		}
 	],
 	"rarityWeights": {
-		"monster": { "common": 70, "rare": 22, "epic": 7, "legendary": 1 },
-		"boss": { "common": 0, "rare": 50, "epic": 35, "legendary": 15 },
-		"merchant": { "common": 60, "rare": 35, "epic": 5, "legendary": 0 }
+		"monster": {
+			"common": 70,
+			"rare": 22,
+			"epic": 7,
+			"legendary": 1
+		},
+		"boss": {
+			"common": 0,
+			"rare": 50,
+			"epic": 35,
+			"legendary": 15
+		},
+		"merchant": {
+			"common": 60,
+			"rare": 35,
+			"epic": 5,
+			"legendary": 0
+		}
 	},
 	"merchantStockSize": 3,
 	"merchantMarkupPct": 300,

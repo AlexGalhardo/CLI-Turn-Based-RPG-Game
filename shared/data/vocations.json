@@ -38,11 +38,11 @@
 		{
 			"id": "mage",
 			"name": "Mage",
-			"startHp": 130,
+			"startHp": 145,
 			"startMp": 120,
 			"hpPerLevel": 5,
 			"mpPerLevel": 15,
-			"hpRegen": 1,
+			"hpRegen": 2,
 			"mpRegen": 4,
 			"meleeMin": 4,
 			"meleeMax": 9,

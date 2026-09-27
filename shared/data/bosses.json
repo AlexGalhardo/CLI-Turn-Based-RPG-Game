@@ -6,8 +6,8 @@
 			"name": "Munster",
 			"tier": 0,
 			"family": "rodent",
-			"hp": 320,
-			"xp": 320,
+			"hp": 240,
+			"xp": 480,
 			"gold": {
 				"min": 75,
 				"max": 150
@@ -16,8 +16,8 @@
 				{
 					"id": "melee",
 					"element": "physical",
-					"min": 8,
-					"max": 16,
+					"min": 7,
+					"max": 15,
 					"weight": 3,
 					"status": {
 						"id": "bleed",
@@ -28,8 +28,8 @@
 				{
 					"id": "poison_spit",
 					"element": "earth",
-					"min": 11,
-					"max": 21,
+					"min": 10,
+					"max": 19,
 					"weight": 2,
 					"status": {
 						"id": "poison",
@@ -49,8 +49,8 @@
 			"name": "The Horned Fox",
 			"tier": 1,
 			"family": "giant",
-			"hp": 544,
-			"xp": 736,
+			"hp": 408,
+			"xp": 1104,
 			"gold": {
 				"min": 135,
 				"max": 270
@@ -59,8 +59,8 @@
 				{
 					"id": "melee",
 					"element": "physical",
-					"min": 11,
-					"max": 22,
+					"min": 10,
+					"max": 21,
 					"weight": 3,
 					"status": {
 						"id": "bleed",
@@ -80,8 +80,8 @@
 			"name": "The Old Widow",
 			"tier": 2,
 			"family": "insect",
-			"hp": 924,
-			"xp": 1696,
+			"hp": 693,
+			"xp": 2536,
 			"gold": {
 				"min": 245,
 				"max": 490
@@ -90,8 +90,8 @@
 				{
 					"id": "melee",
 					"element": "physical",
-					"min": 17,
-					"max": 34,
+					"min": 16,
+					"max": 32,
 					"weight": 3,
 					"status": {
 						"id": "bleed",
@@ -102,8 +102,8 @@
 				{
 					"id": "poison_spit",
 					"element": "earth",
-					"min": 23,
-					"max": 43,
+					"min": 21,
+					"max": 40,
 					"weight": 2,
 					"status": {
 						"id": "poison",
@@ -114,8 +114,8 @@
 				{
 					"id": "stun_blow",
 					"element": "physical",
-					"min": 14,
-					"max": 26,
+					"min": 13,
+					"max": 24,
 					"weight": 1,
 					"status": {
 						"id": "stun",
@@ -136,8 +136,8 @@
 			"name": "Dharalion",
 			"tier": 3,
 			"family": "mage",
-			"hp": 1572,
-			"xp": 3896,
+			"hp": 1179,
+			"xp": 5840,
 			"gold": {
 				"min": 435,
 				"max": 870
@@ -146,8 +146,8 @@
 				{
 					"id": "melee",
 					"element": "physical",
-					"min": 25,
-					"max": 50,
+					"min": 23,
+					"max": 46,
 					"weight": 3,
 					"status": {
 						"id": "bleed",
@@ -158,8 +158,8 @@
 				{
 					"id": "energy_beam",
 					"element": "energy",
-					"min": 33,
-					"max": 63,
+					"min": 31,
+					"max": 58,
 					"weight": 2,
 					"status": {
 						"id": "electrify",
@@ -170,8 +170,8 @@
 				{
 					"id": "stun_blow",
 					"element": "physical",
-					"min": 21,
-					"max": 37,
+					"min": 19,
+					"max": 35,
 					"weight": 1,
 					"status": {
 						"id": "stun",
@@ -192,8 +192,8 @@
 			"name": "Demodras",
 			"tier": 4,
 			"family": "dragon",
-			"hp": 2672,
-			"xp": 8952,
+			"hp": 2004,
+			"xp": 13432,
 			"gold": {
 				"min": 785,
 				"max": 1570
@@ -202,8 +202,8 @@
 				{
 					"id": "melee",
 					"element": "physical",
-					"min": 37,
-					"max": 74,
+					"min": 34,
+					"max": 68,
 					"weight": 3,
 					"status": {
 						"id": "bleed",
@@ -214,8 +214,8 @@
 				{
 					"id": "fire_blast",
 					"element": "fire",
-					"min": 49,
-					"max": 93,
+					"min": 45,
+					"max": 85,
 					"weight": 2,
 					"status": {
 						"id": "burn",
@@ -226,8 +226,8 @@
 				{
 					"id": "stun_blow",
 					"element": "physical",
-					"min": 31,
-					"max": 55,
+					"min": 28,
+					"max": 51,
 					"weight": 1,
 					"status": {
 						"id": "stun",
@@ -248,8 +248,8 @@
 			"name": "Zulazza the Corruptor",
 			"tier": 5,
 			"family": "reptile",
-			"hp": 4544,
-			"xp": 20600,
+			"hp": 3408,
+			"xp": 30896,
 			"gold": {
 				"min": 1415,
 				"max": 2830
@@ -258,8 +258,8 @@
 				{
 					"id": "melee",
 					"element": "physical",
-					"min": 54,
-					"max": 109,
+					"min": 50,
+					"max": 100,
 					"weight": 3,
 					"status": {
 						"id": "bleed",
@@ -270,8 +270,8 @@
 				{
 					"id": "poison_spit",
 					"element": "earth",
-					"min": 72,
-					"max": 136,
+					"min": 67,
+					"max": 126,
 					"weight": 2,
 					"status": {
 						"id": "poison",
@@ -282,8 +282,8 @@
 				{
 					"id": "stun_blow",
 					"element": "physical",
-					"min": 45,
-					"max": 81,
+					"min": 42,
+					"max": 75,
 					"weight": 1,
 					"status": {
 						"id": "stun",
@@ -304,8 +304,8 @@
 			"name": "Orshabaal",
 			"tier": 6,
 			"family": "demon",
-			"hp": 7724,
-			"xp": 47368,
+			"hp": 5793,
+			"xp": 71056,
 			"gold": {
 				"min": 2550,
 				"max": 5100
@@ -314,8 +314,8 @@
 				{
 					"id": "melee",
 					"element": "physical",
-					"min": 79,
-					"max": 158,
+					"min": 73,
+					"max": 146,
 					"weight": 3,
 					"status": {
 						"id": "bleed",
@@ -326,8 +326,8 @@
 				{
 					"id": "fire_blast",
 					"element": "fire",
-					"min": 105,
-					"max": 198,
+					"min": 97,
+					"max": 183,
 					"weight": 2,
 					"status": {
 						"id": "burn",
@@ -338,8 +338,8 @@
 				{
 					"id": "stun_blow",
 					"element": "physical",
-					"min": 66,
-					"max": 118,
+					"min": 61,
+					"max": 109,
 					"weight": 1,
 					"status": {
 						"id": "stun",
@@ -361,8 +361,8 @@
 			"name": "Ghazbaran",
 			"tier": 7,
 			"family": "demon",
-			"hp": 13132,
-			"xp": 108952,
+			"hp": 9849,
+			"xp": 163432,
 			"gold": {
 				"min": 4590,
 				"max": 9180
@@ -371,8 +371,8 @@
 				{
 					"id": "melee",
 					"element": "physical",
-					"min": 115,
-					"max": 230,
+					"min": 106,
+					"max": 212,
 					"weight": 3,
 					"status": {
 						"id": "bleed",
@@ -383,8 +383,8 @@
 				{
 					"id": "death_strike",
 					"element": "death",
-					"min": 153,
-					"max": 288,
+					"min": 141,
+					"max": 265,
 					"weight": 2,
 					"status": {
 						"id": "curse",
@@ -395,8 +395,8 @@
 				{
 					"id": "stun_blow",
 					"element": "physical",
-					"min": 96,
-					"max": 172,
+					"min": 88,
+					"max": 159,
 					"weight": 1,
 					"status": {
 						"id": "stun",
@@ -418,8 +418,8 @@
 			"name": "Morgaroth",
 			"tier": 8,
 			"family": "demon",
-			"hp": 22324,
-			"xp": 250592,
+			"hp": 16743,
+			"xp": 375896,
 			"gold": {
 				"min": 8265,
 				"max": 16530
@@ -428,8 +428,8 @@
 				{
 					"id": "melee",
 					"element": "physical",
-					"min": 166,
-					"max": 333,
+					"min": 153,
+					"max": 307,
 					"weight": 3,
 					"status": {
 						"id": "bleed",
@@ -440,8 +440,8 @@
 				{
 					"id": "fire_blast",
 					"element": "fire",
-					"min": 222,
-					"max": 417,
+					"min": 204,
+					"max": 384,
 					"weight": 2,
 					"status": {
 						"id": "burn",
@@ -452,8 +452,8 @@
 				{
 					"id": "stun_blow",
 					"element": "physical",
-					"min": 139,
-					"max": 250,
+					"min": 128,
+					"max": 230,
 					"weight": 1,
 					"status": {
 						"id": "stun",
@@ -475,8 +475,8 @@
 			"name": "Ferumbras",
 			"tier": 9,
 			"family": "mage",
-			"hp": 37948,
-			"xp": 576368,
+			"hp": 28461,
+			"xp": 864552,
 			"gold": {
 				"min": 14875,
 				"max": 29750
@@ -485,8 +485,8 @@
 				{
 					"id": "melee",
 					"element": "physical",
-					"min": 242,
-					"max": 484,
+					"min": 223,
+					"max": 447,
 					"weight": 3,
 					"status": {
 						"id": "bleed",
@@ -497,8 +497,8 @@
 				{
 					"id": "death_strike",
 					"element": "death",
-					"min": 323,
-					"max": 606,
+					"min": 298,
+					"max": 559,
 					"weight": 2,
 					"status": {
 						"id": "curse",
@@ -509,8 +509,8 @@
 				{
 					"id": "stun_blow",
 					"element": "physical",
-					"min": 202,
-					"max": 363,
+					"min": 186,
+					"max": 335,
 					"weight": 1,
 					"status": {
 						"id": "stun",

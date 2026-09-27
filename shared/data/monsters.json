@@ -7,7 +7,7 @@
 			"tier": 0,
 			"family": "rodent",
 			"hp": 64,
-			"xp": 32,
+			"xp": 48,
 			"gold": {
 				"min": 7,
 				"max": 22
@@ -31,7 +31,7 @@
 			"tier": 0,
 			"family": "rodent",
 			"hp": 72,
-			"xp": 36,
+			"xp": 54,
 			"gold": {
 				"min": 7,
 				"max": 22
@@ -55,7 +55,7 @@
 			"tier": 0,
 			"family": "beast",
 			"hp": 68,
-			"xp": 34,
+			"xp": 51,
 			"gold": {
 				"min": 7,
 				"max": 22
@@ -79,7 +79,7 @@
 			"tier": 0,
 			"family": "insect",
 			"hp": 68,
-			"xp": 34,
+			"xp": 51,
 			"gold": {
 				"min": 7,
 				"max": 22
@@ -104,7 +104,7 @@
 			"tier": 0,
 			"family": "insect",
 			"hp": 72,
-			"xp": 36,
+			"xp": 54,
 			"gold": {
 				"min": 7,
 				"max": 22
@@ -142,7 +142,7 @@
 			"tier": 0,
 			"family": "reptile",
 			"hp": 76,
-			"xp": 38,
+			"xp": 57,
 			"gold": {
 				"min": 7,
 				"max": 22
@@ -180,7 +180,7 @@
 			"tier": 0,
 			"family": "beast",
 			"hp": 64,
-			"xp": 32,
+			"xp": 48,
 			"gold": {
 				"min": 7,
 				"max": 22
@@ -204,7 +204,7 @@
 			"tier": 0,
 			"family": "beast",
 			"hp": 84,
-			"xp": 42,
+			"xp": 63,
 			"gold": {
 				"min": 7,
 				"max": 22
@@ -228,7 +228,7 @@
 			"tier": 0,
 			"family": "humanoid",
 			"hp": 80,
-			"xp": 40,
+			"xp": 60,
 			"gold": {
 				"min": 7,
 				"max": 22
@@ -250,7 +250,7 @@
 			"tier": 0,
 			"family": "humanoid",
 			"hp": 92,
-			"xp": 46,
+			"xp": 69,
 			"gold": {
 				"min": 7,
 				"max": 22
@@ -272,7 +272,7 @@
 			"tier": 0,
 			"family": "undead",
 			"hp": 88,
-			"xp": 44,
+			"xp": 66,
 			"gold": {
 				"min": 7,
 				"max": 22
@@ -298,7 +298,7 @@
 			"tier": 1,
 			"family": "orc",
 			"hp": 122,
-			"xp": 82,
+			"xp": 124,
 			"gold": {
 				"min": 13,
 				"max": 40
@@ -327,7 +327,7 @@
 			"tier": 1,
 			"family": "orc",
 			"hp": 129,
-			"xp": 87,
+			"xp": 131,
 			"gold": {
 				"min": 13,
 				"max": 40
@@ -356,7 +356,7 @@
 			"tier": 1,
 			"family": "orc",
 			"hp": 149,
-			"xp": 101,
+			"xp": 151,
 			"gold": {
 				"min": 13,
 				"max": 40
@@ -385,7 +385,7 @@
 			"tier": 1,
 			"family": "insect",
 			"hp": 122,
-			"xp": 82,
+			"xp": 124,
 			"gold": {
 				"min": 13,
 				"max": 40
@@ -415,7 +415,7 @@
 			"tier": 1,
 			"family": "insect",
 			"hp": 129,
-			"xp": 87,
+			"xp": 131,
 			"gold": {
 				"min": 13,
 				"max": 40
@@ -458,7 +458,7 @@
 			"tier": 1,
 			"family": "humanoid",
 			"hp": 136,
-			"xp": 92,
+			"xp": 138,
 			"gold": {
 				"min": 13,
 				"max": 40
@@ -485,7 +485,7 @@
 			"tier": 1,
 			"family": "humanoid",
 			"hp": 136,
-			"xp": 92,
+			"xp": 138,
 			"gold": {
 				"min": 13,
 				"max": 40
@@ -512,7 +512,7 @@
 			"tier": 1,
 			"family": "humanoid",
 			"hp": 149,
-			"xp": 101,
+			"xp": 151,
 			"gold": {
 				"min": 13,
 				"max": 40
@@ -539,7 +539,7 @@
 			"tier": 1,
 			"family": "giant",
 			"hp": 142,
-			"xp": 96,
+			"xp": 144,
 			"gold": {
 				"min": 13,
 				"max": 40
@@ -569,7 +569,7 @@
 			"tier": 1,
 			"family": "undead",
 			"hp": 142,
-			"xp": 96,
+			"xp": 144,
 			"gold": {
 				"min": 13,
 				"max": 40
@@ -612,7 +612,7 @@
 			"tier": 1,
 			"family": "beast",
 			"hp": 156,
-			"xp": 105,
+			"xp": 158,
 			"gold": {
 				"min": 13,
 				"max": 40
@@ -641,7 +641,7 @@
 			"tier": 2,
 			"family": "giant",
 			"hp": 219,
-			"xp": 201,
+			"xp": 301,
 			"gold": {
 				"min": 24,
 				"max": 73
@@ -671,7 +671,7 @@
 			"tier": 2,
 			"family": "giant",
 			"hp": 254,
-			"xp": 233,
+			"xp": 348,
 			"gold": {
 				"min": 24,
 				"max": 73
@@ -701,7 +701,7 @@
 			"tier": 2,
 			"family": "mage",
 			"hp": 219,
-			"xp": 201,
+			"xp": 301,
 			"gold": {
 				"min": 24,
 				"max": 73
@@ -744,7 +744,7 @@
 			"tier": 2,
 			"family": "orc",
 			"hp": 265,
-			"xp": 243,
+			"xp": 364,
 			"gold": {
 				"min": 24,
 				"max": 73
@@ -773,7 +773,7 @@
 			"tier": 2,
 			"family": "reptile",
 			"hp": 242,
-			"xp": 222,
+			"xp": 332,
 			"gold": {
 				"min": 24,
 				"max": 73
@@ -803,7 +803,7 @@
 			"tier": 2,
 			"family": "insect",
 			"hp": 231,
-			"xp": 212,
+			"xp": 317,
 			"gold": {
 				"min": 24,
 				"max": 73
@@ -846,7 +846,7 @@
 			"tier": 2,
 			"family": "giant",
 			"hp": 265,
-			"xp": 243,
+			"xp": 364,
 			"gold": {
 				"min": 24,
 				"max": 73
@@ -876,7 +876,7 @@
 			"tier": 2,
 			"family": "mage",
 			"hp": 231,
-			"xp": 212,
+			"xp": 317,
 			"gold": {
 				"min": 24,
 				"max": 73
@@ -919,7 +919,7 @@
 			"tier": 2,
 			"family": "humanoid",
 			"hp": 242,
-			"xp": 222,
+			"xp": 332,
 			"gold": {
 				"min": 24,
 				"max": 73
@@ -946,7 +946,7 @@
 			"tier": 2,
 			"family": "undead",
 			"hp": 219,
-			"xp": 201,
+			"xp": 301,
 			"gold": {
 				"min": 24,
 				"max": 73
@@ -990,7 +990,7 @@
 			"tier": 2,
 			"family": "humanoid",
 			"hp": 219,
-			"xp": 201,
+			"xp": 301,
 			"gold": {
 				"min": 24,
 				"max": 73
@@ -1017,7 +1017,7 @@
 			"tier": 3,
 			"family": "orc",
 			"hp": 412,
-			"xp": 511,
+			"xp": 766,
 			"gold": {
 				"min": 43,
 				"max": 130
@@ -1046,7 +1046,7 @@
 			"tier": 3,
 			"family": "orc",
 			"hp": 471,
-			"xp": 584,
+			"xp": 876,
 			"gold": {
 				"min": 43,
 				"max": 130
@@ -1075,7 +1075,7 @@
 			"tier": 3,
 			"family": "mage",
 			"hp": 373,
-			"xp": 462,
+			"xp": 693,
 			"gold": {
 				"min": 43,
 				"max": 130
@@ -1118,7 +1118,7 @@
 			"tier": 3,
 			"family": "construct",
 			"hp": 432,
-			"xp": 535,
+			"xp": 803,
 			"gold": {
 				"min": 43,
 				"max": 130
@@ -1149,7 +1149,7 @@
 			"tier": 3,
 			"family": "demon",
 			"hp": 373,
-			"xp": 462,
+			"xp": 693,
 			"gold": {
 				"min": 43,
 				"max": 130
@@ -1193,7 +1193,7 @@
 			"tier": 3,
 			"family": "insect",
 			"hp": 393,
-			"xp": 487,
+			"xp": 730,
 			"gold": {
 				"min": 43,
 				"max": 130
@@ -1236,7 +1236,7 @@
 			"tier": 3,
 			"family": "undead",
 			"hp": 412,
-			"xp": 511,
+			"xp": 766,
 			"gold": {
 				"min": 43,
 				"max": 130
@@ -1279,7 +1279,7 @@
 			"tier": 3,
 			"family": "undead",
 			"hp": 432,
-			"xp": 535,
+			"xp": 803,
 			"gold": {
 				"min": 43,
 				"max": 130
@@ -1322,7 +1322,7 @@
 			"tier": 3,
 			"family": "dragon",
 			"hp": 432,
-			"xp": 535,
+			"xp": 803,
 			"gold": {
 				"min": 43,
 				"max": 130
@@ -1364,7 +1364,7 @@
 			"tier": 3,
 			"family": "mage",
 			"hp": 353,
-			"xp": 438,
+			"xp": 657,
 			"gold": {
 				"min": 43,
 				"max": 130
@@ -1407,7 +1407,7 @@
 			"tier": 3,
 			"family": "plant",
 			"hp": 393,
-			"xp": 487,
+			"xp": 730,
 			"gold": {
 				"min": 43,
 				"max": 130
@@ -1450,7 +1450,7 @@
 			"tier": 4,
 			"family": "dragon",
 			"hp": 734,
-			"xp": 1230,
+			"xp": 1846,
 			"gold": {
 				"min": 78,
 				"max": 235
@@ -1493,7 +1493,7 @@
 			"tier": 4,
 			"family": "insect",
 			"hp": 734,
-			"xp": 1230,
+			"xp": 1846,
 			"gold": {
 				"min": 78,
 				"max": 235
@@ -1536,7 +1536,7 @@
 			"tier": 4,
 			"family": "undead",
 			"hp": 701,
-			"xp": 1174,
+			"xp": 1762,
 			"gold": {
 				"min": 78,
 				"max": 235
@@ -1579,7 +1579,7 @@
 			"tier": 4,
 			"family": "mage",
 			"hp": 668,
-			"xp": 1119,
+			"xp": 1679,
 			"gold": {
 				"min": 78,
 				"max": 235
@@ -1622,7 +1622,7 @@
 			"tier": 4,
 			"family": "elemental",
 			"hp": 634,
-			"xp": 1063,
+			"xp": 1595,
 			"gold": {
 				"min": 78,
 				"max": 235
@@ -1664,7 +1664,7 @@
 			"tier": 4,
 			"family": "elemental",
 			"hp": 668,
-			"xp": 1119,
+			"xp": 1679,
 			"gold": {
 				"min": 78,
 				"max": 235
@@ -1706,7 +1706,7 @@
 			"tier": 4,
 			"family": "elemental",
 			"hp": 634,
-			"xp": 1063,
+			"xp": 1595,
 			"gold": {
 				"min": 78,
 				"max": 235
@@ -1748,7 +1748,7 @@
 			"tier": 4,
 			"family": "insect",
 			"hp": 701,
-			"xp": 1174,
+			"xp": 1762,
 			"gold": {
 				"min": 78,
 				"max": 235
@@ -1791,7 +1791,7 @@
 			"tier": 4,
 			"family": "undead",
 			"hp": 734,
-			"xp": 1230,
+			"xp": 1846,
 			"gold": {
 				"min": 78,
 				"max": 235
@@ -1834,7 +1834,7 @@
 			"tier": 4,
 			"family": "giant",
 			"hp": 701,
-			"xp": 1174,
+			"xp": 1762,
 			"gold": {
 				"min": 78,
 				"max": 235
@@ -1878,7 +1878,7 @@
 			"tier": 4,
 			"family": "aquatic",
 			"hp": 634,
-			"xp": 1063,
+			"xp": 1595,
 			"gold": {
 				"min": 78,
 				"max": 235
@@ -1921,7 +1921,7 @@
 			"tier": 5,
 			"family": "dragon",
 			"hp": 1306,
-			"xp": 2961,
+			"xp": 4441,
 			"gold": {
 				"min": 141,
 				"max": 424
@@ -1964,7 +1964,7 @@
 			"tier": 5,
 			"family": "giant",
 			"hp": 1363,
-			"xp": 3090,
+			"xp": 4634,
 			"gold": {
 				"min": 141,
 				"max": 424
@@ -1994,7 +1994,7 @@
 			"tier": 5,
 			"family": "reptile",
 			"hp": 1249,
-			"xp": 2832,
+			"xp": 4248,
 			"gold": {
 				"min": 141,
 				"max": 424
@@ -2037,7 +2037,7 @@
 			"tier": 5,
 			"family": "dragon",
 			"hp": 1249,
-			"xp": 2832,
+			"xp": 4248,
 			"gold": {
 				"min": 141,
 				"max": 424
@@ -2080,7 +2080,7 @@
 			"tier": 5,
 			"family": "mage",
 			"hp": 1136,
-			"xp": 2575,
+			"xp": 3862,
 			"gold": {
 				"min": 141,
 				"max": 424
@@ -2123,7 +2123,7 @@
 			"tier": 5,
 			"family": "mage",
 			"hp": 1136,
-			"xp": 2575,
+			"xp": 3862,
 			"gold": {
 				"min": 141,
 				"max": 424
@@ -2166,7 +2166,7 @@
 			"tier": 5,
 			"family": "elemental",
 			"hp": 1079,
-			"xp": 2446,
+			"xp": 3668,
 			"gold": {
 				"min": 141,
 				"max": 424
@@ -2208,7 +2208,7 @@
 			"tier": 5,
 			"family": "demon",
 			"hp": 1192,
-			"xp": 2703,
+			"xp": 4055,
 			"gold": {
 				"min": 141,
 				"max": 424
@@ -2252,7 +2252,7 @@
 			"tier": 5,
 			"family": "undead",
 			"hp": 1079,
-			"xp": 2446,
+			"xp": 3668,
 			"gold": {
 				"min": 141,
 				"max": 424
@@ -2295,7 +2295,7 @@
 			"tier": 5,
 			"family": "insect",
 			"hp": 1192,
-			"xp": 2703,
+			"xp": 4055,
 			"gold": {
 				"min": 141,
 				"max": 424
@@ -2338,7 +2338,7 @@
 			"tier": 5,
 			"family": "aquatic",
 			"hp": 1192,
-			"xp": 2703,
+			"xp": 4055,
 			"gold": {
 				"min": 141,
 				"max": 424
@@ -2369,7 +2369,7 @@
 			"tier": 6,
 			"family": "dragon",
 			"hp": 2124,
-			"xp": 6513,
+			"xp": 9770,
 			"gold": {
 				"min": 255,
 				"max": 765
@@ -2412,7 +2412,7 @@
 			"tier": 6,
 			"family": "reptile",
 			"hp": 2027,
-			"xp": 6217,
+			"xp": 9326,
 			"gold": {
 				"min": 255,
 				"max": 765
@@ -2455,7 +2455,7 @@
 			"tier": 6,
 			"family": "undead",
 			"hp": 2220,
-			"xp": 6809,
+			"xp": 10214,
 			"gold": {
 				"min": 255,
 				"max": 765
@@ -2498,7 +2498,7 @@
 			"tier": 6,
 			"family": "demon",
 			"hp": 2124,
-			"xp": 6513,
+			"xp": 9770,
 			"gold": {
 				"min": 255,
 				"max": 765
@@ -2542,7 +2542,7 @@
 			"tier": 6,
 			"family": "demon",
 			"hp": 2220,
-			"xp": 6809,
+			"xp": 10214,
 			"gold": {
 				"min": 255,
 				"max": 765
@@ -2574,7 +2574,7 @@
 			"tier": 6,
 			"family": "demon",
 			"hp": 2027,
-			"xp": 6217,
+			"xp": 9326,
 			"gold": {
 				"min": 255,
 				"max": 765
@@ -2618,7 +2618,7 @@
 			"tier": 6,
 			"family": "undead",
 			"hp": 2124,
-			"xp": 6513,
+			"xp": 9770,
 			"gold": {
 				"min": 255,
 				"max": 765
@@ -2662,7 +2662,7 @@
 			"tier": 6,
 			"family": "undead",
 			"hp": 2027,
-			"xp": 6217,
+			"xp": 9326,
 			"gold": {
 				"min": 255,
 				"max": 765
@@ -2705,7 +2705,7 @@
 			"tier": 6,
 			"family": "aquatic",
 			"hp": 2027,
-			"xp": 6217,
+			"xp": 9326,
 			"gold": {
 				"min": 255,
 				"max": 765
@@ -2748,7 +2748,7 @@
 			"tier": 6,
 			"family": "aberration",
 			"hp": 2027,
-			"xp": 6217,
+			"xp": 9326,
 			"gold": {
 				"min": 255,
 				"max": 765
@@ -2791,7 +2791,7 @@
 			"tier": 6,
 			"family": "dragon",
 			"hp": 2317,
-			"xp": 7105,
+			"xp": 10658,
 			"gold": {
 				"min": 255,
 				"max": 765
@@ -2834,7 +2834,7 @@
 			"tier": 7,
 			"family": "demon",
 			"hp": 3775,
-			"xp": 15661,
+			"xp": 23493,
 			"gold": {
 				"min": 459,
 				"max": 1377
@@ -2878,7 +2878,7 @@
 			"tier": 7,
 			"family": "demon",
 			"hp": 3447,
-			"xp": 14299,
+			"xp": 21450,
 			"gold": {
 				"min": 459,
 				"max": 1377
@@ -2922,7 +2922,7 @@
 			"tier": 7,
 			"family": "demon",
 			"hp": 3939,
-			"xp": 16342,
+			"xp": 24514,
 			"gold": {
 				"min": 459,
 				"max": 1377
@@ -2954,7 +2954,7 @@
 			"tier": 7,
 			"family": "demon",
 			"hp": 3447,
-			"xp": 14299,
+			"xp": 21450,
 			"gold": {
 				"min": 459,
 				"max": 1377
@@ -2998,7 +2998,7 @@
 			"tier": 7,
 			"family": "demon",
 			"hp": 3611,
-			"xp": 14980,
+			"xp": 22471,
 			"gold": {
 				"min": 459,
 				"max": 1377
@@ -3044,7 +3044,7 @@
 			"tier": 7,
 			"family": "elemental",
 			"hp": 3283,
-			"xp": 13619,
+			"xp": 20429,
 			"gold": {
 				"min": 459,
 				"max": 1377
@@ -3086,7 +3086,7 @@
 			"tier": 7,
 			"family": "demon",
 			"hp": 3118,
-			"xp": 12938,
+			"xp": 19407,
 			"gold": {
 				"min": 459,
 				"max": 1377
@@ -3130,7 +3130,7 @@
 			"tier": 7,
 			"family": "undead",
 			"hp": 3283,
-			"xp": 13619,
+			"xp": 20429,
 			"gold": {
 				"min": 459,
 				"max": 1377
@@ -3173,7 +3173,7 @@
 			"tier": 7,
 			"family": "undead",
 			"hp": 3283,
-			"xp": 13619,
+			"xp": 20429,
 			"gold": {
 				"min": 459,
 				"max": 1377
@@ -3217,7 +3217,7 @@
 			"tier": 7,
 			"family": "dragon",
 			"hp": 3775,
-			"xp": 15661,
+			"xp": 23493,
 			"gold": {
 				"min": 459,
 				"max": 1377
@@ -3260,7 +3260,7 @@
 			"tier": 7,
 			"family": "reptile",
 			"hp": 3611,
-			"xp": 14980,
+			"xp": 22471,
 			"gold": {
 				"min": 459,
 				"max": 1377
@@ -3303,7 +3303,7 @@
 			"tier": 8,
 			"family": "beast",
 			"hp": 6139,
-			"xp": 34456,
+			"xp": 51685,
 			"gold": {
 				"min": 826,
 				"max": 2479
@@ -3345,7 +3345,7 @@
 			"tier": 8,
 			"family": "aberration",
 			"hp": 6139,
-			"xp": 34456,
+			"xp": 51685,
 			"gold": {
 				"min": 826,
 				"max": 2479
@@ -3376,7 +3376,7 @@
 			"tier": 8,
 			"family": "aberration",
 			"hp": 5860,
-			"xp": 32890,
+			"xp": 49336,
 			"gold": {
 				"min": 826,
 				"max": 2479
@@ -3407,7 +3407,7 @@
 			"tier": 8,
 			"family": "aberration",
 			"hp": 5581,
-			"xp": 31324,
+			"xp": 46987,
 			"gold": {
 				"min": 826,
 				"max": 2479
@@ -3450,7 +3450,7 @@
 			"tier": 8,
 			"family": "aberration",
 			"hp": 5860,
-			"xp": 32890,
+			"xp": 49336,
 			"gold": {
 				"min": 826,
 				"max": 2479
@@ -3495,7 +3495,7 @@
 			"tier": 8,
 			"family": "aberration",
 			"hp": 5860,
-			"xp": 32890,
+			"xp": 49336,
 			"gold": {
 				"min": 826,
 				"max": 2479
@@ -3538,7 +3538,7 @@
 			"tier": 8,
 			"family": "demon",
 			"hp": 5860,
-			"xp": 32890,
+			"xp": 49336,
 			"gold": {
 				"min": 826,
 				"max": 2479
@@ -3582,7 +3582,7 @@
 			"tier": 8,
 			"family": "demon",
 			"hp": 6139,
-			"xp": 34456,
+			"xp": 51685,
 			"gold": {
 				"min": 826,
 				"max": 2479
@@ -3626,7 +3626,7 @@
 			"tier": 8,
 			"family": "demon",
 			"hp": 5860,
-			"xp": 32890,
+			"xp": 49336,
 			"gold": {
 				"min": 826,
 				"max": 2479
@@ -3670,7 +3670,7 @@
 			"tier": 8,
 			"family": "undead",
 			"hp": 5581,
-			"xp": 31324,
+			"xp": 46987,
 			"gold": {
 				"min": 826,
 				"max": 2479
@@ -3715,7 +3715,7 @@
 			"tier": 8,
 			"family": "construct",
 			"hp": 6418,
-			"xp": 36022,
+			"xp": 54035,
 			"gold": {
 				"min": 826,
 				"max": 2479
@@ -3758,7 +3758,7 @@
 			"tier": 9,
 			"family": "demon",
 			"hp": 10910,
-			"xp": 82852,
+			"xp": 124279,
 			"gold": {
 				"min": 1487,
 				"max": 4462
@@ -3802,7 +3802,7 @@
 			"tier": 9,
 			"family": "demon",
 			"hp": 10910,
-			"xp": 82852,
+			"xp": 124279,
 			"gold": {
 				"min": 1487,
 				"max": 4462
@@ -3846,7 +3846,7 @@
 			"tier": 9,
 			"family": "undead",
 			"hp": 9961,
-			"xp": 75648,
+			"xp": 113472,
 			"gold": {
 				"min": 1487,
 				"max": 4462
@@ -3889,7 +3889,7 @@
 			"tier": 9,
 			"family": "aberration",
 			"hp": 9961,
-			"xp": 75648,
+			"xp": 113472,
 			"gold": {
 				"min": 1487,
 				"max": 4462
@@ -3932,7 +3932,7 @@
 			"tier": 9,
 			"family": "undead",
 			"hp": 9961,
-			"xp": 75648,
+			"xp": 113472,
 			"gold": {
 				"min": 1487,
 				"max": 4462
@@ -3977,7 +3977,7 @@
 			"tier": 9,
 			"family": "plant",
 			"hp": 10435,
-			"xp": 79250,
+			"xp": 118875,
 			"gold": {
 				"min": 1487,
 				"max": 4462
@@ -4020,7 +4020,7 @@
 			"tier": 9,
 			"family": "undead",
 			"hp": 9487,
-			"xp": 72046,
+			"xp": 108069,
 			"gold": {
 				"min": 1487,
 				"max": 4462
@@ -4064,7 +4064,7 @@
 			"tier": 9,
 			"family": "undead",
 			"hp": 9487,
-			"xp": 72046,
+			"xp": 108069,
 			"gold": {
 				"min": 1487,
 				"max": 4462
@@ -4102,7 +4102,7 @@
 			"tier": 9,
 			"family": "aberration",
 			"hp": 9487,
-			"xp": 72046,
+			"xp": 108069,
 			"gold": {
 				"min": 1487,
 				"max": 4462
@@ -4145,7 +4145,7 @@
 			"tier": 9,
 			"family": "undead",
 			"hp": 9961,
-			"xp": 75648,
+			"xp": 113472,
 			"gold": {
 				"min": 1487,
 				"max": 4462
@@ -4189,7 +4189,7 @@
 			"tier": 9,
 			"family": "construct",
 			"hp": 11384,
-			"xp": 86455,
+			"xp": 129682,
 			"gold": {
 				"min": 1487,
 				"max": 4462
