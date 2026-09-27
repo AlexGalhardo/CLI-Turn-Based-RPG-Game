@@ -1,0 +1,28 @@
+{
+  "name": "rpg-typescript",
+  "version": "0.4.0",
+  "private": true,
+  "description": "Endless turn-based RPG for the terminal — TypeScript port (Bun + Ink)",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run src/main.tsx",
+    "build": "bun build --compile --minify --sourcemap ./src/main.tsx --outfile dist/rpg-typescript",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check --write .",
+    "lint:ci": "biome ci .",
+    "test": "bun test",
+    "test:coverage": "bun test --coverage"
+  },
+  "dependencies": {
+    "ink": "7.1.1",
+    "react": "19.3.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.14",
+    "@types/bun": "1.4.2",
+    "@types/react": "19.3.0",
+    "ink-testing-library": "4.0.0",
+    "typescript": "7.0.2"
+  }
+}
