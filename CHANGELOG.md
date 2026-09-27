@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- 151 items (TibiaWiki names) covering 8 slots in all 10 tiers, with weapons per vocation, shields and spellbooks;
+  21 affixes (including one elemental ward per element) and 18 achievements.
+- Python persistence: settings, auto-save at the merchant with atomic writes, resume (mid-battle quits resume from the
+  last merchant visit), history of finished runs with full statistics and timestamps, profile with bestiary,
+  achievements and Hall of Fame, schema version checks.
+
 ## [0.2.0] - 2026-09-27
 
 ### Added

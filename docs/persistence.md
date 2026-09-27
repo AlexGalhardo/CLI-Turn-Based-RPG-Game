@@ -29,14 +29,21 @@ Tests always point `RPG_DATA_DIR` at a temporary directory.
 	"implementation": "python",
 	"savedAt": "2026-09-27T21:04:11Z",
 	"rngState": 2891336453,
-	"run": { "id": "…", "seed": 42, "difficulty": "normal", "round": 12, "phase": "merchant", "player": { }, "merchantStock": [ ], "stats": { } }
+	"session": { "runId": "20260927T210411Z-42", "startedAt": "2026-09-27T21:04:11Z", "playTimeSeconds": 1520, "sessions": 2 },
+	"run": { "seed": 42, "config": { }, "phase": "merchant", "round": 12, "player": { }, "merchantStock": [ ], "stats": { } }
 }
 ```
 
+`run` is exactly `RunState.to_dict()` of the reference implementation; `rngState` is the PRNG state at the moment of
+the snapshot. Loading a save = restoring that state and PRNG, so the continued run is identical to an uninterrupted
+one (tested by `test_restore_mid_run_continues_identically`).
+
 - Written when entering the merchant and after every merchant action (auto-save), and on "Save & quit".
 - Written atomically: write `save.json.tmp`, then rename.
-- `run.stats.startedAt` is kept across sessions; `run.stats.sessions` counts how many times the run was resumed and
-  `playTimeSeconds` accumulates time played (so a run can be spread over several days).
+- `session.startedAt` is kept across sessions; `session.sessions` counts how many times the run was played (1 +
+  resumes) and `playTimeSeconds` accumulates time played, so a run can be spread over several days.
+- Quitting mid-battle keeps the **last merchant snapshot**: the run resumes before that fight (the fight is lost, not
+  the run).
 - On death the run is moved to `history/<runId>.json` (with `endedAt` and cause of death) and `save.json` is deleted.
 
 ## Run id

@@ -133,7 +133,10 @@ def test_generate_item_is_deterministic_and_unique_affixes(data: GameData) -> No
 def test_generate_item_without_candidates_consumes_nothing(data: GameData) -> None:
 	rng = Rng(3)
 	normal = data.balance.difficulty("normal")
-	result = generate_item(data, rng, vocation=data.vocation("mage"), tier=9, table="monster", difficulty=normal, uid=1)
+	empty = replace(data, items=())
+	result = generate_item(
+		empty, rng, vocation=data.vocation("mage"), tier=9, table="monster", difficulty=normal, uid=1
+	)
 	assert result is None
 	assert rng.state == 3
 
