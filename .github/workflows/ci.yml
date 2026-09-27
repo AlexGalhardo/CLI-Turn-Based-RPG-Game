@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Implementations are added phase by phase (see PLAN.md); their jobs only run once the project exists.
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      python: ${{ steps.detect.outputs.python }}
+      typescript: ${{ steps.detect.outputs.typescript }}
+      golang: ${{ steps.detect.outputs.golang }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: detect
+        run: |
+          echo "python=$([ -f rpg-python/pyproject.toml ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "typescript=$([ -f rpg-typescript/tsconfig.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "golang=$([ -f rpg-golang/go.mod ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+  repo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - name: Biome (root JSON/TS)
+        run: bun run lint:ci
+      - name: Commit messages (Conventional Commits)
+        if: github.event_name == 'pull_request'
+        run: bunx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}

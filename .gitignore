@@ -1,0 +1,44 @@
+# Local-only material (docs of other projects, old nested git repos, old binaries). Never published.
+.local/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Node / Bun
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Go
+rpg-golang/bin/
+rpg-golang/internal/assets/shared/
+*.test
+*.out
+
+# Build outputs
+bin/
+build/
+*.exe
+rpg-typescript/rpg-typescript
+rpg-golang/rpg-golang
+
+# Game saves generated during local runs/tests
+.rpg-data/
