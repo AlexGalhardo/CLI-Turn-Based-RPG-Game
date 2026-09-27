@@ -15,7 +15,8 @@ Content is data, not code (ADR 0002). All three implementations load the same fi
    lives in `pt-BR.json`).
 3. New monster family → add it to `families.json` and create `shared/art/families/<family>.txt`
    (`@idle`, `@attack`, `@hurt`; frames split by `%%`; max 32 × 10; no tabs). New boss → `shared/art/bosses/<id>.txt`.
-4. A new data file needs a schema in `shared/schemas/<name>.schema.json` (the check fails otherwise).
+4. A new data file needs a schema in `shared/schemas/<name>.schema.json` (the check fails otherwise), and an import in
+   `rpg-typescript/src/infrastructure/embedded-shared.ts`. A new family/boss art file also needs an import line there.
 5. Validate: `bun run check:shared` (root), then `cd rpg-python && uv run pytest` (cross-reference tests).
 6. Balance: `uv run rpg --simulate 30` and compare the median rounds per vocation/difficulty before/after.
 7. Content changes alter deterministic outcomes → follow the `golden-files` skill.

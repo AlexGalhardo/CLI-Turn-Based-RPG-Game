@@ -97,3 +97,8 @@ jobs:
         run: bun run typecheck
       - name: Tests (unit, integration, golden, e2e) + coverage
         run: bun run test:coverage
+      - name: Build single-file executable
+        run: bun run build
+      - name: Smoke test the executable
+        shell: bash
+        run: ./dist/rpg-typescript --version && ./dist/rpg-typescript --simulate 1 --vocation mage --difficulty easy

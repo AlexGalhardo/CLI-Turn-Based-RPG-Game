@@ -35,8 +35,9 @@ test(shared): regenerate golden files after crit rule change
 
 ## Versioning
 
-[SemVer 2.0.0](https://semver.org/). **One version for the whole monorepo** (root `package.json`, `rpg-python/
-pyproject.toml`, `rpg-typescript/package.json`, `rpg-golang/internal/version`), bumped together.
+[SemVer 2.0.0](https://semver.org/). **One version for the whole monorepo**, bumped together in: root `package.json`,
+`rpg-python/pyproject.toml` + `rpg-python/src/rpg/__init__.py`, `rpg-typescript/package.json` (read by
+`src/version.ts`) and `rpg-golang/internal/version` (Phase 3), plus the README badge.
 
 | Version | Milestone |
 |---|---|

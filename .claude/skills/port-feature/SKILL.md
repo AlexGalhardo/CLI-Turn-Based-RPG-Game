@@ -34,6 +34,18 @@ and the UI controller behaves the same.
 - The bot is part of the golden files: port `GreedyBot` decision by decision, including tie-breakers (`max` with
   `(value, id)` keys).
 
+## Lessons from the TypeScript port (v0.5.0)
+
+- Mirror the Python module 1:1 and run `tests/golden` right after the engine: the TS port passed every golden file and
+  the bot parity check on the first run by following this order.
+- Compare simulator reports between languages with `diff --strip-trailing-cr` (Python prints CRLF on Windows).
+- Ink: `bun build --compile` must resolve the optional `react-devtools-core` peer → map it to a local stub via
+  `tsconfig.json` `paths` (`--external` and `--define` did not work).
+- ink-testing-library: a lone `ESC` needs ~100 ms before Ink emits it; long e2e tests need an explicit timeout
+  (`bun test` defaults to 5 s).
+- Never import helpers from a `*.test.ts` file (bun re-runs that file's tests); keep them in `tests/helpers.ts`.
+- `node:util` `parseArgs` throws `TypeError` for usage errors; wrap them to match argparse's exit code 2.
+
 ## Done when
 
 - `shared/golden` replay passes, unit/integration/e2e suites pass, coverage ≥ 90% on domain/application.
