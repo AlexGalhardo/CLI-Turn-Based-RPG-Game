@@ -33,7 +33,8 @@
 			"!legacy",
 			"!.claude",
 			"!.local",
-			"!.vscode/settings.json"
+			"!.vscode/settings.json",
+			"!shared/golden"
 		]
 	}
 }

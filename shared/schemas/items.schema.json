@@ -1,0 +1,82 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "items.schema.json",
+	"title": "items",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"$schema": {
+			"type": "string"
+		},
+		"items": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+					},
+					"name": {
+						"type": "string"
+					},
+					"slot": {
+						"enum": ["helmet", "armor", "legs", "boots", "amulet", "ring", "weapon", "shield"]
+					},
+					"type": {
+						"type": "string",
+						"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+					},
+					"tier": {
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 9
+					},
+					"element": {
+						"enum": ["physical", "fire", "ice", "energy", "earth", "holy", "death"]
+					},
+					"stats": {
+						"type": "object",
+						"propertyNames": {
+							"enum": [
+								"attack",
+								"armor",
+								"maxHp",
+								"maxMp",
+								"hpRegen",
+								"mpRegen",
+								"critChance",
+								"critDamage",
+								"spellPower",
+								"physicalDamage",
+								"dodge",
+								"parry",
+								"lifeLeech",
+								"manaLeech",
+								"protPhysical",
+								"protFire",
+								"protIce",
+								"protEnergy",
+								"protEarth",
+								"protHoly",
+								"protDeath"
+							]
+						},
+						"additionalProperties": {
+							"type": "integer",
+							"minimum": 0
+						}
+					},
+					"value": {
+						"type": "integer",
+						"minimum": 1
+					}
+				},
+				"required": ["id", "name", "slot", "type", "tier", "stats", "value"]
+			}
+		}
+	},
+	"required": ["items"]
+}

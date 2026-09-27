@@ -1,0 +1,109 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "vocations.schema.json",
+	"title": "vocations",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"$schema": {
+			"type": "string"
+		},
+		"vocations": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+					},
+					"name": {
+						"type": "string"
+					},
+					"startHp": {
+						"type": "integer",
+						"minimum": 1
+					},
+					"startMp": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"hpPerLevel": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"mpPerLevel": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"hpRegen": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"mpRegen": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"meleeMin": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"meleeMax": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"meleePerLevel": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"weaponTypes": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+						}
+					},
+					"shieldTypes": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+						}
+					},
+					"starterWeapon": {
+						"type": "string",
+						"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+					},
+					"spells": {
+						"type": "array",
+						"minItems": 1,
+						"items": {
+							"type": "string",
+							"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+						}
+					}
+				},
+				"required": [
+					"id",
+					"name",
+					"startHp",
+					"startMp",
+					"hpPerLevel",
+					"mpPerLevel",
+					"hpRegen",
+					"mpRegen",
+					"meleeMin",
+					"meleeMax",
+					"meleePerLevel",
+					"weaponTypes",
+					"shieldTypes",
+					"starterWeapon",
+					"spells"
+				]
+			}
+		}
+	},
+	"required": ["vocations"]
+}

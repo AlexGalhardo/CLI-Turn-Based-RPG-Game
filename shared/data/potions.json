@@ -1,0 +1,86 @@
+{
+	"$schema": "../schemas/potions.schema.json",
+	"potions": [
+		{
+			"id": "health_potion",
+			"name": "Health Potion",
+			"resource": "hp",
+			"min": 75,
+			"max": 125,
+			"price": 50,
+			"unlockRound": 0
+		},
+		{
+			"id": "strong_health_potion",
+			"name": "Strong Health Potion",
+			"resource": "hp",
+			"min": 180,
+			"max": 260,
+			"price": 100,
+			"unlockRound": 15
+		},
+		{
+			"id": "great_health_potion",
+			"name": "Great Health Potion",
+			"resource": "hp",
+			"min": 400,
+			"max": 550,
+			"price": 190,
+			"unlockRound": 35
+		},
+		{
+			"id": "ultimate_health_potion",
+			"name": "Ultimate Health Potion",
+			"resource": "hp",
+			"min": 800,
+			"max": 1000,
+			"price": 310,
+			"unlockRound": 55
+		},
+		{
+			"id": "supreme_health_potion",
+			"name": "Supreme Health Potion",
+			"resource": "hp",
+			"min": 1400,
+			"max": 1800,
+			"price": 500,
+			"unlockRound": 75
+		},
+		{
+			"id": "mana_potion",
+			"name": "Mana Potion",
+			"resource": "mp",
+			"min": 75,
+			"max": 125,
+			"price": 50,
+			"unlockRound": 0
+		},
+		{
+			"id": "strong_mana_potion",
+			"name": "Strong Mana Potion",
+			"resource": "mp",
+			"min": 150,
+			"max": 220,
+			"price": 80,
+			"unlockRound": 15
+		},
+		{
+			"id": "great_mana_potion",
+			"name": "Great Mana Potion",
+			"resource": "mp",
+			"min": 280,
+			"max": 380,
+			"price": 120,
+			"unlockRound": 35
+		},
+		{
+			"id": "ultimate_mana_potion",
+			"name": "Ultimate Mana Potion",
+			"resource": "mp",
+			"min": 450,
+			"max": 600,
+			"price": 250,
+			"unlockRound": 55
+		}
+	]
+}

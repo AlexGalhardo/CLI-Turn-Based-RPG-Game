@@ -1,6 +1,6 @@
 {
   "name": "cli-turn-based-rpg-game",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Monorepo tooling (Biome, commitlint, husky) for the CLI Turn-Based RPG in Python, TypeScript and Go",
   "license": "MIT",
@@ -9,18 +9,23 @@
     "format": "biome format --write .",
     "format:ci": "biome format .",
     "lint": "biome check --write .",
-    "lint:ci": "biome ci ."
+    "lint:ci": "biome ci .",
+    "check:shared": "bun run scripts/check-shared.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
     "@commitlint/cli": "21.2.3",
     "@commitlint/config-conventional": "21.2.3",
+    "ajv": "8.20.0",
     "husky": "9.1.7",
     "lint-staged": "17.6.0"
   },
   "lint-staged": {
     "*.{ts,tsx,js,json,jsonc}": "biome check --write --no-errors-on-unmatched",
-    "rpg-python/**/*.py": ["uv run --project rpg-python ruff format", "uv run --project rpg-python ruff check --fix"],
+    "rpg-python/**/*.py": [
+      "uv run --project rpg-python ruff format",
+      "uv run --project rpg-python ruff check --fix"
+    ],
     "rpg-golang/**/*.go": "gofmt -w"
   }
 }

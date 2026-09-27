@@ -1,0 +1,90 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "spells.schema.json",
+	"title": "spells",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"$schema": {
+			"type": "string"
+		},
+		"spells": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+					},
+					"name": {
+						"type": "string"
+					},
+					"words": {
+						"type": "string"
+					},
+					"kind": {
+						"enum": ["attack", "heal"]
+					},
+					"element": {
+						"enum": ["physical", "fire", "ice", "energy", "earth", "holy", "death"]
+					},
+					"mana": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"min": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"max": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"perLevel": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"perMagicLevel": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"level3Bonus": {
+						"type": "object",
+						"additionalProperties": false,
+						"properties": {
+							"status": {
+								"type": "string",
+								"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+							},
+							"chance": {
+								"type": "integer",
+								"minimum": 0,
+								"maximum": 100
+							},
+							"cleanse": {
+								"type": "boolean"
+							}
+						}
+					}
+				},
+				"required": [
+					"id",
+					"name",
+					"words",
+					"kind",
+					"element",
+					"mana",
+					"min",
+					"max",
+					"perLevel",
+					"perMagicLevel",
+					"level3Bonus"
+				]
+			}
+		}
+	},
+	"required": ["spells"]
+}

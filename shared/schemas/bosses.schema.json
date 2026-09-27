@@ -1,0 +1,140 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "bosses.schema.json",
+	"title": "bosses",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"$schema": {
+			"type": "string"
+		},
+		"bosses": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+					},
+					"name": {
+						"type": "string",
+						"minLength": 1
+					},
+					"tier": {
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 9
+					},
+					"family": {
+						"type": "string",
+						"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+					},
+					"hp": {
+						"type": "integer",
+						"minimum": 1
+					},
+					"xp": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"gold": {
+						"type": "object",
+						"additionalProperties": false,
+						"properties": {
+							"min": {
+								"type": "integer",
+								"minimum": 0
+							},
+							"max": {
+								"type": "integer",
+								"minimum": 0
+							}
+						},
+						"required": ["min", "max"]
+					},
+					"attacks": {
+						"type": "array",
+						"minItems": 1,
+						"items": {
+							"type": "object",
+							"additionalProperties": false,
+							"properties": {
+								"id": {
+									"type": "string",
+									"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+								},
+								"element": {
+									"enum": ["physical", "fire", "ice", "energy", "earth", "holy", "death"]
+								},
+								"min": {
+									"type": "integer",
+									"minimum": 0
+								},
+								"max": {
+									"type": "integer",
+									"minimum": 0
+								},
+								"weight": {
+									"type": "integer",
+									"minimum": 1
+								},
+								"status": {
+									"type": "object",
+									"additionalProperties": false,
+									"properties": {
+										"id": {
+											"type": "string",
+											"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+										},
+										"chance": {
+											"type": "integer",
+											"minimum": 0,
+											"maximum": 100
+										},
+										"damagePct": {
+											"type": "integer",
+											"minimum": 0
+										}
+									},
+									"required": ["id", "chance", "damagePct"]
+								}
+							},
+							"required": ["id", "element", "min", "max", "weight"]
+						}
+					},
+					"resistances": {
+						"type": "object",
+						"propertyNames": {
+							"enum": ["physical", "fire", "ice", "energy", "earth", "holy", "death"]
+						},
+						"additionalProperties": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 300
+						}
+					},
+					"chargeAttack": {
+						"type": "string",
+						"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+					}
+				},
+				"required": [
+					"id",
+					"name",
+					"tier",
+					"family",
+					"hp",
+					"xp",
+					"gold",
+					"attacks",
+					"resistances",
+					"chargeAttack"
+				]
+			}
+		}
+	},
+	"required": ["bosses"]
+}

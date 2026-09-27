@@ -1,0 +1,38 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "statuses.schema.json",
+	"title": "statuses",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"$schema": {
+			"type": "string"
+		},
+		"statuses": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+					},
+					"kind": {
+						"enum": ["dot", "stun"]
+					},
+					"element": {
+						"enum": ["physical", "fire", "ice", "energy", "earth", "holy", "death"]
+					},
+					"turns": {
+						"type": "integer",
+						"minimum": 1
+					}
+				},
+				"required": ["id", "kind", "element", "turns"]
+			}
+		}
+	},
+	"required": ["statuses"]
+}

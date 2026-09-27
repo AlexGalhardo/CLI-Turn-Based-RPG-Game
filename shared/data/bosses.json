@@ -1,0 +1,530 @@
+{
+	"$schema": "../schemas/bosses.schema.json",
+	"bosses": [
+		{
+			"id": "munster",
+			"name": "Munster",
+			"tier": 0,
+			"family": "rodent",
+			"hp": 320,
+			"xp": 320,
+			"gold": {
+				"min": 75,
+				"max": 150
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 8,
+					"max": 16,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 8,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 11,
+					"max": 21,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 15,
+						"damagePct": 20
+					}
+				}
+			],
+			"chargeAttack": "melee",
+			"resistances": {
+				"earth": 50,
+				"energy": 125
+			}
+		},
+		{
+			"id": "the_horned_fox",
+			"name": "The Horned Fox",
+			"tier": 1,
+			"family": "giant",
+			"hp": 544,
+			"xp": 736,
+			"gold": {
+				"min": 135,
+				"max": 270
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 11,
+					"max": 22,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 9,
+						"damagePct": 15
+					}
+				}
+			],
+			"chargeAttack": "melee",
+			"resistances": {
+				"energy": 110,
+				"physical": 90
+			}
+		},
+		{
+			"id": "the_old_widow",
+			"name": "The Old Widow",
+			"tier": 2,
+			"family": "insect",
+			"hp": 924,
+			"xp": 1696,
+			"gold": {
+				"min": 245,
+				"max": 490
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 17,
+					"max": 34,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 10,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 23,
+					"max": 43,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 17,
+						"damagePct": 20
+					}
+				},
+				{
+					"id": "stun_blow",
+					"element": "physical",
+					"min": 14,
+					"max": 26,
+					"weight": 1,
+					"status": {
+						"id": "stun",
+						"chance": 35,
+						"damagePct": 0
+					}
+				}
+			],
+			"chargeAttack": "poison_spit",
+			"resistances": {
+				"earth": 50,
+				"energy": 125,
+				"fire": 120
+			}
+		},
+		{
+			"id": "dharalion",
+			"name": "Dharalion",
+			"tier": 3,
+			"family": "mage",
+			"hp": 1572,
+			"xp": 3896,
+			"gold": {
+				"min": 435,
+				"max": 870
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 25,
+					"max": 50,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 11,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "energy_beam",
+					"element": "energy",
+					"min": 33,
+					"max": 63,
+					"weight": 2,
+					"status": {
+						"id": "electrify",
+						"chance": 18,
+						"damagePct": 20
+					}
+				},
+				{
+					"id": "stun_blow",
+					"element": "physical",
+					"min": 21,
+					"max": 37,
+					"weight": 1,
+					"status": {
+						"id": "stun",
+						"chance": 35,
+						"damagePct": 0
+					}
+				}
+			],
+			"chargeAttack": "energy_beam",
+			"resistances": {
+				"earth": 125,
+				"energy": 50,
+				"physical": 110
+			}
+		},
+		{
+			"id": "demodras",
+			"name": "Demodras",
+			"tier": 4,
+			"family": "dragon",
+			"hp": 2672,
+			"xp": 8952,
+			"gold": {
+				"min": 785,
+				"max": 1570
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 37,
+					"max": 74,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 12,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "fire_blast",
+					"element": "fire",
+					"min": 49,
+					"max": 93,
+					"weight": 2,
+					"status": {
+						"id": "burn",
+						"chance": 19,
+						"damagePct": 20
+					}
+				},
+				{
+					"id": "stun_blow",
+					"element": "physical",
+					"min": 31,
+					"max": 55,
+					"weight": 1,
+					"status": {
+						"id": "stun",
+						"chance": 35,
+						"damagePct": 0
+					}
+				}
+			],
+			"chargeAttack": "fire_blast",
+			"resistances": {
+				"earth": 80,
+				"fire": 50,
+				"ice": 125
+			}
+		},
+		{
+			"id": "zulazza_the_corruptor",
+			"name": "Zulazza the Corruptor",
+			"tier": 5,
+			"family": "reptile",
+			"hp": 4544,
+			"xp": 20600,
+			"gold": {
+				"min": 1415,
+				"max": 2830
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 54,
+					"max": 109,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 13,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 72,
+					"max": 136,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 20,
+						"damagePct": 20
+					}
+				},
+				{
+					"id": "stun_blow",
+					"element": "physical",
+					"min": 45,
+					"max": 81,
+					"weight": 1,
+					"status": {
+						"id": "stun",
+						"chance": 35,
+						"damagePct": 0
+					}
+				}
+			],
+			"chargeAttack": "poison_spit",
+			"resistances": {
+				"earth": 50,
+				"energy": 125,
+				"ice": 120
+			}
+		},
+		{
+			"id": "orshabaal",
+			"name": "Orshabaal",
+			"tier": 6,
+			"family": "demon",
+			"hp": 7724,
+			"xp": 47368,
+			"gold": {
+				"min": 2550,
+				"max": 5100
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 79,
+					"max": 158,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 14,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "fire_blast",
+					"element": "fire",
+					"min": 105,
+					"max": 198,
+					"weight": 2,
+					"status": {
+						"id": "burn",
+						"chance": 21,
+						"damagePct": 20
+					}
+				},
+				{
+					"id": "stun_blow",
+					"element": "physical",
+					"min": 66,
+					"max": 118,
+					"weight": 1,
+					"status": {
+						"id": "stun",
+						"chance": 35,
+						"damagePct": 0
+					}
+				}
+			],
+			"chargeAttack": "fire_blast",
+			"resistances": {
+				"death": 80,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "ghazbaran",
+			"name": "Ghazbaran",
+			"tier": 7,
+			"family": "demon",
+			"hp": 13132,
+			"xp": 108952,
+			"gold": {
+				"min": 4590,
+				"max": 9180
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 115,
+					"max": 230,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 15,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 153,
+					"max": 288,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 22,
+						"damagePct": 20
+					}
+				},
+				{
+					"id": "stun_blow",
+					"element": "physical",
+					"min": 96,
+					"max": 172,
+					"weight": 1,
+					"status": {
+						"id": "stun",
+						"chance": 35,
+						"damagePct": 0
+					}
+				}
+			],
+			"chargeAttack": "melee",
+			"resistances": {
+				"death": 50,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "morgaroth",
+			"name": "Morgaroth",
+			"tier": 8,
+			"family": "demon",
+			"hp": 22324,
+			"xp": 250592,
+			"gold": {
+				"min": 8265,
+				"max": 16530
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 166,
+					"max": 333,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 16,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "fire_blast",
+					"element": "fire",
+					"min": 222,
+					"max": 417,
+					"weight": 2,
+					"status": {
+						"id": "burn",
+						"chance": 23,
+						"damagePct": 20
+					}
+				},
+				{
+					"id": "stun_blow",
+					"element": "physical",
+					"min": 139,
+					"max": 250,
+					"weight": 1,
+					"status": {
+						"id": "stun",
+						"chance": 35,
+						"damagePct": 0
+					}
+				}
+			],
+			"chargeAttack": "fire_blast",
+			"resistances": {
+				"death": 80,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "ferumbras",
+			"name": "Ferumbras",
+			"tier": 9,
+			"family": "mage",
+			"hp": 37948,
+			"xp": 576368,
+			"gold": {
+				"min": 14875,
+				"max": 29750
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 242,
+					"max": 484,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 17,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 323,
+					"max": 606,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 24,
+						"damagePct": 20
+					}
+				},
+				{
+					"id": "stun_blow",
+					"element": "physical",
+					"min": 202,
+					"max": 363,
+					"weight": 1,
+					"status": {
+						"id": "stun",
+						"chance": 35,
+						"damagePct": 0
+					}
+				}
+			],
+			"chargeAttack": "death_strike",
+			"resistances": {
+				"death": 50,
+				"holy": 125,
+				"physical": 110
+			}
+		}
+	]
+}

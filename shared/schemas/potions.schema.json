@@ -1,0 +1,50 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "potions.schema.json",
+	"title": "potions",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"$schema": {
+			"type": "string"
+		},
+		"potions": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+					},
+					"name": {
+						"type": "string"
+					},
+					"resource": {
+						"enum": ["hp", "mp"]
+					},
+					"min": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"max": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"price": {
+						"type": "integer",
+						"minimum": 1
+					},
+					"unlockRound": {
+						"type": "integer",
+						"minimum": 0
+					}
+				},
+				"required": ["id", "name", "resource", "min", "max", "price", "unlockRound"]
+			}
+		}
+	},
+	"required": ["potions"]
+}

@@ -1,0 +1,4230 @@
+{
+	"$schema": "../schemas/monsters.schema.json",
+	"monsters": [
+		{
+			"id": "rat",
+			"name": "Rat",
+			"tier": 0,
+			"family": "rodent",
+			"hp": 64,
+			"xp": 32,
+			"gold": {
+				"min": 7,
+				"max": 22
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 4,
+					"max": 9,
+					"weight": 3
+				}
+			],
+			"resistances": {
+				"earth": 110
+			}
+		},
+		{
+			"id": "cave_rat",
+			"name": "Cave Rat",
+			"tier": 0,
+			"family": "rodent",
+			"hp": 72,
+			"xp": 36,
+			"gold": {
+				"min": 7,
+				"max": 22
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 5,
+					"max": 10,
+					"weight": 3
+				}
+			],
+			"resistances": {
+				"earth": 110
+			}
+		},
+		{
+			"id": "bat",
+			"name": "Bat",
+			"tier": 0,
+			"family": "beast",
+			"hp": 68,
+			"xp": 34,
+			"gold": {
+				"min": 7,
+				"max": 22
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 4,
+					"max": 9,
+					"weight": 3
+				}
+			],
+			"resistances": {
+				"ice": 110
+			}
+		},
+		{
+			"id": "bug",
+			"name": "Bug",
+			"tier": 0,
+			"family": "insect",
+			"hp": 68,
+			"xp": 34,
+			"gold": {
+				"min": 7,
+				"max": 22
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 4,
+					"max": 9,
+					"weight": 3
+				}
+			],
+			"resistances": {
+				"earth": 80,
+				"fire": 120
+			}
+		},
+		{
+			"id": "spider",
+			"name": "Spider",
+			"tier": 0,
+			"family": "insect",
+			"hp": 72,
+			"xp": 36,
+			"gold": {
+				"min": 7,
+				"max": 22
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 5,
+					"max": 10,
+					"weight": 3
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 7,
+					"max": 13,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 15,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 50,
+				"energy": 125,
+				"fire": 120
+			}
+		},
+		{
+			"id": "snake",
+			"name": "Snake",
+			"tier": 0,
+			"family": "reptile",
+			"hp": 76,
+			"xp": 38,
+			"gold": {
+				"min": 7,
+				"max": 22
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 5,
+					"max": 10,
+					"weight": 3
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 7,
+					"max": 13,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 15,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 50,
+				"energy": 125,
+				"ice": 120
+			}
+		},
+		{
+			"id": "deer",
+			"name": "Deer",
+			"tier": 0,
+			"family": "beast",
+			"hp": 64,
+			"xp": 32,
+			"gold": {
+				"min": 7,
+				"max": 22
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 4,
+					"max": 9,
+					"weight": 3
+				}
+			],
+			"resistances": {
+				"ice": 110
+			}
+		},
+		{
+			"id": "wolf",
+			"name": "Wolf",
+			"tier": 0,
+			"family": "beast",
+			"hp": 84,
+			"xp": 42,
+			"gold": {
+				"min": 7,
+				"max": 22
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 6,
+					"max": 12,
+					"weight": 3
+				}
+			],
+			"resistances": {
+				"ice": 110
+			}
+		},
+		{
+			"id": "goblin",
+			"name": "Goblin",
+			"tier": 0,
+			"family": "humanoid",
+			"hp": 80,
+			"xp": 40,
+			"gold": {
+				"min": 7,
+				"max": 22
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 6,
+					"max": 12,
+					"weight": 3
+				}
+			],
+			"resistances": {}
+		},
+		{
+			"id": "troll",
+			"name": "Troll",
+			"tier": 0,
+			"family": "humanoid",
+			"hp": 92,
+			"xp": 46,
+			"gold": {
+				"min": 7,
+				"max": 22
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 6,
+					"max": 13,
+					"weight": 3
+				}
+			],
+			"resistances": {}
+		},
+		{
+			"id": "skeleton",
+			"name": "Skeleton",
+			"tier": 0,
+			"family": "undead",
+			"hp": 88,
+			"xp": 44,
+			"gold": {
+				"min": 7,
+				"max": 22
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 6,
+					"max": 13,
+					"weight": 3
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 60,
+				"holy": 140
+			}
+		},
+		{
+			"id": "orc",
+			"name": "Orc",
+			"tier": 1,
+			"family": "orc",
+			"hp": 122,
+			"xp": 82,
+			"gold": {
+				"min": 13,
+				"max": 40
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 7,
+					"max": 14,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 9,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"holy": 110
+			}
+		},
+		{
+			"id": "orc_spearman",
+			"name": "Orc Spearman",
+			"tier": 1,
+			"family": "orc",
+			"hp": 129,
+			"xp": 87,
+			"gold": {
+				"min": 13,
+				"max": 40
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 7,
+					"max": 15,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 9,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"holy": 110
+			}
+		},
+		{
+			"id": "orc_warrior",
+			"name": "Orc Warrior",
+			"tier": 1,
+			"family": "orc",
+			"hp": 149,
+			"xp": 101,
+			"gold": {
+				"min": 13,
+				"max": 40
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 9,
+					"max": 18,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 9,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"holy": 110
+			}
+		},
+		{
+			"id": "rotworm",
+			"name": "Rotworm",
+			"tier": 1,
+			"family": "insect",
+			"hp": 122,
+			"xp": 82,
+			"gold": {
+				"min": 13,
+				"max": 40
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 7,
+					"max": 14,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 9,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"earth": 80,
+				"fire": 120
+			}
+		},
+		{
+			"id": "poison_spider",
+			"name": "Poison Spider",
+			"tier": 1,
+			"family": "insect",
+			"hp": 129,
+			"xp": 87,
+			"gold": {
+				"min": 13,
+				"max": 40
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 7,
+					"max": 15,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 9,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 10,
+					"max": 19,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 16,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 50,
+				"energy": 125,
+				"fire": 120
+			}
+		},
+		{
+			"id": "dwarf",
+			"name": "Dwarf",
+			"tier": 1,
+			"family": "humanoid",
+			"hp": 136,
+			"xp": 92,
+			"gold": {
+				"min": 13,
+				"max": 40
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 8,
+					"max": 16,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 9,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {}
+		},
+		{
+			"id": "amazon",
+			"name": "Amazon",
+			"tier": 1,
+			"family": "humanoid",
+			"hp": 136,
+			"xp": 92,
+			"gold": {
+				"min": 13,
+				"max": 40
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 8,
+					"max": 16,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 9,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {}
+		},
+		{
+			"id": "valkyrie",
+			"name": "Valkyrie",
+			"tier": 1,
+			"family": "humanoid",
+			"hp": 149,
+			"xp": 101,
+			"gold": {
+				"min": 13,
+				"max": 40
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 9,
+					"max": 18,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 9,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {}
+		},
+		{
+			"id": "minotaur",
+			"name": "Minotaur",
+			"tier": 1,
+			"family": "giant",
+			"hp": 142,
+			"xp": 96,
+			"gold": {
+				"min": 13,
+				"max": 40
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 8,
+					"max": 16,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 9,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"energy": 110,
+				"physical": 90
+			}
+		},
+		{
+			"id": "ghoul",
+			"name": "Ghoul",
+			"tier": 1,
+			"family": "undead",
+			"hp": 142,
+			"xp": 96,
+			"gold": {
+				"min": 13,
+				"max": 40
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 8,
+					"max": 16,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 9,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 11,
+					"max": 21,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 16,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 60,
+				"holy": 140
+			}
+		},
+		{
+			"id": "bear",
+			"name": "Bear",
+			"tier": 1,
+			"family": "beast",
+			"hp": 156,
+			"xp": 105,
+			"gold": {
+				"min": 13,
+				"max": 40
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 9,
+					"max": 19,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 9,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"ice": 110
+			}
+		},
+		{
+			"id": "minotaur_archer",
+			"name": "Minotaur Archer",
+			"tier": 2,
+			"family": "giant",
+			"hp": 219,
+			"xp": 201,
+			"gold": {
+				"min": 24,
+				"max": 73
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 11,
+					"max": 22,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 10,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"energy": 110,
+				"physical": 90
+			}
+		},
+		{
+			"id": "minotaur_guard",
+			"name": "Minotaur Guard",
+			"tier": 2,
+			"family": "giant",
+			"hp": 254,
+			"xp": 233,
+			"gold": {
+				"min": 24,
+				"max": 73
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 13,
+					"max": 27,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 10,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"energy": 110,
+				"physical": 90
+			}
+		},
+		{
+			"id": "orc_shaman",
+			"name": "Orc Shaman",
+			"tier": 2,
+			"family": "mage",
+			"hp": 219,
+			"xp": 201,
+			"gold": {
+				"min": 24,
+				"max": 73
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 11,
+					"max": 22,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 10,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "energy_beam",
+					"element": "energy",
+					"min": 15,
+					"max": 28,
+					"weight": 2,
+					"status": {
+						"id": "electrify",
+						"chance": 17,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 125,
+				"energy": 50,
+				"physical": 110
+			}
+		},
+		{
+			"id": "orc_berserker",
+			"name": "Orc Berserker",
+			"tier": 2,
+			"family": "orc",
+			"hp": 265,
+			"xp": 243,
+			"gold": {
+				"min": 24,
+				"max": 73
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 14,
+					"max": 28,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 10,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"holy": 110
+			}
+		},
+		{
+			"id": "crocodile",
+			"name": "Crocodile",
+			"tier": 2,
+			"family": "reptile",
+			"hp": 242,
+			"xp": 222,
+			"gold": {
+				"min": 24,
+				"max": 73
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 13,
+					"max": 26,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 10,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"earth": 70,
+				"ice": 120
+			}
+		},
+		{
+			"id": "tarantula",
+			"name": "Tarantula",
+			"tier": 2,
+			"family": "insect",
+			"hp": 231,
+			"xp": 212,
+			"gold": {
+				"min": 24,
+				"max": 73
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 12,
+					"max": 25,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 10,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 16,
+					"max": 31,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 17,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 50,
+				"energy": 125,
+				"fire": 120
+			}
+		},
+		{
+			"id": "cyclops",
+			"name": "Cyclops",
+			"tier": 2,
+			"family": "giant",
+			"hp": 265,
+			"xp": 243,
+			"gold": {
+				"min": 24,
+				"max": 73
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 14,
+					"max": 28,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 10,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"energy": 110,
+				"physical": 90
+			}
+		},
+		{
+			"id": "elf_arcanist",
+			"name": "Elf Arcanist",
+			"tier": 2,
+			"family": "mage",
+			"hp": 231,
+			"xp": 212,
+			"gold": {
+				"min": 24,
+				"max": 73
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 12,
+					"max": 25,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 10,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "energy_beam",
+					"element": "energy",
+					"min": 16,
+					"max": 31,
+					"weight": 2,
+					"status": {
+						"id": "electrify",
+						"chance": 17,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 125,
+				"energy": 50,
+				"physical": 110
+			}
+		},
+		{
+			"id": "dwarf_guard",
+			"name": "Dwarf Guard",
+			"tier": 2,
+			"family": "humanoid",
+			"hp": 242,
+			"xp": 222,
+			"gold": {
+				"min": 24,
+				"max": 73
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 13,
+					"max": 26,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 10,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {}
+		},
+		{
+			"id": "ghost",
+			"name": "Ghost",
+			"tier": 2,
+			"family": "undead",
+			"hp": 219,
+			"xp": 201,
+			"gold": {
+				"min": 24,
+				"max": 73
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 11,
+					"max": 22,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 10,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 15,
+					"max": 28,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 17,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 60,
+				"holy": 140,
+				"physical": 40
+			}
+		},
+		{
+			"id": "hunter",
+			"name": "Hunter",
+			"tier": 2,
+			"family": "humanoid",
+			"hp": 219,
+			"xp": 201,
+			"gold": {
+				"min": 24,
+				"max": 73
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 11,
+					"max": 22,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 10,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {}
+		},
+		{
+			"id": "orc_leader",
+			"name": "Orc Leader",
+			"tier": 3,
+			"family": "orc",
+			"hp": 412,
+			"xp": 511,
+			"gold": {
+				"min": 43,
+				"max": 130
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 18,
+					"max": 37,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 11,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"holy": 110
+			}
+		},
+		{
+			"id": "orc_warlord",
+			"name": "Orc Warlord",
+			"tier": 3,
+			"family": "orc",
+			"hp": 471,
+			"xp": 584,
+			"gold": {
+				"min": 43,
+				"max": 130
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 21,
+					"max": 43,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 11,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"holy": 110
+			}
+		},
+		{
+			"id": "dwarf_geomancer",
+			"name": "Dwarf Geomancer",
+			"tier": 3,
+			"family": "mage",
+			"hp": 373,
+			"xp": 462,
+			"gold": {
+				"min": 43,
+				"max": 130
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 16,
+					"max": 33,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 11,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 22,
+					"max": 42,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 18,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 50,
+				"energy": 125,
+				"physical": 110
+			}
+		},
+		{
+			"id": "stone_golem",
+			"name": "Stone Golem",
+			"tier": 3,
+			"family": "construct",
+			"hp": 432,
+			"xp": 535,
+			"gold": {
+				"min": 43,
+				"max": 130
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 19,
+					"max": 39,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 11,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"earth": 60,
+				"energy": 130,
+				"physical": 70
+			}
+		},
+		{
+			"id": "fire_devil",
+			"name": "Fire Devil",
+			"tier": 3,
+			"family": "demon",
+			"hp": 373,
+			"xp": 462,
+			"gold": {
+				"min": 43,
+				"max": 130
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 16,
+					"max": 33,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 11,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "fire_blast",
+					"element": "fire",
+					"min": 22,
+					"max": 42,
+					"weight": 2,
+					"status": {
+						"id": "burn",
+						"chance": 18,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 80,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "scarab",
+			"name": "Scarab",
+			"tier": 3,
+			"family": "insect",
+			"hp": 393,
+			"xp": 487,
+			"gold": {
+				"min": 43,
+				"max": 130
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 18,
+					"max": 36,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 11,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 24,
+					"max": 45,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 18,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 50,
+				"energy": 125,
+				"fire": 120
+			}
+		},
+		{
+			"id": "mummy",
+			"name": "Mummy",
+			"tier": 3,
+			"family": "undead",
+			"hp": 412,
+			"xp": 511,
+			"gold": {
+				"min": 43,
+				"max": 130
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 18,
+					"max": 37,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 11,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 24,
+					"max": 46,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 18,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 60,
+				"holy": 140
+			}
+		},
+		{
+			"id": "bonebeast",
+			"name": "Bonebeast",
+			"tier": 3,
+			"family": "undead",
+			"hp": 432,
+			"xp": 535,
+			"gold": {
+				"min": 43,
+				"max": 130
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 19,
+					"max": 39,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 11,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 26,
+					"max": 49,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 18,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 60,
+				"holy": 140
+			}
+		},
+		{
+			"id": "wyvern",
+			"name": "Wyvern",
+			"tier": 3,
+			"family": "dragon",
+			"hp": 432,
+			"xp": 535,
+			"gold": {
+				"min": 43,
+				"max": 130
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 19,
+					"max": 39,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 11,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 26,
+					"max": 49,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 18,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 50,
+				"energy": 125
+			}
+		},
+		{
+			"id": "dworc_voodoomaster",
+			"name": "Dworc Voodoomaster",
+			"tier": 3,
+			"family": "mage",
+			"hp": 353,
+			"xp": 438,
+			"gold": {
+				"min": 43,
+				"max": 130
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 16,
+					"max": 32,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 11,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 21,
+					"max": 40,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 18,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 50,
+				"holy": 125,
+				"physical": 110
+			}
+		},
+		{
+			"id": "carniphila",
+			"name": "Carniphila",
+			"tier": 3,
+			"family": "plant",
+			"hp": 393,
+			"xp": 487,
+			"gold": {
+				"min": 43,
+				"max": 130
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 18,
+					"max": 36,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 11,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 24,
+					"max": 45,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 18,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 20,
+				"energy": 125,
+				"fire": 140
+			}
+		},
+		{
+			"id": "dragon",
+			"name": "Dragon",
+			"tier": 4,
+			"family": "dragon",
+			"hp": 734,
+			"xp": 1230,
+			"gold": {
+				"min": 78,
+				"max": 235
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 28,
+					"max": 57,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 12,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "fire_blast",
+					"element": "fire",
+					"min": 38,
+					"max": 72,
+					"weight": 2,
+					"status": {
+						"id": "burn",
+						"chance": 19,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 80,
+				"fire": 50,
+				"ice": 125
+			}
+		},
+		{
+			"id": "giant_spider",
+			"name": "Giant Spider",
+			"tier": 4,
+			"family": "insect",
+			"hp": 734,
+			"xp": 1230,
+			"gold": {
+				"min": 78,
+				"max": 235
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 28,
+					"max": 57,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 12,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 38,
+					"max": 72,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 19,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 50,
+				"energy": 125,
+				"fire": 120
+			}
+		},
+		{
+			"id": "vampire",
+			"name": "Vampire",
+			"tier": 4,
+			"family": "undead",
+			"hp": 701,
+			"xp": 1174,
+			"gold": {
+				"min": 78,
+				"max": 235
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 27,
+					"max": 55,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 12,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 36,
+					"max": 69,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 19,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 60,
+				"holy": 140
+			}
+		},
+		{
+			"id": "necromancer",
+			"name": "Necromancer",
+			"tier": 4,
+			"family": "mage",
+			"hp": 668,
+			"xp": 1119,
+			"gold": {
+				"min": 78,
+				"max": 235
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 26,
+					"max": 52,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 12,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 35,
+					"max": 66,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 19,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 50,
+				"holy": 125,
+				"physical": 110
+			}
+		},
+		{
+			"id": "fire_elemental",
+			"name": "Fire Elemental",
+			"tier": 4,
+			"family": "elemental",
+			"hp": 634,
+			"xp": 1063,
+			"gold": {
+				"min": 78,
+				"max": 235
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 24,
+					"max": 49,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 12,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "fire_blast",
+					"element": "fire",
+					"min": 32,
+					"max": 61,
+					"weight": 2,
+					"status": {
+						"id": "burn",
+						"chance": 19,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"fire": 0,
+				"ice": 125
+			}
+		},
+		{
+			"id": "earth_elemental",
+			"name": "Earth Elemental",
+			"tier": 4,
+			"family": "elemental",
+			"hp": 668,
+			"xp": 1119,
+			"gold": {
+				"min": 78,
+				"max": 235
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 26,
+					"max": 52,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 12,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 35,
+					"max": 66,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 19,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 0,
+				"energy": 125
+			}
+		},
+		{
+			"id": "water_elemental",
+			"name": "Water Elemental",
+			"tier": 4,
+			"family": "elemental",
+			"hp": 634,
+			"xp": 1063,
+			"gold": {
+				"min": 78,
+				"max": 235
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 24,
+					"max": 49,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 12,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "ice_wave",
+					"element": "ice",
+					"min": 32,
+					"max": 61,
+					"weight": 2,
+					"status": {
+						"id": "freeze",
+						"chance": 19,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"fire": 125,
+				"ice": 0
+			}
+		},
+		{
+			"id": "ancient_scarab",
+			"name": "Ancient Scarab",
+			"tier": 4,
+			"family": "insect",
+			"hp": 701,
+			"xp": 1174,
+			"gold": {
+				"min": 78,
+				"max": 235
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 27,
+					"max": 55,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 12,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 36,
+					"max": 69,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 19,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 50,
+				"energy": 125,
+				"fire": 120
+			}
+		},
+		{
+			"id": "lich",
+			"name": "Lich",
+			"tier": 4,
+			"family": "undead",
+			"hp": 734,
+			"xp": 1230,
+			"gold": {
+				"min": 78,
+				"max": 235
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 28,
+					"max": 57,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 12,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 38,
+					"max": 72,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 19,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 60,
+				"holy": 140
+			}
+		},
+		{
+			"id": "frost_giant",
+			"name": "Frost Giant",
+			"tier": 4,
+			"family": "giant",
+			"hp": 701,
+			"xp": 1174,
+			"gold": {
+				"min": 78,
+				"max": 235
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 27,
+					"max": 55,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 12,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "ice_wave",
+					"element": "ice",
+					"min": 36,
+					"max": 69,
+					"weight": 2,
+					"status": {
+						"id": "freeze",
+						"chance": 19,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"energy": 110,
+				"fire": 125,
+				"ice": 50,
+				"physical": 90
+			}
+		},
+		{
+			"id": "quara_constrictor",
+			"name": "Quara Constrictor",
+			"tier": 4,
+			"family": "aquatic",
+			"hp": 634,
+			"xp": 1063,
+			"gold": {
+				"min": 78,
+				"max": 235
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 24,
+					"max": 49,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 12,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "ice_wave",
+					"element": "ice",
+					"min": 32,
+					"max": 61,
+					"weight": 2,
+					"status": {
+						"id": "freeze",
+						"chance": 19,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"energy": 140,
+				"fire": 60,
+				"ice": 50
+			}
+		},
+		{
+			"id": "dragon_lord",
+			"name": "Dragon Lord",
+			"tier": 5,
+			"family": "dragon",
+			"hp": 1306,
+			"xp": 2961,
+			"gold": {
+				"min": 141,
+				"max": 424
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 43,
+					"max": 87,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 13,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "fire_blast",
+					"element": "fire",
+					"min": 58,
+					"max": 109,
+					"weight": 2,
+					"status": {
+						"id": "burn",
+						"chance": 20,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 80,
+				"fire": 50,
+				"ice": 125
+			}
+		},
+		{
+			"id": "behemoth",
+			"name": "Behemoth",
+			"tier": 5,
+			"family": "giant",
+			"hp": 1363,
+			"xp": 3090,
+			"gold": {
+				"min": 141,
+				"max": 424
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 45,
+					"max": 91,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 13,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"energy": 110,
+				"physical": 90
+			}
+		},
+		{
+			"id": "serpent_spawn",
+			"name": "Serpent Spawn",
+			"tier": 5,
+			"family": "reptile",
+			"hp": 1249,
+			"xp": 2832,
+			"gold": {
+				"min": 141,
+				"max": 424
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 42,
+					"max": 84,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 13,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 56,
+					"max": 105,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 20,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 50,
+				"energy": 125,
+				"ice": 120
+			}
+		},
+		{
+			"id": "hydra",
+			"name": "Hydra",
+			"tier": 5,
+			"family": "dragon",
+			"hp": 1249,
+			"xp": 2832,
+			"gold": {
+				"min": 141,
+				"max": 424
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 42,
+					"max": 84,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 13,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "ice_wave",
+					"element": "ice",
+					"min": 56,
+					"max": 105,
+					"weight": 2,
+					"status": {
+						"id": "freeze",
+						"chance": 20,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 80,
+				"fire": 125,
+				"ice": 50
+			}
+		},
+		{
+			"id": "warlock",
+			"name": "Warlock",
+			"tier": 5,
+			"family": "mage",
+			"hp": 1136,
+			"xp": 2575,
+			"gold": {
+				"min": 141,
+				"max": 424
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 38,
+					"max": 76,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 13,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "energy_beam",
+					"element": "energy",
+					"min": 51,
+					"max": 96,
+					"weight": 2,
+					"status": {
+						"id": "electrify",
+						"chance": 20,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 125,
+				"energy": 50,
+				"physical": 110
+			}
+		},
+		{
+			"id": "infernalist",
+			"name": "Infernalist",
+			"tier": 5,
+			"family": "mage",
+			"hp": 1136,
+			"xp": 2575,
+			"gold": {
+				"min": 141,
+				"max": 424
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 38,
+					"max": 76,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 13,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "fire_blast",
+					"element": "fire",
+					"min": 51,
+					"max": 96,
+					"weight": 2,
+					"status": {
+						"id": "burn",
+						"chance": 20,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"fire": 50,
+				"ice": 125,
+				"physical": 110
+			}
+		},
+		{
+			"id": "energy_elemental",
+			"name": "Energy Elemental",
+			"tier": 5,
+			"family": "elemental",
+			"hp": 1079,
+			"xp": 2446,
+			"gold": {
+				"min": 141,
+				"max": 424
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 36,
+					"max": 72,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 13,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "energy_beam",
+					"element": "energy",
+					"min": 48,
+					"max": 90,
+					"weight": 2,
+					"status": {
+						"id": "electrify",
+						"chance": 20,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 125,
+				"energy": 0
+			}
+		},
+		{
+			"id": "nightmare",
+			"name": "Nightmare",
+			"tier": 5,
+			"family": "demon",
+			"hp": 1192,
+			"xp": 2703,
+			"gold": {
+				"min": 141,
+				"max": 424
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 40,
+					"max": 80,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 13,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 53,
+					"max": 100,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 20,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 50,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "banshee",
+			"name": "Banshee",
+			"tier": 5,
+			"family": "undead",
+			"hp": 1079,
+			"xp": 2446,
+			"gold": {
+				"min": 141,
+				"max": 424
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 36,
+					"max": 72,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 13,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 48,
+					"max": 90,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 20,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 60,
+				"holy": 140
+			}
+		},
+		{
+			"id": "crystal_spider",
+			"name": "Crystal Spider",
+			"tier": 5,
+			"family": "insect",
+			"hp": 1192,
+			"xp": 2703,
+			"gold": {
+				"min": 141,
+				"max": 424
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 40,
+					"max": 80,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 13,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "ice_wave",
+					"element": "ice",
+					"min": 53,
+					"max": 100,
+					"weight": 2,
+					"status": {
+						"id": "freeze",
+						"chance": 20,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 80,
+				"fire": 120,
+				"ice": 50
+			}
+		},
+		{
+			"id": "quara_predator",
+			"name": "Quara Predator",
+			"tier": 5,
+			"family": "aquatic",
+			"hp": 1192,
+			"xp": 2703,
+			"gold": {
+				"min": 141,
+				"max": 424
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 40,
+					"max": 80,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 13,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"energy": 140,
+				"fire": 60,
+				"ice": 50
+			}
+		},
+		{
+			"id": "frost_dragon",
+			"name": "Frost Dragon",
+			"tier": 6,
+			"family": "dragon",
+			"hp": 2124,
+			"xp": 6513,
+			"gold": {
+				"min": 255,
+				"max": 765
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 61,
+					"max": 122,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 14,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "ice_wave",
+					"element": "ice",
+					"min": 81,
+					"max": 153,
+					"weight": 2,
+					"status": {
+						"id": "freeze",
+						"chance": 21,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 80,
+				"fire": 125,
+				"ice": 50
+			}
+		},
+		{
+			"id": "medusa",
+			"name": "Medusa",
+			"tier": 6,
+			"family": "reptile",
+			"hp": 2027,
+			"xp": 6217,
+			"gold": {
+				"min": 255,
+				"max": 765
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 58,
+					"max": 116,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 14,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 77,
+					"max": 145,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 21,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 50,
+				"energy": 125,
+				"ice": 120
+			}
+		},
+		{
+			"id": "grim_reaper",
+			"name": "Grim Reaper",
+			"tier": 6,
+			"family": "undead",
+			"hp": 2220,
+			"xp": 6809,
+			"gold": {
+				"min": 255,
+				"max": 765
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 63,
+					"max": 127,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 14,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 84,
+					"max": 159,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 21,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 60,
+				"holy": 140
+			}
+		},
+		{
+			"id": "dark_torturer",
+			"name": "Dark Torturer",
+			"tier": 6,
+			"family": "demon",
+			"hp": 2124,
+			"xp": 6513,
+			"gold": {
+				"min": 255,
+				"max": 765
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 61,
+					"max": 122,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 14,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 81,
+					"max": 153,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 21,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 50,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "destroyer",
+			"name": "Destroyer",
+			"tier": 6,
+			"family": "demon",
+			"hp": 2220,
+			"xp": 6809,
+			"gold": {
+				"min": 255,
+				"max": 765
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 63,
+					"max": 127,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 14,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"death": 80,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "hellspawn",
+			"name": "Hellspawn",
+			"tier": 6,
+			"family": "demon",
+			"hp": 2027,
+			"xp": 6217,
+			"gold": {
+				"min": 255,
+				"max": 765
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 58,
+					"max": 116,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 14,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "fire_blast",
+					"element": "fire",
+					"min": 77,
+					"max": 145,
+					"weight": 2,
+					"status": {
+						"id": "burn",
+						"chance": 21,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 80,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "blightwalker",
+			"name": "Blightwalker",
+			"tier": 6,
+			"family": "undead",
+			"hp": 2124,
+			"xp": 6513,
+			"gold": {
+				"min": 255,
+				"max": 765
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 61,
+					"max": 122,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 14,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 81,
+					"max": 153,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 21,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 50,
+				"energy": 125,
+				"holy": 140
+			}
+		},
+		{
+			"id": "betrayed_wraith",
+			"name": "Betrayed Wraith",
+			"tier": 6,
+			"family": "undead",
+			"hp": 2027,
+			"xp": 6217,
+			"gold": {
+				"min": 255,
+				"max": 765
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 58,
+					"max": 116,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 14,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 77,
+					"max": 145,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 21,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 60,
+				"holy": 140
+			}
+		},
+		{
+			"id": "sea_serpent",
+			"name": "Sea Serpent",
+			"tier": 6,
+			"family": "aquatic",
+			"hp": 2027,
+			"xp": 6217,
+			"gold": {
+				"min": 255,
+				"max": 765
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 58,
+					"max": 116,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 14,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "ice_wave",
+					"element": "ice",
+					"min": 77,
+					"max": 145,
+					"weight": 2,
+					"status": {
+						"id": "freeze",
+						"chance": 21,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"energy": 140,
+				"fire": 60,
+				"ice": 50
+			}
+		},
+		{
+			"id": "hand_of_cursed_fate",
+			"name": "Hand of Cursed Fate",
+			"tier": 6,
+			"family": "aberration",
+			"hp": 2027,
+			"xp": 6217,
+			"gold": {
+				"min": 255,
+				"max": 765
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 58,
+					"max": 116,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 14,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 77,
+					"max": 145,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 21,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 50,
+				"holy": 120,
+				"physical": 90
+			}
+		},
+		{
+			"id": "undead_dragon",
+			"name": "Undead Dragon",
+			"tier": 6,
+			"family": "dragon",
+			"hp": 2317,
+			"xp": 7105,
+			"gold": {
+				"min": 255,
+				"max": 765
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 66,
+					"max": 133,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 14,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 88,
+					"max": 166,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 21,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 50,
+				"earth": 80,
+				"holy": 125
+			}
+		},
+		{
+			"id": "demon",
+			"name": "Demon",
+			"tier": 7,
+			"family": "demon",
+			"hp": 3775,
+			"xp": 15661,
+			"gold": {
+				"min": 459,
+				"max": 1377
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 93,
+					"max": 186,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 15,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "fire_blast",
+					"element": "fire",
+					"min": 124,
+					"max": 232,
+					"weight": 2,
+					"status": {
+						"id": "burn",
+						"chance": 22,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 80,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "fury",
+			"name": "Fury",
+			"tier": 7,
+			"family": "demon",
+			"hp": 3447,
+			"xp": 14299,
+			"gold": {
+				"min": 459,
+				"max": 1377
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 84,
+					"max": 169,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 15,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 112,
+					"max": 211,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 22,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 50,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "juggernaut",
+			"name": "Juggernaut",
+			"tier": 7,
+			"family": "demon",
+			"hp": 3939,
+			"xp": 16342,
+			"gold": {
+				"min": 459,
+				"max": 1377
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 97,
+					"max": 194,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 15,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"death": 80,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "hellfire_fighter",
+			"name": "Hellfire Fighter",
+			"tier": 7,
+			"family": "demon",
+			"hp": 3447,
+			"xp": 14299,
+			"gold": {
+				"min": 459,
+				"max": 1377
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 84,
+					"max": 169,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 15,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "fire_blast",
+					"element": "fire",
+					"min": 112,
+					"max": 211,
+					"weight": 2,
+					"status": {
+						"id": "burn",
+						"chance": 22,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 80,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "plaguesmith",
+			"name": "Plaguesmith",
+			"tier": 7,
+			"family": "demon",
+			"hp": 3611,
+			"xp": 14980,
+			"gold": {
+				"min": 459,
+				"max": 1377
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 88,
+					"max": 177,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 15,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 118,
+					"max": 222,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 22,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 80,
+				"earth": 50,
+				"energy": 125,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "defiler",
+			"name": "Defiler",
+			"tier": 7,
+			"family": "elemental",
+			"hp": 3283,
+			"xp": 13619,
+			"gold": {
+				"min": 459,
+				"max": 1377
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 81,
+					"max": 162,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 15,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 108,
+					"max": 202,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 22,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 0,
+				"energy": 125
+			}
+		},
+		{
+			"id": "diabolic_imp",
+			"name": "Diabolic Imp",
+			"tier": 7,
+			"family": "demon",
+			"hp": 3118,
+			"xp": 12938,
+			"gold": {
+				"min": 459,
+				"max": 1377
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 76,
+					"max": 153,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 15,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "fire_blast",
+					"element": "fire",
+					"min": 102,
+					"max": 192,
+					"weight": 2,
+					"status": {
+						"id": "burn",
+						"chance": 22,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 80,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "lost_soul",
+			"name": "Lost Soul",
+			"tier": 7,
+			"family": "undead",
+			"hp": 3283,
+			"xp": 13619,
+			"gold": {
+				"min": 459,
+				"max": 1377
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 81,
+					"max": 162,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 15,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 108,
+					"max": 202,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 22,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 60,
+				"holy": 140
+			}
+		},
+		{
+			"id": "spectre",
+			"name": "Spectre",
+			"tier": 7,
+			"family": "undead",
+			"hp": 3283,
+			"xp": 13619,
+			"gold": {
+				"min": 459,
+				"max": 1377
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 81,
+					"max": 162,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 15,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 108,
+					"max": 202,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 22,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 60,
+				"holy": 140,
+				"physical": 20
+			}
+		},
+		{
+			"id": "ghastly_dragon",
+			"name": "Ghastly Dragon",
+			"tier": 7,
+			"family": "dragon",
+			"hp": 3775,
+			"xp": 15661,
+			"gold": {
+				"min": 459,
+				"max": 1377
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 93,
+					"max": 186,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 15,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 124,
+					"max": 232,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 22,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 50,
+				"earth": 80,
+				"holy": 125
+			}
+		},
+		{
+			"id": "draken_elite",
+			"name": "Draken Elite",
+			"tier": 7,
+			"family": "reptile",
+			"hp": 3611,
+			"xp": 14980,
+			"gold": {
+				"min": 459,
+				"max": 1377
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 88,
+					"max": 177,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 15,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "fire_blast",
+					"element": "fire",
+					"min": 118,
+					"max": 222,
+					"weight": 2,
+					"status": {
+						"id": "burn",
+						"chance": 22,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 70,
+				"fire": 50,
+				"ice": 120
+			}
+		},
+		{
+			"id": "hellhound",
+			"name": "Hellhound",
+			"tier": 8,
+			"family": "beast",
+			"hp": 6139,
+			"xp": 34456,
+			"gold": {
+				"min": 826,
+				"max": 2479
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 128,
+					"max": 256,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 16,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "fire_blast",
+					"element": "fire",
+					"min": 171,
+					"max": 321,
+					"weight": 2,
+					"status": {
+						"id": "burn",
+						"chance": 23,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"fire": 50,
+				"ice": 110
+			}
+		},
+		{
+			"id": "guzzlemaw",
+			"name": "Guzzlemaw",
+			"tier": 8,
+			"family": "aberration",
+			"hp": 6139,
+			"xp": 34456,
+			"gold": {
+				"min": 826,
+				"max": 2479
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 128,
+					"max": 256,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 16,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"death": 60,
+				"holy": 120,
+				"physical": 90
+			}
+		},
+		{
+			"id": "frazzlemaw",
+			"name": "Frazzlemaw",
+			"tier": 8,
+			"family": "aberration",
+			"hp": 5860,
+			"xp": 32890,
+			"gold": {
+				"min": 826,
+				"max": 2479
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 122,
+					"max": 244,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 16,
+						"damagePct": 15
+					}
+				}
+			],
+			"resistances": {
+				"death": 60,
+				"holy": 120,
+				"physical": 90
+			}
+		},
+		{
+			"id": "silencer",
+			"name": "Silencer",
+			"tier": 8,
+			"family": "aberration",
+			"hp": 5581,
+			"xp": 31324,
+			"gold": {
+				"min": 826,
+				"max": 2479
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 117,
+					"max": 234,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 16,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 156,
+					"max": 292,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 23,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 50,
+				"holy": 120,
+				"physical": 90
+			}
+		},
+		{
+			"id": "retching_horror",
+			"name": "Retching Horror",
+			"tier": 8,
+			"family": "aberration",
+			"hp": 5860,
+			"xp": 32890,
+			"gold": {
+				"min": 826,
+				"max": 2479
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 122,
+					"max": 244,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 16,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 163,
+					"max": 306,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 23,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 60,
+				"earth": 50,
+				"energy": 125,
+				"holy": 120,
+				"physical": 90
+			}
+		},
+		{
+			"id": "choking_fear",
+			"name": "Choking Fear",
+			"tier": 8,
+			"family": "aberration",
+			"hp": 5860,
+			"xp": 32890,
+			"gold": {
+				"min": 826,
+				"max": 2479
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 122,
+					"max": 244,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 16,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 163,
+					"max": 306,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 23,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 50,
+				"holy": 120,
+				"physical": 90
+			}
+		},
+		{
+			"id": "vexclaw",
+			"name": "Vexclaw",
+			"tier": 8,
+			"family": "demon",
+			"hp": 5860,
+			"xp": 32890,
+			"gold": {
+				"min": 826,
+				"max": 2479
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 122,
+					"max": 244,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 16,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "fire_blast",
+					"element": "fire",
+					"min": 163,
+					"max": 306,
+					"weight": 2,
+					"status": {
+						"id": "burn",
+						"chance": 23,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 80,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "hellflayer",
+			"name": "Hellflayer",
+			"tier": 8,
+			"family": "demon",
+			"hp": 6139,
+			"xp": 34456,
+			"gold": {
+				"min": 826,
+				"max": 2479
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 128,
+					"max": 256,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 16,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "fire_blast",
+					"element": "fire",
+					"min": 171,
+					"max": 321,
+					"weight": 2,
+					"status": {
+						"id": "burn",
+						"chance": 23,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 80,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "grimeleech",
+			"name": "Grimeleech",
+			"tier": 8,
+			"family": "demon",
+			"hp": 5860,
+			"xp": 32890,
+			"gold": {
+				"min": 826,
+				"max": 2479
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 122,
+					"max": 244,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 16,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 163,
+					"max": 306,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 23,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 50,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "burster_spectre",
+			"name": "Burster Spectre",
+			"tier": 8,
+			"family": "undead",
+			"hp": 5581,
+			"xp": 31324,
+			"gold": {
+				"min": 826,
+				"max": 2479
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 117,
+					"max": 234,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 16,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "ice_wave",
+					"element": "ice",
+					"min": 156,
+					"max": 292,
+					"weight": 2,
+					"status": {
+						"id": "freeze",
+						"chance": 23,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 60,
+				"fire": 125,
+				"holy": 140,
+				"ice": 50
+			}
+		},
+		{
+			"id": "sight_of_surrender",
+			"name": "Sight of Surrender",
+			"tier": 8,
+			"family": "construct",
+			"hp": 6418,
+			"xp": 36022,
+			"gold": {
+				"min": 826,
+				"max": 2479
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 134,
+					"max": 268,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 16,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "energy_beam",
+					"element": "energy",
+					"min": 179,
+					"max": 336,
+					"weight": 2,
+					"status": {
+						"id": "electrify",
+						"chance": 23,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 60,
+				"energy": 50,
+				"physical": 70
+			}
+		},
+		{
+			"id": "brachiodemon",
+			"name": "Brachiodemon",
+			"tier": 9,
+			"family": "demon",
+			"hp": 10910,
+			"xp": 82852,
+			"gold": {
+				"min": 1487,
+				"max": 4462
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 195,
+					"max": 390,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 17,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "fire_blast",
+					"element": "fire",
+					"min": 260,
+					"max": 487,
+					"weight": 2,
+					"status": {
+						"id": "burn",
+						"chance": 24,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 80,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "infernal_demon",
+			"name": "Infernal Demon",
+			"tier": 9,
+			"family": "demon",
+			"hp": 10910,
+			"xp": 82852,
+			"gold": {
+				"min": 1487,
+				"max": 4462
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 195,
+					"max": 390,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 17,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "fire_blast",
+					"element": "fire",
+					"min": 260,
+					"max": 487,
+					"weight": 2,
+					"status": {
+						"id": "burn",
+						"chance": 24,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 80,
+				"fire": 40,
+				"holy": 130,
+				"ice": 110
+			}
+		},
+		{
+			"id": "infernal_phantom",
+			"name": "Infernal Phantom",
+			"tier": 9,
+			"family": "undead",
+			"hp": 9961,
+			"xp": 75648,
+			"gold": {
+				"min": 1487,
+				"max": 4462
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 178,
+					"max": 356,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 17,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 237,
+					"max": 445,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 24,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 60,
+				"holy": 140
+			}
+		},
+		{
+			"id": "many_faces",
+			"name": "Many Faces",
+			"tier": 9,
+			"family": "aberration",
+			"hp": 9961,
+			"xp": 75648,
+			"gold": {
+				"min": 1487,
+				"max": 4462
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 178,
+					"max": 356,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 17,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 237,
+					"max": 445,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 24,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 50,
+				"holy": 120,
+				"physical": 90
+			}
+		},
+		{
+			"id": "cloak_of_terror",
+			"name": "Cloak of Terror",
+			"tier": 9,
+			"family": "undead",
+			"hp": 9961,
+			"xp": 75648,
+			"gold": {
+				"min": 1487,
+				"max": 4462
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 178,
+					"max": 356,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 17,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "ice_wave",
+					"element": "ice",
+					"min": 237,
+					"max": 445,
+					"weight": 2,
+					"status": {
+						"id": "freeze",
+						"chance": 24,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 60,
+				"fire": 125,
+				"holy": 140,
+				"ice": 50
+			}
+		},
+		{
+			"id": "branchy_crawler",
+			"name": "Branchy Crawler",
+			"tier": 9,
+			"family": "plant",
+			"hp": 10435,
+			"xp": 79250,
+			"gold": {
+				"min": 1487,
+				"max": 4462
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 186,
+					"max": 373,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 17,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 248,
+					"max": 466,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 24,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 20,
+				"energy": 125,
+				"fire": 140
+			}
+		},
+		{
+			"id": "capricious_phantom",
+			"name": "Capricious Phantom",
+			"tier": 9,
+			"family": "undead",
+			"hp": 9487,
+			"xp": 72046,
+			"gold": {
+				"min": 1487,
+				"max": 4462
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 169,
+					"max": 339,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 17,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "energy_beam",
+					"element": "energy",
+					"min": 226,
+					"max": 424,
+					"weight": 2,
+					"status": {
+						"id": "electrify",
+						"chance": 24,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 60,
+				"energy": 50,
+				"holy": 140
+			}
+		},
+		{
+			"id": "vibrant_phantom",
+			"name": "Vibrant Phantom",
+			"tier": 9,
+			"family": "undead",
+			"hp": 9487,
+			"xp": 72046,
+			"gold": {
+				"min": 1487,
+				"max": 4462
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 169,
+					"max": 339,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 17,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "holy_flash",
+					"element": "holy",
+					"min": 226,
+					"max": 424,
+					"weight": 2
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 60,
+				"holy": 50
+			}
+		},
+		{
+			"id": "courage_leech",
+			"name": "Courage Leech",
+			"tier": 9,
+			"family": "aberration",
+			"hp": 9487,
+			"xp": 72046,
+			"gold": {
+				"min": 1487,
+				"max": 4462
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 169,
+					"max": 339,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 17,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "death_strike",
+					"element": "death",
+					"min": 226,
+					"max": 424,
+					"weight": 2,
+					"status": {
+						"id": "curse",
+						"chance": 24,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 50,
+				"holy": 120,
+				"physical": 90
+			}
+		},
+		{
+			"id": "hazardous_phantom",
+			"name": "Hazardous Phantom",
+			"tier": 9,
+			"family": "undead",
+			"hp": 9961,
+			"xp": 75648,
+			"gold": {
+				"min": 1487,
+				"max": 4462
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 178,
+					"max": 356,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 17,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "energy_beam",
+					"element": "energy",
+					"min": 237,
+					"max": 445,
+					"weight": 2,
+					"status": {
+						"id": "electrify",
+						"chance": 24,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"death": 30,
+				"earth": 60,
+				"energy": 50,
+				"holy": 140
+			}
+		},
+		{
+			"id": "rotten_golem",
+			"name": "Rotten Golem",
+			"tier": 9,
+			"family": "construct",
+			"hp": 11384,
+			"xp": 86455,
+			"gold": {
+				"min": 1487,
+				"max": 4462
+			},
+			"attacks": [
+				{
+					"id": "melee",
+					"element": "physical",
+					"min": 203,
+					"max": 406,
+					"weight": 3,
+					"status": {
+						"id": "bleed",
+						"chance": 17,
+						"damagePct": 15
+					}
+				},
+				{
+					"id": "poison_spit",
+					"element": "earth",
+					"min": 271,
+					"max": 508,
+					"weight": 2,
+					"status": {
+						"id": "poison",
+						"chance": 24,
+						"damagePct": 20
+					}
+				}
+			],
+			"resistances": {
+				"earth": 50,
+				"energy": 130,
+				"physical": 70
+			}
+		}
+	]
+}

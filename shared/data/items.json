@@ -1,0 +1,35 @@
+{
+	"$schema": "../schemas/items.schema.json",
+	"items": [
+		{
+			"id": "sword",
+			"name": "Sword",
+			"slot": "weapon",
+			"type": "sword",
+			"tier": 0,
+			"element": "physical",
+			"stats": { "attack": 4 },
+			"value": 25
+		},
+		{
+			"id": "bow",
+			"name": "Bow",
+			"slot": "weapon",
+			"type": "bow",
+			"tier": 0,
+			"element": "physical",
+			"stats": { "attack": 4 },
+			"value": 25
+		},
+		{
+			"id": "wand_of_vortex",
+			"name": "Wand of Vortex",
+			"slot": "weapon",
+			"type": "wand",
+			"tier": 0,
+			"element": "energy",
+			"stats": { "attack": 5 },
+			"value": 25
+		}
+	]
+}

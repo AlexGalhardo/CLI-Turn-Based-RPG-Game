@@ -1,0 +1,72 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "affixes.schema.json",
+	"title": "affixes",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"$schema": {
+			"type": "string"
+		},
+		"affixes": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+					},
+					"stat": {
+						"enum": [
+							"attack",
+							"armor",
+							"maxHp",
+							"maxMp",
+							"hpRegen",
+							"mpRegen",
+							"critChance",
+							"critDamage",
+							"spellPower",
+							"physicalDamage",
+							"dodge",
+							"parry",
+							"lifeLeech",
+							"manaLeech",
+							"protPhysical",
+							"protFire",
+							"protIce",
+							"protEnergy",
+							"protEarth",
+							"protHoly",
+							"protDeath"
+						]
+					},
+					"min": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"max": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"perTier": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"slots": {
+						"type": "array",
+						"minItems": 1,
+						"items": {
+							"enum": ["helmet", "armor", "legs", "boots", "amulet", "ring", "weapon", "shield"]
+						}
+					}
+				},
+				"required": ["id", "stat", "min", "max", "perTier", "slots"]
+			}
+		}
+	},
+	"required": ["affixes"]
+}

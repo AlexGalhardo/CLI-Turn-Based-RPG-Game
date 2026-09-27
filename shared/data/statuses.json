@@ -1,0 +1,12 @@
+{
+	"$schema": "../schemas/statuses.schema.json",
+	"statuses": [
+		{ "id": "burn", "kind": "dot", "element": "fire", "turns": 3 },
+		{ "id": "poison", "kind": "dot", "element": "earth", "turns": 5 },
+		{ "id": "electrify", "kind": "dot", "element": "energy", "turns": 3 },
+		{ "id": "bleed", "kind": "dot", "element": "physical", "turns": 4 },
+		{ "id": "freeze", "kind": "dot", "element": "ice", "turns": 2 },
+		{ "id": "curse", "kind": "dot", "element": "death", "turns": 4 },
+		{ "id": "stun", "kind": "stun", "element": "physical", "turns": 1 }
+	]
+}

@@ -1,0 +1,56 @@
+{
+	"$schema": "../schemas/vocations.schema.json",
+	"vocations": [
+		{
+			"id": "warrior",
+			"name": "Warrior",
+			"startHp": 180,
+			"startMp": 40,
+			"hpPerLevel": 15,
+			"mpPerLevel": 5,
+			"hpRegen": 3,
+			"mpRegen": 1,
+			"meleeMin": 8,
+			"meleeMax": 14,
+			"meleePerLevel": 2,
+			"weaponTypes": ["sword", "axe", "club"],
+			"shieldTypes": ["shield"],
+			"starterWeapon": "sword",
+			"spells": ["brutal_strike", "fierce_berserk", "annihilation", "wound_cleansing"]
+		},
+		{
+			"id": "archer",
+			"name": "Archer",
+			"startHp": 150,
+			"startMp": 80,
+			"hpPerLevel": 10,
+			"mpPerLevel": 15,
+			"hpRegen": 2,
+			"mpRegen": 2,
+			"meleeMin": 7,
+			"meleeMax": 13,
+			"meleePerLevel": 2,
+			"weaponTypes": ["bow", "crossbow", "spear"],
+			"shieldTypes": ["shield"],
+			"starterWeapon": "bow",
+			"spells": ["ethereal_spear", "divine_missile", "divine_caldera", "divine_healing"]
+		},
+		{
+			"id": "mage",
+			"name": "Mage",
+			"startHp": 130,
+			"startMp": 120,
+			"hpPerLevel": 5,
+			"mpPerLevel": 15,
+			"hpRegen": 1,
+			"mpRegen": 4,
+			"meleeMin": 4,
+			"meleeMax": 9,
+			"meleePerLevel": 1,
+			"weaponTypes": ["wand", "rod"],
+			"shieldTypes": ["spellbook"],
+			"starterWeapon": "wand_of_vortex",
+			"spells": ["flame_strike", "energy_strike", "eternal_winter", "intense_healing", "ultimate_healing"]
+		}
+	]
+}

@@ -1,0 +1,293 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "balance.schema.json",
+	"title": "balance",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"$schema": {
+			"type": "string"
+		},
+		"roundsPerTier": {
+			"type": "integer",
+			"minimum": 1
+		},
+		"cycleStatPct": {
+			"type": "integer",
+			"minimum": 0
+		},
+		"cycleRewardPct": {
+			"type": "integer",
+			"minimum": 0
+		},
+		"positionPct": {
+			"type": "integer",
+			"minimum": 0
+		},
+		"difficulties": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+					},
+					"hpPct": {
+						"type": "integer",
+						"minimum": 1
+					},
+					"damagePct": {
+						"type": "integer",
+						"minimum": 1
+					},
+					"goldPct": {
+						"type": "integer",
+						"minimum": 1
+					},
+					"xpPct": {
+						"type": "integer",
+						"minimum": 1
+					},
+					"nonCommonWeightPct": {
+						"type": "integer",
+						"minimum": 1
+					}
+				},
+				"required": ["id", "hpPct", "damagePct", "goldPct", "xpPct", "nonCommonWeightPct"]
+			}
+		},
+		"critMultiplierPct": {
+			"type": "integer",
+			"minimum": 1
+		},
+		"defendDamagePct": {
+			"type": "integer",
+			"minimum": 0,
+			"maximum": 100
+		},
+		"bossTelegraphEvery": {
+			"type": "integer",
+			"minimum": 2
+		},
+		"bossChargeDamagePct": {
+			"type": "integer",
+			"minimum": 1
+		},
+		"caps": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"critChance": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 100
+				},
+				"dodge": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 100
+				},
+				"parry": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 100
+				},
+				"leech": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 100
+				},
+				"protection": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 100
+				}
+			},
+			"required": ["critChance", "dodge", "parry", "leech", "protection"]
+		},
+		"magicLevel": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"base": {
+					"type": "integer",
+					"minimum": 1
+				},
+				"growthPct": {
+					"type": "integer",
+					"minimum": 101
+				}
+			},
+			"required": ["base", "growthPct"]
+		},
+		"spellLevels": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"properties": {
+					"level": {
+						"type": "integer",
+						"minimum": 1
+					},
+					"uses": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"effectPct": {
+						"type": "integer",
+						"minimum": 1
+					},
+					"manaPct": {
+						"type": "integer",
+						"minimum": 1
+					}
+				},
+				"required": ["level", "uses", "effectPct", "manaPct"]
+			}
+		},
+		"startingGold": {
+			"type": "integer",
+			"minimum": 0
+		},
+		"startingPotions": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"properties": {
+					"potionId": {
+						"type": "string",
+						"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+					},
+					"quantity": {
+						"type": "integer",
+						"minimum": 0
+					}
+				},
+				"required": ["potionId", "quantity"]
+			}
+		},
+		"bagCapacity": {
+			"type": "integer",
+			"minimum": 1
+		},
+		"dropChancePct": {
+			"type": "integer",
+			"minimum": 0,
+			"maximum": 100
+		},
+		"bossDrops": {
+			"type": "integer",
+			"minimum": 0
+		},
+		"rarities": {
+			"type": "array",
+			"minItems": 4,
+			"maxItems": 4,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"properties": {
+					"id": {
+						"enum": ["common", "rare", "epic", "legendary"]
+					},
+					"statPct": {
+						"type": "integer",
+						"minimum": 1
+					},
+					"valuePct": {
+						"type": "integer",
+						"minimum": 1
+					},
+					"affixMin": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"affixMax": {
+						"type": "integer",
+						"minimum": 0
+					}
+				},
+				"required": ["id", "statPct", "valuePct", "affixMin", "affixMax"]
+			}
+		},
+		"rarityWeights": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"monster": {
+					"type": "object",
+					"propertyNames": {
+						"enum": ["common", "rare", "epic", "legendary"]
+					},
+					"additionalProperties": {
+						"type": "integer",
+						"minimum": 0
+					}
+				},
+				"boss": {
+					"type": "object",
+					"propertyNames": {
+						"enum": ["common", "rare", "epic", "legendary"]
+					},
+					"additionalProperties": {
+						"type": "integer",
+						"minimum": 0
+					}
+				},
+				"merchant": {
+					"type": "object",
+					"propertyNames": {
+						"enum": ["common", "rare", "epic", "legendary"]
+					},
+					"additionalProperties": {
+						"type": "integer",
+						"minimum": 0
+					}
+				}
+			},
+			"required": ["monster", "boss", "merchant"]
+		},
+		"merchantStockSize": {
+			"type": "integer",
+			"minimum": 0
+		},
+		"merchantMarkupPct": {
+			"type": "integer",
+			"minimum": 1
+		},
+		"spellStatusDamagePct": {
+			"type": "integer",
+			"minimum": 0
+		}
+	},
+	"required": [
+		"roundsPerTier",
+		"cycleStatPct",
+		"cycleRewardPct",
+		"positionPct",
+		"difficulties",
+		"critMultiplierPct",
+		"defendDamagePct",
+		"bossTelegraphEvery",
+		"bossChargeDamagePct",
+		"caps",
+		"magicLevel",
+		"spellLevels",
+		"startingGold",
+		"startingPotions",
+		"bagCapacity",
+		"dropChancePct",
+		"bossDrops",
+		"rarities",
+		"rarityWeights",
+		"merchantStockSize",
+		"merchantMarkupPct",
+		"spellStatusDamagePct"
+	]
+}

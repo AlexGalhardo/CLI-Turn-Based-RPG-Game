@@ -1,0 +1,21 @@
+{
+	"$schema": "../schemas/families.schema.json",
+	"families": [
+		"aberration",
+		"aquatic",
+		"beast",
+		"construct",
+		"demon",
+		"dragon",
+		"elemental",
+		"giant",
+		"humanoid",
+		"insect",
+		"mage",
+		"orc",
+		"plant",
+		"reptile",
+		"rodent",
+		"undead"
+	]
+}
