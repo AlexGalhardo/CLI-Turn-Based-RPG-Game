@@ -168,6 +168,7 @@ In this order:
 4. Bestiary/statistics updates. Phase → Merchant.
 
 **Item generation** (`items.json`, `affixes.json`, names from TibiaWiki, stats specific to this game):
+
 1. Candidates: items usable by the player's vocation with `tier ∈ [tierIndex - 1, tierIndex]` (clamped ≥ 0), sorted by
    `id` → `rng.roll(0, len - 1)`.
 2. Rarity: weighted roll over `common, rare, epic, legendary` (monster, boss or merchant table; HARD multiplies the
