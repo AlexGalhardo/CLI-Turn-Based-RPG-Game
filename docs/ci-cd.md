@@ -5,7 +5,7 @@
 | Workflow | Trigger | Jobs |
 |---|---|---|
 | `ci.yml` | push / PR to `main` | `repo` (commitlint on PR commits, Biome for root JSON/TS, shared data schemas + i18n key parity) · `python` (ruff format --check, ruff check, mypy, pytest + coverage) · `typescript` (biome ci, tsc --noEmit, bun test, bun build --compile) · `golang` (gofmt check, go vet, golangci-lint, go test -race, go build) |
-| `release.yml` | tag `v*` | builds TypeScript and Go binaries for linux-x64, darwin-arm64, windows-x64 and attaches them to the GitHub Release with the CHANGELOG section |
+| `release.yml` | tag `v*` | builds TypeScript and Go binaries for linux-x64, darwin-arm64, windows-x64 and attaches them to the GitHub Release with the CHANGELOG section; a manual run (`workflow_dispatch`) only builds (dry run) |
 
 Jobs for a language are skipped until that phase starts (path filters), so the pipeline is green at every phase.
 
