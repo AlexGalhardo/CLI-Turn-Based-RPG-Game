@@ -12,8 +12,8 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 | 0.1.0 | M0 — Foundation | done |
 | 0.2.0 | M1 — Python Alpha | done |
 | 0.3.0 | M2 — Python Beta | done |
-| 0.4.0 | M3 — Python 1.0 refinement | in progress |
-| 0.5.0 | M4 — TypeScript at parity | pending |
+| 0.4.0 | M3 — Python 1.0 refinement | done |
+| 0.5.0 | M4 — TypeScript at parity | in progress |
 | 0.6.0 | M5 — Go at parity | pending |
 | 1.0.0 | M6 — Release 1.0 (three binaries/implementations) | pending |
 
@@ -91,11 +91,11 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 
 ### M3 — Python 1.0 refinement (0.4.0)
 
-- [ ] Balance pass with the simulator (target: NORMAL median round 30–60 for the bot, per vocation within ±20%)
-- [ ] UX polish: colours by element, rarity colours, confirmations, resize message, help screen
-- [ ] Final golden files (scenarios + bot full runs per vocation/difficulty)
-- [ ] Coverage and mypy strict clean; docs updated (`python.md`, game design numbers)
-- [ ] Skills: "add content to shared data", "port a feature to another language", "regenerate golden files"
+- [x] Balance pass with the simulator (NORMAL median 40–50 for the bot, vocations within ±12%; table in game design §12)
+- [x] UX polish: colours by element and rarity, resize message, two-column menus, paged informative screens
+- [x] Final golden files (scenarios + bot full runs per vocation/difficulty)
+- [x] Coverage (97%) and mypy strict clean; docs updated (`python.md`, `tui.md`, game design numbers)
+- [x] Skills: `add-game-content`, `golden-files`, `port-feature`
 
 ## Phase 2 — TypeScript (M4, 0.5.0)
 
@@ -125,6 +125,6 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 ## Skills (`.claude/skills/`) — created when a flow repeats
 
 - [x] `add-game-content` — add monster/item/spell/boss/achievement to shared data (+ i18n, art, checks)
-- [ ] `port-feature` — implement a rule in Python first, regenerate golden, port to TS/Go
+- [x] `port-feature` — implement a rule in Python first, regenerate golden, port to TS/Go
 - [x] `golden-files` — when and how to regenerate golden files
 - [ ] `release` — version bump in four places, changelog, tag
