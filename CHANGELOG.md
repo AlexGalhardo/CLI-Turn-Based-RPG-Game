@@ -7,6 +7,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-27
+
+### Added
+
+- TypeScript implementation (`rpg-typescript`) at full parity with the Python reference: deterministic engine, bot,
+  simulator, persistence (interchangeable saves), UI controller and an Ink terminal UI that renders the same screens
+  as the Textual version. Single-file executable via `bun build --compile`.
+- 117 TypeScript tests: unit, integration, golden replay of every Python-recorded scenario, bot parity (the TypeScript
+  bot issues exactly the recorded commands) and end-to-end Ink tests including a whole run played by keys.
+- Golden files now include the final run state (`finalRun`), proving save-format parity across languages.
+- CI job for TypeScript on Linux and Windows (Biome, tsc 7, tests with coverage, build and smoke test).
+
 ## [0.4.0] - 2026-09-27
 
 ### Changed
@@ -73,7 +85,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - CI workflow skeleton with per-language jobs.
 - The 2016 Python and 2022 TypeScript code is not carried over; the originals remain in their own repositories.
 
-[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.1.0...v0.2.0

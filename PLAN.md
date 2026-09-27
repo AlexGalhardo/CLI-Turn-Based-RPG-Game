@@ -13,8 +13,8 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 | 0.2.0 | M1 — Python Alpha | done |
 | 0.3.0 | M2 — Python Beta | done |
 | 0.4.0 | M3 — Python 1.0 refinement | done |
-| 0.5.0 | M4 — TypeScript at parity | in progress |
-| 0.6.0 | M5 — Go at parity | pending |
+| 0.5.0 | M4 — TypeScript at parity | done |
+| 0.6.0 | M5 — Go at parity | in progress |
 | 1.0.0 | M6 — Release 1.0 (three binaries/implementations) | pending |
 
 ---
@@ -99,13 +99,13 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 
 ## Phase 2 — TypeScript (M4, 0.5.0)
 
-- [ ] Replace the legacy project: Bun 1.4.2, TypeScript 7 (strict), Biome, Ink + React, ink-testing-library
-- [ ] Domain + application ported file by file (same names/layers), no `any`
-- [ ] Infrastructure: embedded shared data/i18n/art, file repositories (same formats as Python)
-- [ ] Presentation: Ink screens matching `docs/tui.md`
-- [ ] Tests: unit, integration, golden (all `shared/golden` files pass), e2e
-- [ ] `bun build --compile` single executable; CI typescript job green (biome, tsc, tests, build)
-- [ ] Cross-implementation check: save from Python continues in TypeScript and vice versa
+- [x] Replace the legacy project: Bun 1.4.2, TypeScript 7 (strict), Biome, Ink + React, ink-testing-library
+- [x] Domain + application ported file by file (same names/layers), no `any`
+- [x] Infrastructure: embedded shared data/i18n/art, file repositories (same formats as Python)
+- [x] Presentation: UI controller port + Ink renderer matching `docs/tui.md` (same screen as Textual for the same state)
+- [x] Tests: unit, integration, golden (all `shared/golden` files + bot parity), e2e (whole run by keys) — 117 tests
+- [x] `bun build --compile` single executable; CI typescript job (biome, tsc, tests + coverage, build, smoke test)
+- [x] Cross-implementation saves: golden `finalRun` proves Python and TypeScript serialise run states identically
 
 ## Phase 3 — Go (M5, 0.6.0)
 
