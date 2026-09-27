@@ -17,7 +17,7 @@ and CI validates them (`bun run check:shared` at the repository root).
 | File | Content |
 |---|---|
 | `balance.json` | Global knobs: difficulties, tiers, scaling, crit, defend, caps, drop chances, rarity tables, spell levels, magic level curve, merchant, starting kit |
-| `vocations.json` | Knight, Paladin, Sorcerer, Druid: start HP/MP, per-level gains, regen, melee range, spells, starter weapon, equippable weapon types |
+| `vocations.json` | Warrior, Archer, Mage: start HP/MP, per-level gains, regen, melee range, spells, starter weapon, equippable weapon types |
 | `spells.json` | Attack and healing spells: vocation, incantation, element, mana, min/max, perLevel, perMagicLevel, level3Bonus |
 | `monsters.json` | ≥ 100 monsters: tier, family (art), HP, XP, gold range, attacks (element, min/max, weight, status), resistances |
 | `bosses.json` | One boss per tier: same shape as a monster + `chargeAttack` |
@@ -53,8 +53,13 @@ Flat key → template map. Placeholders use `{name}`. English (`en`) is the defa
 `pt-BR` is the only other locale. A CI check fails if the two files don't have the same key set.
 
 ```json
-{ "event.player_attacked": "You hit for {damage}{critSuffix}.", "menu.new_run": "New run" }
+{ "event.player_attacked": "You hit for {damage} {element} damage.", "menu.new_run": "New run" }
 ```
+
+Event text keys are `event.<type>` plus an optional variant suffix chosen by the presentation: `_crit` (crit),
+`_charged` (boss charge), `_boss` (boss round) or `_player`/`_monster` (events with a `target`). Id fields
+(`spellId`, `potionId`, `monsterId`, `itemId`) are replaced by display names, and `element`, `status`, `rarity`,
+`resource` by their translated labels.
 
 ## Art (`shared/art/`)
 

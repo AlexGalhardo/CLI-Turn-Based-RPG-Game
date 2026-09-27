@@ -11,7 +11,7 @@ Gloss** (Go). The layout below is the spec; the three must look practically iden
 │        <|   |>            HP ██████████████░░░░░░  812/950                  │
 │         /   \             physical · weak: fire · burn(2)                   │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ Alex · Knight · Lv 12 · ML 4                         Gold 1,240             │
+│ Alex · Warrior · Lv 12 · ML 4                         Gold 1,240             │
 │ HP ████████████████████░░░░░  1450/1800                                     │
 │ MP ██████░░░░░░░░░░░░░░░░░░░   120/450                                      │
 ├─────────────────────────────────────────────────────────────────────────────┤
@@ -33,7 +33,7 @@ Gloss** (Go). The layout below is the spec; the three must look practically iden
 |---|---|
 | Title | `[1]` Continue (only with a save) · `[2]` New run · `[3]` Hall of Fame · `[4]` Bestiary · `[5]` Achievements · `[6]` Language · `[0]` Quit |
 | Language (first launch and from title) | `[1]` English · `[2]` Português (Brasil) |
-| New run | difficulty `[1-3]` → name (text input, 1–16 chars) → vocation `[1-4]` |
+| new run | difficulty `[1-3]` → name (text input, 1–16 chars) → vocation `[1-3]` |
 | Battle | `[1]` Attack · `[2]` Spells submenu · `[3]` Potions submenu · `[4]` Defend · `[Q]` Save & quit |
 | Merchant | `[1]` Buy potions · `[2]` Sell items · `[3]` Equipment · `[4]` Merchant stock · `[5]` Character · `[0]` Next fight · `[Q]` Save & quit |
 | Game over | run summary + `[1]` New run · `[2]` Title |

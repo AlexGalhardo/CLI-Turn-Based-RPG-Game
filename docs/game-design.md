@@ -48,7 +48,7 @@ Values come from `balance.json → difficulties`.
   - `tierIndex = ((r - 1) / roundsPerTier) % tierCount`
   - `cycle = (r - 1) / (roundsPerTier * tierCount)` — after the last tier the loop restarts, stronger ("NG+")
   - `position = (r - 1) % roundsPerTier` — `position == roundsPerTier - 1` is the **boss fight**
-- Spawn: boss → `bosses[tierIndex]`. Otherwise `monster = tierMonsters[rng.int(0, len - 1)]` (list sorted by `id`).
+- Spawn: boss → `bosses[tierIndex]`. Otherwise `monster = tierMonsters[rng.roll(0, len - 1)]` (list sorted by `id`).
 - Scaling percentages:
   - `cyclePct = 100 + cycle * balance.cycleStatPct` (HP and damage)
   - `cycleRewardPct = 100 + cycle * balance.cycleRewardPct` (XP and gold)
@@ -59,16 +59,18 @@ Values come from `balance.json → difficulties`.
 
 ## 4. Character
 
-Vocations (from the 2016 game): **Knight, Paladin, Sorcerer, Druid** (`vocations.json`).
+Vocations: **Warrior, Archer, Mage** (`vocations.json`). Per level: Warrior +15 HP / +5 MP, Archer +10 HP / +15 MP,
+Mage +5 HP / +15 MP.
 
 - Start: level 1, magic level 1, `vocation.startHp/startMp`, `balance.startingGold`, `balance.startingPotions`, the
   vocation's `starterWeapon` equipped (common rarity, no affixes).
 - **Experience** (Tibia formula): total XP needed to *reach* level `L` is
   `xpForLevel(L) = floor(50 * (L³ - 6L² + 17L - 12) / 3)`. After every victory, while `xp >= xpForLevel(level + 1)`:
   `level += 1`, `maxHp += hpPerLevel`, `maxMp += mpPerLevel`, `hp += hpPerLevel`, `mp += mpPerLevel`.
-- **Magic level**: grows with mana spent. `manaForMagicLevel(1) = balance.magicLevel.base`,
-  `manaForMagicLevel(n + 1) = pct(manaForMagicLevel(n), balance.magicLevel.growthPct)`. After each spell cast, while
-  `manaSpent >= manaForMagicLevel(magicLevel)`: `magicLevel += 1` (the threshold is cumulative mana spent).
+- **Magic level**: grows with mana spent. The cost of each magic level is `cost(1) = balance.magicLevel.base`,
+  `cost(n + 1) = pct(cost(n), balance.magicLevel.growthPct)`; `manaForMagicLevel(n) = cost(1) + … + cost(n)` is the
+  total mana spent needed to leave level `n`. After each spell cast, while
+  `manaSpent >= manaForMagicLevel(magicLevel)`: `magicLevel += 1`.
 - **Regeneration** at the end of every turn: `hp += hpRegen`, `mp += mpRegen` (capped at max).
 
 ### Derived stats
@@ -102,20 +104,20 @@ One **player command** resolves one turn. Invalid commands (not enough mana, no 
 
 1. **Player action**
    - `attack` (melee):
-     1. `base = rng.int(voc.meleeMin + level * voc.meleePerLevel + attack, voc.meleeMax + level * voc.meleePerLevel + attack)`
+     1. `base = rng.roll(voc.meleeMin + (level - 1) * voc.meleePerLevel + attack, voc.meleeMax + (level - 1) * voc.meleePerLevel + attack)`
      2. `dmg = pct(base, 100 + physicalDamage)`
      3. crit: `rng.chance(critChance)` → `dmg = pct(dmg, critMultiplierPct + critDamage)`
      4. element = weapon element (default `physical`); `dmg = pct(dmg, monster.resistance[element])`
      5. `dmg = max(1, dmg)` unless the resistance is 0 (immune → 0)
      6. leech: `hp += pct(dmg, lifeLeech)`, `mp += pct(dmg, manaLeech)` (capped)
    - `cast <spellId>` (attack spell): mana cost `pct(spell.mana, spellLevel.manaPct)` is paid first, then
-     1. `base = rng.int(spell.min + level * spell.perLevel + magicLevel * spell.perMagicLevel, spell.max + <same bonus>)`
+     1. `base = rng.roll(spell.min + level * spell.perLevel + magicLevel * spell.perMagicLevel, spell.max + <same bonus>)`
      2. `dmg = pct(pct(base, spellLevel.effectPct), 100 + spellPower)`
      3. crit roll as melee; 4. resistance; 5. min 1 / immune; 6. leech
      7. if the spell is at level 3 and has `level3Bonus.status`: `rng.chance(level3Bonus.chance)` → apply status
-   - `cast <spellId>` (healing spell): `heal = pct(pct(rng.int(min', max'), effectPct), 100 + spellPower)` with the same
+   - `cast <spellId>` (healing spell): `heal = pct(pct(rng.roll(min', max'), effectPct), 100 + spellPower)` with the same
      level/magic-level bonus; capped at `maxHp`; no crit. Level 3 `cleanse` removes all negative statuses.
-   - `potion <potionId>`: `rng.int(potion.min, potion.max)` restored to HP or MP (capped). One potion per turn.
+   - `potion <potionId>`: `rng.roll(potion.min, potion.max)` restored to HP or MP (capped). One potion per turn.
    - `defend`: incoming damage this turn × `balance.defendDamagePct` (50%).
    - After any successful cast: `spellUses[spellId] += 1`, `manaSpent += cost`, then spell-level and magic-level checks.
 2. **Monster dead?** → victory (section 8).
@@ -125,10 +127,10 @@ One **player command** resolves one turn. Invalid commands (not enough mana, no 
    3. boss pattern (bosses only): `pos = bossActions % (telegraphEvery + 1)`; `pos < telegraphEvery - 1` → normal attack,
       `pos == telegraphEvery - 1` → **telegraph** (announce, no damage), `pos == telegraphEvery` → **charged attack**
       (`chargeAttack`, damage × `bossChargeDamagePct`). `bossActions += 1` after each of these.
-   4. normal attack: weighted pick `rng.int(1, totalWeight)` over `attacks` (always rolled, even with one attack)
+   4. normal attack: weighted pick `rng.roll(1, totalWeight)` over `attacks` (always rolled, even with one attack)
    5. `rng.chance(dodge)` → dodged, no further rolls
    6. physical attacks only: `rng.chance(parry)` → parried, no further rolls
-   7. `raw = rng.int(attack.min, attack.max)` (already scaled); charged → `pct(raw, bossChargeDamagePct)`
+   7. `raw = rng.roll(attack.min, attack.max)` (already scaled); charged → `pct(raw, bossChargeDamagePct)`
    8. physical → armor mitigation; then `pct(dmg, 100 - prot[element])`; defend → `pct(dmg, defendDamagePct)`; min 1
    9. attack status: `rng.chance(status.chance)` → apply to player
 4. **Player dead?** → defeat.
@@ -150,31 +152,35 @@ One **player command** resolves one turn. Invalid commands (not enough mana, no 
 
 - DoT per turn = `max(1, pct(damageThatAppliedIt, source.damagePct))`; on the player reduced by `prot[element]`, on
   monsters by `resistance[element]`. Re-applying refreshes `turns` and keeps the higher per-turn value.
-- Stun can't be applied while the target's `stunCooldown > 0`; consuming a stun sets `stunCooldown = 1`.
+- Stun can't be applied while the target is stunned or its `stunCooldown > 0`; consuming a stun sets
+  `stunCooldown = 2` (cooldowns decrement at the end of every turn), so a target is never stunned two turns in a row.
+- A status whose element the target is immune to (resistance 0) is not applied (the chance is still rolled).
+- Spell-applied statuses use `balance.spellStatusDamagePct` as `damagePct`.
+- After a victory the player's statuses, stun cooldown and defend flag are cleared.
 
 ## 8. Victory, loot and drops
 
 In this order:
 1. XP (scaled) → level-up loop.
-2. Gold `rng.int(goldMin, goldMax)` (scaled).
+2. Gold `rng.roll(goldMin, goldMax)` (scaled).
 3. Drops: normal monster `rng.chance(balance.dropChancePct)` → 1 item; boss → `balance.bossDrops` items with the boss
    rarity table.
 4. Bestiary/statistics updates. Phase → Merchant.
 
 **Item generation** (`items.json`, `affixes.json`, names from TibiaWiki, stats specific to this game):
 1. Candidates: items usable by the player's vocation with `tier ∈ [tierIndex - 1, tierIndex]` (clamped ≥ 0), sorted by
-   `id` → `rng.int(0, len - 1)`.
+   `id` → `rng.roll(0, len - 1)`.
 2. Rarity: weighted roll over `common, rare, epic, legendary` (monster, boss or merchant table; HARD multiplies the
    non-common weights by 150%).
-3. Affix count `rng.int(rarityAffixes.min, rarityAffixes.max)` (common 0, rare 1–2, epic 3, legendary 4).
-4. For each affix: candidates = affixes allowed for the slot and not yet chosen, sorted by `id` → `rng.int` pick →
-   value `rng.int(affix.min, affix.max) + tierIndex * affix.perTier`.
+3. Affix count `rng.roll(rarityAffixes.min, rarityAffixes.max)` (common 0, rare 1–2, epic 3, legendary 4).
+4. For each affix: candidates = affixes allowed for the slot whose stat is not on the item yet, sorted by `id` → pick →
+   value `rng.roll(affix.min, affix.max) + tierIndex * affix.perTier`.
 5. Base stats × `rarityStatPct` (100/115/130/150). Value (sell price) = `pct(item.value, rarityValuePct)`.
 6. Instance id: `run.nextItemUid++` (deterministic). A full bag (20) auto-sells the new item.
 
 ## 9. Spells
 
-Four vocations, Tibia spell names and incantations (`spells.json`): three attack spells (light/medium/strong, like
+Three vocations, Tibia spell names and incantations (`spells.json`): three attack spells (light/medium/strong, like
 2016) plus healing. Levels by number of uses:
 
 | Level | Uses | Effect | Mana cost | Extra |

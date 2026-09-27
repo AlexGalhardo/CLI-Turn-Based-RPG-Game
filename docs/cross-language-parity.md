@@ -35,10 +35,10 @@ Derived helpers (the only ones the engine may use):
 
 | Helper | Definition |
 |---|---|
-| `int(min, max)` | `min + next() % (max - min + 1)`; requires `min <= max` |
-| `chance(pct)` | `pct <= 0` → `false` **without consuming**; `pct >= 100` → `true` **without consuming**; else `int(1, 100) <= pct` |
-| `weighted(weights)` | `r = int(1, sum)`; first index whose cumulative weight `>= r` |
-| `pick(list)` | `list[int(0, len - 1)]` |
+| `roll(min, max)` | `min + next() % (max - min + 1)`; requires `min <= max` |
+| `chance(pct)` | `pct <= 0` → `false` **without consuming**; `pct >= 100` → `true` **without consuming**; else `roll(1, 100) <= pct` |
+| `weighted(weights)` | `r = roll(1, sum)`; first index whose cumulative weight `>= r` |
+| `pick(list)` | `list[roll(0, len - 1)]` |
 
 Reference vectors (`shared/golden/prng.json`): `seed = 42` → first outputs must match in all implementations.
 
@@ -74,13 +74,13 @@ The engine returns a list of events for each command. An event is a flat JSON ob
 | `spell_level_up` | `spellId`, `level` |
 | `gold_looted` | `amount` |
 | `item_dropped` | `uid`, `itemId`, `rarity` |
-| `item_auto_sold` | `uid`, `gold` |
+| `item_auto_sold` | `uid`, `itemId`, `gold` |
 | `merchant_entered` | `round` |
 | `potion_bought` | `potionId`, `quantity`, `gold` |
-| `item_bought` / `item_sold` | `uid`, `gold` |
-| `item_equipped` / `item_unequipped` | `uid`, `slot` |
+| `item_bought` / `item_sold` | `uid`, `itemId`, `gold` |
+| `item_equipped` / `item_unequipped` | `uid`, `itemId`, `slot` |
 | `player_died` | `monsterId`, `round` |
-| `error` | `code` (`not_enough_mana`, `not_enough_gold`, `no_potion`, `unknown_spell`, `invalid_phase`, `bag_full`, `cannot_equip`, `invalid_item`) |
+| `error` | `code` (`not_enough_mana`, `not_enough_gold`, `no_potion`, `unknown_spell`, `unknown_potion`, `potion_locked`, `invalid_phase`, `invalid_quantity`, `bag_full`, `cannot_equip`, `invalid_item`) |
 
 ## 4. Golden tests
 

@@ -22,7 +22,7 @@ jobs:
       typescript: ${{ steps.detect.outputs.typescript }}
       golang: ${{ steps.detect.outputs.golang }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - id: detect
         run: |
           echo "python=$([ -f rpg-python/pyproject.toml ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
@@ -32,7 +32,7 @@ jobs:
   repo:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
@@ -41,6 +41,35 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: Biome (root JSON/TS)
         run: bun run lint:ci
+      - name: Shared data (schemas, i18n keys, art)
+        run: bun run check:shared
       - name: Commit messages (Conventional Commits)
         if: github.event_name == 'pull_request'
         run: bunx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
+
+  python:
+    needs: detect
+    if: needs.detect.outputs.python == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        working-directory: rpg-python
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          version: "0.12.19"
+          python-version: "3.14"
+      - run: uv sync --frozen
+      - name: Format (ruff)
+        run: uv run ruff format --check
+      - name: Lint (ruff)
+        run: uv run ruff check
+      - name: Types (mypy strict)
+        run: uv run mypy
+      - name: Tests (unit, integration, golden, e2e) + coverage
+        run: uv run pytest
