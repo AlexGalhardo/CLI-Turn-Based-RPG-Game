@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  typescript:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - target: bun-linux-x64
+            asset: rpg-typescript-linux-x64
+          - target: bun-darwin-arm64
+            asset: rpg-typescript-darwin-arm64
+          - target: bun-windows-x64
+            asset: rpg-typescript-windows-x64.exe
+    defaults:
+      run:
+        working-directory: rpg-typescript
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - name: Cross-compile
+        run: bun build --compile --minify --target=${{ matrix.target }} ./src/main.tsx --outfile dist/${{ matrix.asset }}
+      - name: Smoke test (native target only)
+        if: matrix.target == 'bun-linux-x64'
+        run: ./dist/${{ matrix.asset }} --version
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: ${{ matrix.asset }}
+          path: rpg-typescript/dist/${{ matrix.asset }}
+          if-no-files-found: error
+
+  golang:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            asset: rpg-golang-linux-x64
+          - goos: darwin
+            goarch: arm64
+            asset: rpg-golang-darwin-arm64
+          - goos: windows
+            goarch: amd64
+            asset: rpg-golang-windows-x64.exe
+    defaults:
+      run:
+        working-directory: rpg-golang
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: rpg-golang/go.mod
+          cache-dependency-path: rpg-golang/go.sum
+      - run: go generate ./...
+      - name: Cross-compile
+        env:
+          CGO_ENABLED: "0"
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: go build -trimpath -ldflags="-s -w" -o dist/${{ matrix.asset }} ./cmd/rpg
+      - name: Smoke test (native target only)
+        if: matrix.goos == 'linux'
+        run: ./dist/${{ matrix.asset }} --version
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: ${{ matrix.asset }}
+          path: rpg-golang/dist/${{ matrix.asset }}
+          if-no-files-found: error
+
+  publish:
+    needs: [typescript, golang]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8.0.1
+        with:
+          path: assets
+          merge-multiple: true
+      - name: Release notes from CHANGELOG.md
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v heading="## [${version}]" '
+            index($0, heading) == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          test -s notes.md || { echo "CHANGELOG.md has no section for ${version}"; exit 1; }
+      - name: Checksums
+        working-directory: assets
+        run: sha256sum * > SHA256SUMS.txt
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" assets/* --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
