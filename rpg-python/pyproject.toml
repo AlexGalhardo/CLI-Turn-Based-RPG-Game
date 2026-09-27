@@ -1,6 +1,6 @@
 [project]
 name = "rpg"
-version = "0.6.0"
+version = "1.0.0"
 description = "Endless turn-based RPG for the terminal — Python reference implementation"
 readme = "../README.md"
 license = "MIT"

@@ -15,7 +15,7 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 | 0.4.0 | M3 — Python 1.0 refinement | done |
 | 0.5.0 | M4 — TypeScript at parity | done |
 | 0.6.0 | M5 — Go at parity | done |
-| 1.0.0 | M6 — Release 1.0 (three binaries/implementations) | in progress |
+| 1.0.0 | M6 — Release 1.0 (three binaries/implementations) | done |
 
 ---
 
@@ -122,7 +122,7 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 
 - [x] `release.yml`: binaries for linux-x64, darwin-arm64, windows-x64 (TypeScript + Go)
 - [x] README screenshots of the game (text snapshots of the real TUI, identical across versions)
-- [ ] CHANGELOG 1.0.0, tag `v1.0.0`, GitHub Release
+- [x] CHANGELOG 1.0.0, tag `v1.0.0`, GitHub Release
 
 ## Skills (`.claude/skills/`) — created when a flow repeats
 

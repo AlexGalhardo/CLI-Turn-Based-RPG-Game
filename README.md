@@ -5,7 +5,7 @@
 <p align="center">
 	<a href="https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/actions/workflows/ci.yml/badge.svg?branch=main"></a>
 	<a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
-	<a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-0.6.0-green.svg"></a>
+	<a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-1.0.0-green.svg"></a>
 </p>
 
 ## About
@@ -109,7 +109,7 @@ from the same UI controller. A regular fight:
 │           __/>                  CLI Turn-Based RPG                                               │
 │     /\___/ o \__                An endless journey through Tibia's monsters                      │
 │    <  ___      _>                                                                                │
-│     \/   \ vv /                 v0.6.0 · Go                                                      │
+│     \/   \ vv /                 v1.0.0 · Go                                                      │
 │      /\  /\  /\                                                                                  │
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -163,6 +163,10 @@ git clone https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game.git
 cd CLI-Turn-Based-RPG-Game
 bash setups/play-on-unix-version-python.sh   # or any script from the table above
 ```
+
+No toolchain? Download a ready-to-run TypeScript or Go executable for Linux x64, macOS arm64 or Windows x64 from the
+[latest release](https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/releases/latest) (checksums in
+`SHA256SUMS.txt`). On macOS/Linux, `chmod +x` it first.
 
 Use a terminal of at least 100 × 30. Useful flags (same in the three versions): `--seed 42`, `--lang pt-BR`,
 `--no-anim`, `--simulate 1000`.

@@ -7,12 +7,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-27
+
+First stable release: the same game in Python, TypeScript and Go, proven equivalent by shared golden files.
+
 ### Added
 
 - `release.yml`: on a `v*` tag, cross-compiles the TypeScript and Go executables for linux-x64, darwin-arm64 and
   windows-x64 and publishes them with SHA-256 checksums in a GitHub Release whose notes come from this changelog.
 - `release` project skill describing the version bump and tagging flow.
-- README screenshots (text snapshots of the battle, boss and merchant screens).
+- README screenshots (text snapshots of the battle, boss and merchant screens) and download instructions for the
+  release binaries.
 
 ## [0.6.0] - 2026-09-27
 
@@ -109,7 +114,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - CI workflow skeleton with per-language jobs.
 - The 2016 Python and 2022 TypeScript code is not carried over; the originals remain in their own repositories.
 
-[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.6.0...v1.0.0
 [0.6.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.3.0...v0.4.0
