@@ -7,6 +7,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-27
+
+### Added
+
+- Shared content: 110 monsters in 10 tiers and 10 bosses (TibiaWiki names, original stats), three vocations
+  (Warrior, Archer, Mage) with Tibia spells, potions from Health to Supreme, statuses, balance knobs and starter
+  weapons, all validated by JSON Schemas (`bun run check:shared`).
+- `shared/i18n` with English (default) and Brazilian Portuguese, with a CI check that both have the same keys.
+- Python reference engine (`rpg-python`): mulberry32 PRNG, integer formulas, pure `step(command) → events` state
+  machine with battle (melee, spells, potions, defend, crit, dodge, parry, leech, elemental resistances and
+  protections, statuses, boss telegraph/charge), spell levels by use, magic level, infinite tiers with cycle
+  scaling, merchant (potions, selling, equipment, rotating stock), item factory with rarities and affixes, drops and
+  run statistics.
+- Greedy bot and balance simulator (`uv run rpg --simulate N`), golden file generator (`uv run rpg-golden`) and the
+  first golden files (PRNG vectors, scripted scenarios and 9 bot full runs).
+- 131 Python tests (unit, integration, golden) with 95% coverage; CI job for Python on Linux and Windows.
+- Project skills `golden-files` and `add-game-content`.
+
+### Changed
+
+- Vocations are Warrior (+15 HP/+5 MP per level), Archer (+10 HP/+15 MP) and Mage (+5 HP/+15 MP).
+- The magic level threshold is cumulative mana spent; a consumed stun gives a 2-turn stun cooldown.
+
 ## [0.1.0] - 2026-09-27
 
 ### Added
@@ -21,5 +44,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - CI workflow skeleton with per-language jobs.
 - The 2016 Python and 2022 TypeScript code is not carried over; the originals remain in their own repositories.
 
-[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/releases/tag/v0.1.0

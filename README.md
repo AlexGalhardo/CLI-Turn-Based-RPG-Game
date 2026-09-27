@@ -5,7 +5,7 @@
 <p align="center">
 	<a href="https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/actions/workflows/ci.yml/badge.svg?branch=main"></a>
 	<a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
-	<a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-0.1.0-green.svg"></a>
+	<a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-0.2.0-green.svg"></a>
 </p>
 
 ## About
@@ -15,7 +15,7 @@ version in 2022 to learn TypeScript, and in 2026 it became a didactic monorepo: 
 TypeScript and Go, side by side, with the same architecture, the same data and tests that prove the three
 implementations behave exactly the same.
 
-- Pick a vocation (Knight, Paladin, Sorcerer or Druid), a difficulty (Easy, Normal, Hard) and a language (English or
+- Pick a vocation (Warrior, Archer or Mage), a difficulty (Easy, Normal, Hard) and a language (English or
   Português)
 - Fight an **endless** sequence of monsters in tiers of increasing power, with a **boss every 10 rounds**
 - Visit the merchant after every fight: potions, selling loot, a rotating stock

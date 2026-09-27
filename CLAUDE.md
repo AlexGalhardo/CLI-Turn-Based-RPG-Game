@@ -32,7 +32,7 @@ Open-source endless turn-based RPG for the terminal, implemented **three times w
 - Before committing: format, lint, type-check and test the touched project (commands in the per-language docs).
 - Record relevant changes in [`CHANGELOG.md`](CHANGELOG.md) (Keep a Changelog) and tick `PLAN.md` checkboxes.
 - Version: one SemVer for the monorepo, bumped in four places (see [CI/CD](docs/ci-cd.md)).
-- Recurring flows become project skills in `.claude/skills/`; update docs when conventions change.
+- Recurring flows become project skills in `.claude/skills/` (`golden-files`, `add-game-content`, …).
 
 ## Quick commands
 
