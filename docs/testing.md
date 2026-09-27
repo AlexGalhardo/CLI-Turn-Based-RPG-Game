@@ -29,6 +29,7 @@ bun run check:shared
 - Tests always use a fixed seed and `--no-anim`.
 - Coverage floor: **90% lines** on `domain` + `application`, **80%** overall. CI fails below it. Lowering a threshold
   requires a documented reason in the CHANGELOG.
+- TypeScript: Bun applies thresholds per file, so `bunfig.toml` uses 90% lines and 80% functions for every file.
 - Never delete or skip a failing test to get green; fix the cause or open an issue and mark it `xfail`/`skip` with the
   issue link.
 - A bug fix starts with a failing test that reproduces it.

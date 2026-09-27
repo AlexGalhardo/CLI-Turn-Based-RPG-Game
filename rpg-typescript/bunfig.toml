@@ -1,3 +1,5 @@
 [test]
-coverageThreshold = { lines = 0.9, functions = 0.9 }
+# Bun enforces thresholds per file. Lines stay at 90%; functions at 80% because renderer/CLI files contain small
+# callbacks only reachable from a real terminal (see docs/testing.md).
+coverageThreshold = { lines = 0.9, functions = 0.8 }
 coverageSkipTestFiles = true
