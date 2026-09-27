@@ -1,0 +1,128 @@
+{
+	"workbench.iconTheme": "material-icon-theme",
+	"workbench.colorTheme": "Omni",
+	"workbench.editor.wrapTabs": true,
+	"workbench.statusBar.visible": true,
+	"workbench.editor.empty.hint": "hidden",
+	"window.zoomLevel": 1,
+	"diffEditor.ignoreTrimWhitespace": false,
+	"explorer.confirmDelete": true,
+	"explorer.confirmDragAndDrop": true,
+	"git.autofetch": true,
+
+	"editor.fontSize": 16,
+	"editor.wordWrap": "on",
+	"editor.rulers": [120],
+	"editor.insertSpaces": false,
+	"editor.tabSize": 4,
+	"editor.detectIndentation": false,
+	"editor.formatOnSave": true,
+	"editor.formatOnPaste": true,
+	"editor.suggestSelection": "first",
+	"editor.inlineSuggest.enabled": true,
+	"editor.unicodeHighlight.invisibleCharacters": false,
+	"editor.codeActionsOnSave": {
+		"source.fixAll": "explicit"
+	},
+	"files.eol": "\n",
+	"files.insertFinalNewline": true,
+	"files.trimTrailingWhitespace": true,
+
+	"css.format.enable": false,
+	"php.validate.enable": false,
+	"errorLens.excludeBySource": ["dockerfile-utils(37)"],
+
+	"files.exclude": {
+		"**/.trunk/*out": true,
+		"**/.trunk/*out/": true,
+		"**/.trunk/*actions/": true,
+		"**/.trunk/*logs/": true,
+		"**/.trunk/*plugins/": true,
+		"**/__pycache__": true,
+		"**/.pytest_cache": true,
+		"**/.mypy_cache": true,
+		"**/.ruff_cache": true
+	},
+	"files.watcherExclude": {
+		"**/.trunk/*out": true,
+		"**/.trunk/*out/": true,
+		"**/.trunk/*actions/": true,
+		"**/.trunk/*logs/": true,
+		"**/.trunk/*plugins/": true,
+		"**/.venv/**": true,
+		"**/node_modules/**": true
+	},
+	"files.associations": {
+		"*.ts": "typescript"
+	},
+
+	// TypeScript / JSON — Biome is the project formatter and linter (biome.json at the root).
+	"js/ts.updateImportsOnFileMove.enabled": "always",
+	"js/ts.format.insertSpaceBeforeFunctionParenthesis": false,
+	"js/ts.format.placeOpenBraceOnNewLineForControlBlocks": false,
+	"js/ts.format.placeOpenBraceOnNewLineForFunctions": false,
+	"json.format.enable": true,
+	"json.format.keepLines": false,
+	"biome.enabled": true,
+	"[typescript]": {
+		"editor.defaultFormatter": "biomejs.biome",
+		"editor.codeActionsOnSave": {
+			"source.organizeImports.biome": "explicit",
+			"quickfix.biome": "explicit"
+		}
+	},
+	"[typescriptreact]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[json]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[jsonc]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+
+	// Python — Ruff formats/lints (tabs, see rpg-python/pyproject.toml), mypy strict type-checks, pytest runs tests.
+	"[python]": {
+		"editor.defaultFormatter": "charliermarsh.ruff",
+		"editor.insertSpaces": false,
+		"editor.tabSize": 4,
+		"editor.codeActionsOnSave": {
+			"source.fixAll.ruff": "explicit",
+			"source.organizeImports.ruff": "explicit"
+		}
+	},
+	"python.defaultInterpreterPath": "${workspaceFolder}/rpg-python/.venv/Scripts/python.exe",
+	"python.analysis.typeCheckingMode": "strict",
+	"python.analysis.extraPaths": ["${workspaceFolder}/rpg-python/src"],
+	"python.testing.pytestEnabled": true,
+	"python.testing.unittestEnabled": false,
+	"python.testing.cwd": "${workspaceFolder}/rpg-python",
+	"python.testing.pytestArgs": ["tests", "--no-cov"],
+	"mypy-type-checker.cwd": "${workspaceFolder}/rpg-python",
+	"mypy-type-checker.args": ["--config-file=pyproject.toml"],
+	"mypy-type-checker.importStrategy": "fromEnvironment",
+	"ruff.importStrategy": "fromEnvironment",
+
+	// Go — gopls + gofmt (tabs by default), golangci-lint on save, race detector in tests.
+	"[go]": {
+		"editor.defaultFormatter": "golang.go",
+		"editor.insertSpaces": false,
+		"editor.tabSize": 4,
+		"editor.codeActionsOnSave": {
+			"source.organizeImports": "explicit"
+		}
+	},
+	"[go.mod]": {
+		"editor.defaultFormatter": "golang.go"
+	},
+	"go.useLanguageServer": true,
+	"go.lintTool": "golangci-lint",
+	"go.lintOnSave": "package",
+	"go.testFlags": ["-race", "-count=1"],
+	"go.toolsManagement.autoUpdate": true,
+	"gopls": {
+		"formatting.gofumpt": false,
+		"ui.semanticTokens": true,
+		"ui.diagnostic.staticcheck": true
+	}
+}

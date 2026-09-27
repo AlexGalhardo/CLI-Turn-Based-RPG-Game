@@ -7,7 +7,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-27
+
 ### Added
+
+- Python terminal UI built with Textual: title, language selection (first launch and from the title), new run
+  (difficulty, name, vocation), battle with animated ASCII monster, HP/MP bars and combat log, spell and potion menus,
+  merchant (potions, selling, equipment, stock, character sheet), save & quit, continue, game over, Hall of Fame,
+  bestiary and achievements. All texts in English and Brazilian Portuguese.
+- Framework-independent UI controller that the TypeScript and Go ports will mirror.
+- Original ASCII art for 16 monster families and 10 bosses (`idle`, `attack`, `hurt` animations).
+- End-to-end tests driving the real TUI with Textual Pilot, including a whole run played by keys until game over.
 
 - 151 items (TibiaWiki names) covering 8 slots in all 10 tiers, with weapons per vocation, shields and spellbooks;
   21 affixes (including one elemental ward per element) and 18 achievements.
@@ -52,6 +62,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - CI workflow skeleton with per-language jobs.
 - The 2016 Python and 2022 TypeScript code is not carried over; the originals remain in their own repositories.
 
-[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/releases/tag/v0.1.0
