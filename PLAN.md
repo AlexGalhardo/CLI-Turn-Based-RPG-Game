@@ -121,7 +121,7 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 ## M6 — Release 1.0.0
 
 - [x] `release.yml`: binaries for linux-x64, darwin-arm64, windows-x64 (TypeScript + Go)
-- [ ] README screenshots/GIFs of the three versions
+- [x] README screenshots of the game (text snapshots of the real TUI, identical across versions)
 - [ ] CHANGELOG 1.0.0, tag `v1.0.0`, GitHub Release
 
 ## Skills (`.claude/skills/`) — created when a flow repeats
