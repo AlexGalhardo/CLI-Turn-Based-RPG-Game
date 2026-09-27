@@ -120,7 +120,7 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 
 ## M6 — Release 1.0.0
 
-- [ ] `release.yml`: binaries for linux-x64, darwin-arm64, windows-x64 (TypeScript + Go)
+- [x] `release.yml`: binaries for linux-x64, darwin-arm64, windows-x64 (TypeScript + Go)
 - [ ] README screenshots/GIFs of the three versions
 - [ ] CHANGELOG 1.0.0, tag `v1.0.0`, GitHub Release
 
@@ -129,4 +129,4 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 - [x] `add-game-content` — add monster/item/spell/boss/achievement to shared data (+ i18n, art, checks)
 - [x] `port-feature` — implement a rule in Python first, regenerate golden, port to TS/Go
 - [x] `golden-files` — when and how to regenerate golden files
-- [ ] `release` — version bump in four places, changelog, tag
+- [x] `release` — version bump in six places, changelog, tag, release workflow

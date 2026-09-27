@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- `release.yml`: on a `v*` tag, cross-compiles the TypeScript and Go executables for linux-x64, darwin-arm64 and
+  windows-x64 and publishes them with SHA-256 checksums in a GitHub Release whose notes come from this changelog.
+- `release` project skill describing the version bump and tagging flow.
+
 ## [0.6.0] - 2026-09-27
 
 ### Added
