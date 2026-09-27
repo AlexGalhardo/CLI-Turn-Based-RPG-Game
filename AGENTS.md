@@ -33,6 +33,7 @@ Open-source endless turn-based RPG for the terminal, implemented **three times w
 - Record relevant changes in [`CHANGELOG.md`](CHANGELOG.md) (Keep a Changelog) and tick `PLAN.md` checkboxes.
 - Version: one SemVer for the monorepo, bumped in four places (see [CI/CD](docs/ci-cd.md)).
 - Recurring flows become project skills in `.claude/skills/` (`golden-files`, `add-game-content`, `port-feature`).
+- Go work: always load the `golang-how-to` skill first (samber/cc-skills-golang); it routes to the other Go skills.
 
 ## Quick commands
 

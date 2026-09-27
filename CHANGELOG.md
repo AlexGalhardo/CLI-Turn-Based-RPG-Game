@@ -7,6 +7,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-27
+
+### Added
+
+- Go implementation (`rpg-golang`) at full parity with the Python and TypeScript versions: deterministic engine, bot,
+  simulator, persistence (interchangeable saves), UI controller and a Bubble Tea v2 terminal UI; shared content embedded
+  with `go generate` + `go:embed`; executable via `go build`.
+- Go tests: unit, integration, golden replay, bot parity, save-format parity and end-to-end runs through the Bubble Tea
+  model (94.7% coverage); golangci-lint v2 with the recommended configuration and documented exclusions.
+- CI job for Go on Linux and Windows (gofmt, vet, golangci-lint, race-enabled tests with coverage, build, smoke test).
+- The 46 `golang-*` skills of samber/cc-skills-golang (MIT) in `.claude/skills`.
+
 ### Changed
 
 - TypeScript coverage thresholds are enforced per file by Bun: 90% lines and 80% functions (renderer and CLI files have
@@ -90,7 +102,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - CI workflow skeleton with per-language jobs.
 - The 2016 Python and 2022 TypeScript code is not carried over; the originals remain in their own repositories.
 
-[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v0.2.0...v0.3.0

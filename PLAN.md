@@ -14,8 +14,8 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 | 0.3.0 | M2 — Python Beta | done |
 | 0.4.0 | M3 — Python 1.0 refinement | done |
 | 0.5.0 | M4 — TypeScript at parity | done |
-| 0.6.0 | M5 — Go at parity | in progress |
-| 1.0.0 | M6 — Release 1.0 (three binaries/implementations) | pending |
+| 0.6.0 | M5 — Go at parity | done |
+| 1.0.0 | M6 — Release 1.0 (three binaries/implementations) | in progress |
 
 ---
 
@@ -109,12 +109,14 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 
 ## Phase 3 — Go (M5, 0.6.0)
 
-- [ ] Go module (1.27), `go generate` shared copy, Bubble Tea + Lip Gloss, teatest
-- [ ] Domain + application ported (same names/layers), `uint32` PRNG
-- [ ] Infrastructure + presentation matching `docs/tui.md`
-- [ ] Tests: unit, integration, golden, e2e; `-race`
-- [ ] `go build` executable; CI golang job green (gofmt, vet, golangci-lint, tests, build)
-- [ ] Cross-implementation save check (Python ↔ Go ↔ TypeScript)
+- [x] Go module (1.27), `go generate` shared copy + `go:embed`, Bubble Tea v2 + Lip Gloss v2
+- [x] Domain + application ported (same names/layers), `uint32` PRNG
+- [x] Infrastructure + presentation (UI controller port + Bubble Tea renderer) matching `docs/tui.md`
+- [x] Tests: unit, integration, golden (+ bot parity + save format), e2e through the Bubble Tea model (whole run by
+      keys); 94.7% coverage; `-race` in CI
+- [x] `go build` executable; CI golang job (gofmt, vet, golangci-lint, tests, build, smoke test)
+- [x] Cross-implementation saves: golden `finalRun` proves Python, TypeScript and Go serialise run states identically
+- [x] Go skills from samber/cc-skills-golang added to `.claude/skills` and used (layout, lint, testing, errors)
 
 ## M6 — Release 1.0.0
 
