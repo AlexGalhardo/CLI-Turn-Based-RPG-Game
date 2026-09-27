@@ -19,3 +19,8 @@ Skills copiadas (vendored) dos repositórios upstream. Para atualizar, clone o r
 
 `respondeae-secure-endpoint` e `respondeae-local-verification` foram escritas neste repositório (Fase 13 do `PLAN.md`), a partir dos achados da auditoria (`docs/security.md`) e das armadilhas de validação encontradas.
 
+
+## samber/cc-skills-golang (MIT)
+
+All `golang-*` skills (46) were copied from https://github.com/samber/cc-skills-golang at commit `19a0626`
+(listed on https://www.skills.sh/samber/cc-skills-golang). Each folder keeps the original MIT `LICENSE`.
