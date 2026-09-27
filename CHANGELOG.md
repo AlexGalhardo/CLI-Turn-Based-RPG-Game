@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- TypeScript coverage thresholds are enforced per file by Bun: 90% lines and 80% functions (renderer and CLI files have
+  small terminal-only callbacks). Domain and application files remain above 90% functions.
+
 ## [0.5.0] - 2026-09-27
 
 ### Added
