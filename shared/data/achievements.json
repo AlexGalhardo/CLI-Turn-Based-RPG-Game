@@ -1,0 +1,95 @@
+{
+	"$schema": "../schemas/achievements.schema.json",
+	"achievements": [
+		{
+			"id": "first_blood",
+			"type": "kills_total",
+			"value": 1
+		},
+		{
+			"id": "monster_slayer",
+			"type": "kills_total",
+			"value": 100
+		},
+		{
+			"id": "exterminator",
+			"type": "kills_total",
+			"value": 1000
+		},
+		{
+			"id": "boss_slayer",
+			"type": "bosses_total",
+			"value": 1
+		},
+		{
+			"id": "boss_hunter",
+			"type": "bosses_total",
+			"value": 10
+		},
+		{
+			"id": "round_10",
+			"type": "round_reached",
+			"value": 10
+		},
+		{
+			"id": "round_25",
+			"type": "round_reached",
+			"value": 25
+		},
+		{
+			"id": "round_50",
+			"type": "round_reached",
+			"value": 50
+		},
+		{
+			"id": "round_100",
+			"type": "round_reached",
+			"value": 100
+		},
+		{
+			"id": "level_10",
+			"type": "level_reached",
+			"value": 10
+		},
+		{
+			"id": "level_25",
+			"type": "level_reached",
+			"value": 25
+		},
+		{
+			"id": "level_50",
+			"type": "level_reached",
+			"value": 50
+		},
+		{
+			"id": "legendary_find",
+			"type": "legendary_found",
+			"value": 1
+		},
+		{
+			"id": "spell_master",
+			"type": "spell_level_3",
+			"value": 1
+		},
+		{
+			"id": "rich",
+			"type": "gold_held",
+			"value": 10000
+		},
+		{
+			"id": "naturalist",
+			"type": "distinct_monsters",
+			"value": 25
+		},
+		{
+			"id": "bestiary_complete",
+			"type": "distinct_monsters",
+			"value": 120
+		},
+		{
+			"id": "hardcore",
+			"type": "hard_round_reached",
+			"value": 30
+		}
+	]
+}

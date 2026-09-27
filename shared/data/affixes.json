@@ -1,0 +1,173 @@
+{
+	"$schema": "../schemas/affixes.schema.json",
+	"affixes": [
+		{
+			"id": "of_strength",
+			"stat": "attack",
+			"min": 1,
+			"max": 3,
+			"perTier": 2,
+			"slots": ["weapon", "ring", "amulet"]
+		},
+		{
+			"id": "of_power",
+			"stat": "physicalDamage",
+			"min": 2,
+			"max": 5,
+			"perTier": 1,
+			"slots": ["weapon", "ring", "amulet", "helmet"]
+		},
+		{
+			"id": "of_sorcery",
+			"stat": "spellPower",
+			"min": 2,
+			"max": 5,
+			"perTier": 1,
+			"slots": ["weapon", "shield", "amulet", "ring", "helmet"]
+		},
+		{
+			"id": "of_the_bear",
+			"stat": "maxHp",
+			"min": 5,
+			"max": 15,
+			"perTier": 10,
+			"slots": ["helmet", "armor", "legs", "boots", "shield", "amulet"]
+		},
+		{
+			"id": "of_wisdom",
+			"stat": "maxMp",
+			"min": 5,
+			"max": 15,
+			"perTier": 8,
+			"slots": ["helmet", "armor", "legs", "shield", "amulet", "ring"]
+		},
+		{
+			"id": "of_vitality",
+			"stat": "hpRegen",
+			"min": 1,
+			"max": 3,
+			"perTier": 1,
+			"slots": ["armor", "legs", "amulet", "ring"]
+		},
+		{
+			"id": "of_clarity",
+			"stat": "mpRegen",
+			"min": 1,
+			"max": 3,
+			"perTier": 1,
+			"slots": ["helmet", "amulet", "ring", "shield"]
+		},
+		{
+			"id": "of_precision",
+			"stat": "critChance",
+			"min": 1,
+			"max": 3,
+			"perTier": 0,
+			"slots": ["weapon", "ring", "amulet", "helmet"]
+		},
+		{
+			"id": "of_ruin",
+			"stat": "critDamage",
+			"min": 5,
+			"max": 15,
+			"perTier": 2,
+			"slots": ["weapon", "ring", "amulet"]
+		},
+		{
+			"id": "of_evasion",
+			"stat": "dodge",
+			"min": 1,
+			"max": 2,
+			"perTier": 0,
+			"slots": ["boots", "ring", "legs"]
+		},
+		{
+			"id": "of_the_guardian",
+			"stat": "parry",
+			"min": 1,
+			"max": 3,
+			"perTier": 0,
+			"slots": ["shield", "armor", "weapon"]
+		},
+		{
+			"id": "of_the_vampire",
+			"stat": "lifeLeech",
+			"min": 1,
+			"max": 2,
+			"perTier": 0,
+			"slots": ["weapon", "ring", "amulet"]
+		},
+		{
+			"id": "of_the_leech",
+			"stat": "manaLeech",
+			"min": 1,
+			"max": 2,
+			"perTier": 0,
+			"slots": ["weapon", "ring", "amulet"]
+		},
+		{
+			"id": "of_iron",
+			"stat": "armor",
+			"min": 1,
+			"max": 3,
+			"perTier": 1,
+			"slots": ["helmet", "armor", "legs", "boots", "shield"]
+		},
+		{
+			"id": "physical_ward",
+			"stat": "protPhysical",
+			"min": 1,
+			"max": 3,
+			"perTier": 0,
+			"slots": ["helmet", "armor", "legs", "boots", "amulet", "ring", "shield"]
+		},
+		{
+			"id": "fire_ward",
+			"stat": "protFire",
+			"min": 2,
+			"max": 4,
+			"perTier": 0,
+			"slots": ["helmet", "armor", "legs", "boots", "amulet", "ring", "shield"]
+		},
+		{
+			"id": "ice_ward",
+			"stat": "protIce",
+			"min": 2,
+			"max": 4,
+			"perTier": 0,
+			"slots": ["helmet", "armor", "legs", "boots", "amulet", "ring", "shield"]
+		},
+		{
+			"id": "energy_ward",
+			"stat": "protEnergy",
+			"min": 2,
+			"max": 4,
+			"perTier": 0,
+			"slots": ["helmet", "armor", "legs", "boots", "amulet", "ring", "shield"]
+		},
+		{
+			"id": "earth_ward",
+			"stat": "protEarth",
+			"min": 2,
+			"max": 4,
+			"perTier": 0,
+			"slots": ["helmet", "armor", "legs", "boots", "amulet", "ring", "shield"]
+		},
+		{
+			"id": "holy_ward",
+			"stat": "protHoly",
+			"min": 2,
+			"max": 4,
+			"perTier": 0,
+			"slots": ["helmet", "armor", "legs", "boots", "amulet", "ring", "shield"]
+		},
+		{
+			"id": "death_ward",
+			"stat": "protDeath",
+			"min": 2,
+			"max": 4,
+			"perTier": 0,
+			"slots": ["helmet", "armor", "legs", "boots", "amulet", "ring", "shield"]
+		}
+	]
+}

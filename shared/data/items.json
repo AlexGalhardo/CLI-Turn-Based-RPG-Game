@@ -8,8 +8,34 @@
 			"type": "sword",
 			"tier": 0,
 			"element": "physical",
-			"stats": { "attack": 4 },
-			"value": 25
+			"stats": {
+				"attack": 6
+			},
+			"value": 30
+		},
+		{
+			"id": "hand_axe",
+			"name": "Hand Axe",
+			"slot": "weapon",
+			"type": "axe",
+			"tier": 0,
+			"element": "physical",
+			"stats": {
+				"attack": 6
+			},
+			"value": 30
+		},
+		{
+			"id": "mace",
+			"name": "Mace",
+			"slot": "weapon",
+			"type": "club",
+			"tier": 0,
+			"element": "physical",
+			"stats": {
+				"attack": 6
+			},
+			"value": 30
 		},
 		{
 			"id": "bow",
@@ -18,8 +44,37 @@
 			"type": "bow",
 			"tier": 0,
 			"element": "physical",
-			"stats": { "attack": 4 },
-			"value": 25
+			"stats": {
+				"attack": 5,
+				"critChance": 2
+			},
+			"value": 30
+		},
+		{
+			"id": "spear",
+			"name": "Spear",
+			"slot": "weapon",
+			"type": "spear",
+			"tier": 0,
+			"element": "physical",
+			"stats": {
+				"attack": 5,
+				"critChance": 2
+			},
+			"value": 30
+		},
+		{
+			"id": "crossbow",
+			"name": "Crossbow",
+			"slot": "weapon",
+			"type": "crossbow",
+			"tier": 0,
+			"element": "physical",
+			"stats": {
+				"attack": 5,
+				"critChance": 2
+			},
+			"value": 30
 		},
 		{
 			"id": "wand_of_vortex",
@@ -28,8 +83,1772 @@
 			"type": "wand",
 			"tier": 0,
 			"element": "energy",
-			"stats": { "attack": 5 },
-			"value": 25
+			"stats": {
+				"attack": 4,
+				"spellPower": 3
+			},
+			"value": 30
+		},
+		{
+			"id": "snakebite_rod",
+			"name": "Snakebite Rod",
+			"slot": "weapon",
+			"type": "rod",
+			"tier": 0,
+			"element": "earth",
+			"stats": {
+				"attack": 4,
+				"spellPower": 3
+			},
+			"value": 30
+		},
+		{
+			"id": "wooden_shield",
+			"name": "Wooden Shield",
+			"slot": "shield",
+			"type": "shield",
+			"tier": 0,
+			"stats": {
+				"armor": 2,
+				"parry": 3
+			},
+			"value": 20
+		},
+		{
+			"id": "spellbook",
+			"name": "Spellbook",
+			"slot": "shield",
+			"type": "spellbook",
+			"tier": 0,
+			"stats": {
+				"spellPower": 5,
+				"maxMp": 10
+			},
+			"value": 20
+		},
+		{
+			"id": "leather_helmet",
+			"name": "Leather Helmet",
+			"slot": "helmet",
+			"type": "helmet",
+			"tier": 0,
+			"stats": {
+				"armor": 1,
+				"maxHp": 5
+			},
+			"value": 20
+		},
+		{
+			"id": "leather_armor",
+			"name": "Leather Armor",
+			"slot": "armor",
+			"type": "armor",
+			"tier": 0,
+			"stats": {
+				"armor": 3,
+				"maxHp": 10
+			},
+			"value": 20
+		},
+		{
+			"id": "leather_legs",
+			"name": "Leather Legs",
+			"slot": "legs",
+			"type": "legs",
+			"tier": 0,
+			"stats": {
+				"armor": 2,
+				"maxHp": 5
+			},
+			"value": 20
+		},
+		{
+			"id": "leather_boots",
+			"name": "Leather Boots",
+			"slot": "boots",
+			"type": "boots",
+			"tier": 0,
+			"stats": {
+				"armor": 1,
+				"dodge": 1
+			},
+			"value": 20
+		},
+		{
+			"id": "scarf",
+			"name": "Scarf",
+			"slot": "amulet",
+			"type": "amulet",
+			"tier": 0,
+			"stats": {
+				"protPhysical": 4,
+				"maxMp": 5
+			},
+			"value": 20
+		},
+		{
+			"id": "sword_ring",
+			"name": "Sword Ring",
+			"slot": "ring",
+			"type": "ring",
+			"tier": 0,
+			"stats": {
+				"attack": 2
+			},
+			"value": 20
+		},
+		{
+			"id": "spike_sword",
+			"name": "Spike Sword",
+			"slot": "weapon",
+			"type": "sword",
+			"tier": 1,
+			"element": "physical",
+			"stats": {
+				"attack": 10
+			},
+			"value": 54
+		},
+		{
+			"id": "battle_axe",
+			"name": "Battle Axe",
+			"slot": "weapon",
+			"type": "axe",
+			"tier": 1,
+			"element": "physical",
+			"stats": {
+				"attack": 10
+			},
+			"value": 54
+		},
+		{
+			"id": "morning_star",
+			"name": "Morning Star",
+			"slot": "weapon",
+			"type": "club",
+			"tier": 1,
+			"element": "physical",
+			"stats": {
+				"attack": 10
+			},
+			"value": 54
+		},
+		{
+			"id": "elvish_bow",
+			"name": "Elvish Bow",
+			"slot": "weapon",
+			"type": "bow",
+			"tier": 1,
+			"element": "physical",
+			"stats": {
+				"attack": 9,
+				"critChance": 2
+			},
+			"value": 54
+		},
+		{
+			"id": "hunting_spear",
+			"name": "Hunting Spear",
+			"slot": "weapon",
+			"type": "spear",
+			"tier": 1,
+			"element": "physical",
+			"stats": {
+				"attack": 9,
+				"critChance": 2
+			},
+			"value": 54
+		},
+		{
+			"id": "wand_of_dragonbreath",
+			"name": "Wand of Dragonbreath",
+			"slot": "weapon",
+			"type": "wand",
+			"tier": 1,
+			"element": "fire",
+			"stats": {
+				"attack": 8,
+				"spellPower": 4
+			},
+			"value": 54
+		},
+		{
+			"id": "moonlight_rod",
+			"name": "Moonlight Rod",
+			"slot": "weapon",
+			"type": "rod",
+			"tier": 1,
+			"element": "ice",
+			"stats": {
+				"attack": 8,
+				"spellPower": 4
+			},
+			"value": 54
+		},
+		{
+			"id": "dwarven_shield",
+			"name": "Dwarven Shield",
+			"slot": "shield",
+			"type": "shield",
+			"tier": 1,
+			"stats": {
+				"armor": 5,
+				"parry": 4
+			},
+			"value": 36
+		},
+		{
+			"id": "spellbook_of_enlightenment",
+			"name": "Spellbook of Enlightenment",
+			"slot": "shield",
+			"type": "spellbook",
+			"tier": 1,
+			"stats": {
+				"spellPower": 8,
+				"maxMp": 25
+			},
+			"value": 36
+		},
+		{
+			"id": "chain_helmet",
+			"name": "Chain Helmet",
+			"slot": "helmet",
+			"type": "helmet",
+			"tier": 1,
+			"stats": {
+				"armor": 3,
+				"maxHp": 13
+			},
+			"value": 36
+		},
+		{
+			"id": "chain_armor",
+			"name": "Chain Armor",
+			"slot": "armor",
+			"type": "armor",
+			"tier": 1,
+			"stats": {
+				"armor": 7,
+				"maxHp": 22
+			},
+			"value": 36
+		},
+		{
+			"id": "chain_legs",
+			"name": "Chain Legs",
+			"slot": "legs",
+			"type": "legs",
+			"tier": 1,
+			"stats": {
+				"armor": 5,
+				"maxHp": 15
+			},
+			"value": 36
+		},
+		{
+			"id": "sandals",
+			"name": "Sandals",
+			"slot": "boots",
+			"type": "boots",
+			"tier": 1,
+			"stats": {
+				"armor": 3,
+				"dodge": 1
+			},
+			"value": 36
+		},
+		{
+			"id": "bronze_amulet",
+			"name": "Bronze Amulet",
+			"slot": "amulet",
+			"type": "amulet",
+			"tier": 1,
+			"stats": {
+				"protDeath": 6,
+				"maxMp": 13
+			},
+			"value": 36
+		},
+		{
+			"id": "club_ring",
+			"name": "Club Ring",
+			"slot": "ring",
+			"type": "ring",
+			"tier": 1,
+			"stats": {
+				"physicalDamage": 5
+			},
+			"value": 36
+		},
+		{
+			"id": "fire_sword",
+			"name": "Fire Sword",
+			"slot": "weapon",
+			"type": "sword",
+			"tier": 2,
+			"element": "fire",
+			"stats": {
+				"attack": 17
+			},
+			"value": 97
+		},
+		{
+			"id": "barbarian_axe",
+			"name": "Barbarian Axe",
+			"slot": "weapon",
+			"type": "axe",
+			"tier": 2,
+			"element": "physical",
+			"stats": {
+				"attack": 17
+			},
+			"value": 97
+		},
+		{
+			"id": "clerical_mace",
+			"name": "Clerical Mace",
+			"slot": "weapon",
+			"type": "club",
+			"tier": 2,
+			"element": "physical",
+			"stats": {
+				"attack": 17
+			},
+			"value": 97
+		},
+		{
+			"id": "composite_hornbow",
+			"name": "Composite Hornbow",
+			"slot": "weapon",
+			"type": "bow",
+			"tier": 2,
+			"element": "physical",
+			"stats": {
+				"attack": 16,
+				"critChance": 2
+			},
+			"value": 97
+		},
+		{
+			"id": "royal_spear",
+			"name": "Royal Spear",
+			"slot": "weapon",
+			"type": "spear",
+			"tier": 2,
+			"element": "physical",
+			"stats": {
+				"attack": 16,
+				"critChance": 2
+			},
+			"value": 97
+		},
+		{
+			"id": "wand_of_decay",
+			"name": "Wand of Decay",
+			"slot": "weapon",
+			"type": "wand",
+			"tier": 2,
+			"element": "death",
+			"stats": {
+				"attack": 13,
+				"spellPower": 5
+			},
+			"value": 97
+		},
+		{
+			"id": "necrotic_rod",
+			"name": "Necrotic Rod",
+			"slot": "weapon",
+			"type": "rod",
+			"tier": 2,
+			"element": "earth",
+			"stats": {
+				"attack": 13,
+				"spellPower": 5
+			},
+			"value": 97
+		},
+		{
+			"id": "dragon_shield",
+			"name": "Dragon Shield",
+			"slot": "shield",
+			"type": "shield",
+			"tier": 2,
+			"stats": {
+				"armor": 8,
+				"parry": 5
+			},
+			"value": 65
+		},
+		{
+			"id": "spellbook_of_warding",
+			"name": "Spellbook of Warding",
+			"slot": "shield",
+			"type": "spellbook",
+			"tier": 2,
+			"stats": {
+				"spellPower": 11,
+				"maxMp": 40
+			},
+			"value": 65
+		},
+		{
+			"id": "steel_helmet",
+			"name": "Steel Helmet",
+			"slot": "helmet",
+			"type": "helmet",
+			"tier": 2,
+			"stats": {
+				"armor": 5,
+				"maxHp": 21
+			},
+			"value": 65
+		},
+		{
+			"id": "brass_armor",
+			"name": "Brass Armor",
+			"slot": "armor",
+			"type": "armor",
+			"tier": 2,
+			"stats": {
+				"armor": 11,
+				"maxHp": 34
+			},
+			"value": 65
+		},
+		{
+			"id": "brass_legs",
+			"name": "Brass Legs",
+			"slot": "legs",
+			"type": "legs",
+			"tier": 2,
+			"stats": {
+				"armor": 8,
+				"maxHp": 25
+			},
+			"value": 65
+		},
+		{
+			"id": "boots_of_haste",
+			"name": "Boots of Haste",
+			"slot": "boots",
+			"type": "boots",
+			"tier": 2,
+			"stats": {
+				"armor": 5,
+				"dodge": 2
+			},
+			"value": 65
+		},
+		{
+			"id": "garlic_necklace",
+			"name": "Garlic Necklace",
+			"slot": "amulet",
+			"type": "amulet",
+			"tier": 2,
+			"stats": {
+				"protHoly": 8,
+				"maxMp": 21
+			},
+			"value": 65
+		},
+		{
+			"id": "axe_ring",
+			"name": "Axe Ring",
+			"slot": "ring",
+			"type": "ring",
+			"tier": 2,
+			"stats": {
+				"critChance": 3
+			},
+			"value": 65
+		},
+		{
+			"id": "bright_sword",
+			"name": "Bright Sword",
+			"slot": "weapon",
+			"type": "sword",
+			"tier": 3,
+			"element": "physical",
+			"stats": {
+				"attack": 29
+			},
+			"value": 175
+		},
+		{
+			"id": "knight_axe",
+			"name": "Knight Axe",
+			"slot": "weapon",
+			"type": "axe",
+			"tier": 3,
+			"element": "physical",
+			"stats": {
+				"attack": 29
+			},
+			"value": 175
+		},
+		{
+			"id": "dragon_hammer",
+			"name": "Dragon Hammer",
+			"slot": "weapon",
+			"type": "club",
+			"tier": 3,
+			"element": "physical",
+			"stats": {
+				"attack": 29
+			},
+			"value": 175
+		},
+		{
+			"id": "modified_crossbow",
+			"name": "Modified Crossbow",
+			"slot": "weapon",
+			"type": "crossbow",
+			"tier": 3,
+			"element": "physical",
+			"stats": {
+				"attack": 27,
+				"critChance": 2
+			},
+			"value": 175
+		},
+		{
+			"id": "enchanted_spear",
+			"name": "Enchanted Spear",
+			"slot": "weapon",
+			"type": "spear",
+			"tier": 3,
+			"element": "holy",
+			"stats": {
+				"attack": 27,
+				"critChance": 2
+			},
+			"value": 175
+		},
+		{
+			"id": "wand_of_draconia",
+			"name": "Wand of Draconia",
+			"slot": "weapon",
+			"type": "wand",
+			"tier": 3,
+			"element": "fire",
+			"stats": {
+				"attack": 23,
+				"spellPower": 6
+			},
+			"value": 175
+		},
+		{
+			"id": "northwind_rod",
+			"name": "Northwind Rod",
+			"slot": "weapon",
+			"type": "rod",
+			"tier": 3,
+			"element": "ice",
+			"stats": {
+				"attack": 23,
+				"spellPower": 6
+			},
+			"value": 175
+		},
+		{
+			"id": "tower_shield",
+			"name": "Tower Shield",
+			"slot": "shield",
+			"type": "shield",
+			"tier": 3,
+			"stats": {
+				"armor": 11,
+				"parry": 6
+			},
+			"value": 117
+		},
+		{
+			"id": "spellbook_of_mind_control",
+			"name": "Spellbook of Mind Control",
+			"slot": "shield",
+			"type": "spellbook",
+			"tier": 3,
+			"stats": {
+				"spellPower": 14,
+				"maxMp": 55
+			},
+			"value": 117
+		},
+		{
+			"id": "crusader_helmet",
+			"name": "Crusader Helmet",
+			"slot": "helmet",
+			"type": "helmet",
+			"tier": 3,
+			"stats": {
+				"armor": 7,
+				"maxHp": 29
+			},
+			"value": 117
+		},
+		{
+			"id": "plate_armor",
+			"name": "Plate Armor",
+			"slot": "armor",
+			"type": "armor",
+			"tier": 3,
+			"stats": {
+				"armor": 15,
+				"maxHp": 46
+			},
+			"value": 117
+		},
+		{
+			"id": "plate_legs",
+			"name": "Plate Legs",
+			"slot": "legs",
+			"type": "legs",
+			"tier": 3,
+			"stats": {
+				"armor": 11,
+				"maxHp": 35
+			},
+			"value": 117
+		},
+		{
+			"id": "steel_boots",
+			"name": "Steel Boots",
+			"slot": "boots",
+			"type": "boots",
+			"tier": 3,
+			"stats": {
+				"armor": 7,
+				"dodge": 2
+			},
+			"value": 117
+		},
+		{
+			"id": "dragon_necklace",
+			"name": "Dragon Necklace",
+			"slot": "amulet",
+			"type": "amulet",
+			"tier": 3,
+			"stats": {
+				"protFire": 10,
+				"maxMp": 29
+			},
+			"value": 117
+		},
+		{
+			"id": "life_ring",
+			"name": "Life Ring",
+			"slot": "ring",
+			"type": "ring",
+			"tier": 3,
+			"stats": {
+				"hpRegen": 3,
+				"mpRegen": 2
+			},
+			"value": 117
+		},
+		{
+			"id": "giant_sword",
+			"name": "Giant Sword",
+			"slot": "weapon",
+			"type": "sword",
+			"tier": 4,
+			"element": "physical",
+			"stats": {
+				"attack": 50
+			},
+			"value": 315
+		},
+		{
+			"id": "fire_axe",
+			"name": "Fire Axe",
+			"slot": "weapon",
+			"type": "axe",
+			"tier": 4,
+			"element": "fire",
+			"stats": {
+				"attack": 50
+			},
+			"value": 315
+		},
+		{
+			"id": "war_hammer",
+			"name": "War Hammer",
+			"slot": "weapon",
+			"type": "club",
+			"tier": 4,
+			"element": "physical",
+			"stats": {
+				"attack": 50
+			},
+			"value": 315
+		},
+		{
+			"id": "silkweaver_bow",
+			"name": "Silkweaver Bow",
+			"slot": "weapon",
+			"type": "bow",
+			"tier": 4,
+			"element": "physical",
+			"stats": {
+				"attack": 47,
+				"critChance": 2
+			},
+			"value": 315
+		},
+		{
+			"id": "arbalest",
+			"name": "Arbalest",
+			"slot": "weapon",
+			"type": "crossbow",
+			"tier": 4,
+			"element": "physical",
+			"stats": {
+				"attack": 47,
+				"critChance": 2
+			},
+			"value": 315
+		},
+		{
+			"id": "wand_of_cosmic_energy",
+			"name": "Wand of Cosmic Energy",
+			"slot": "weapon",
+			"type": "wand",
+			"tier": 4,
+			"element": "energy",
+			"stats": {
+				"attack": 40,
+				"spellPower": 7
+			},
+			"value": 315
+		},
+		{
+			"id": "terra_rod",
+			"name": "Terra Rod",
+			"slot": "weapon",
+			"type": "rod",
+			"tier": 4,
+			"element": "earth",
+			"stats": {
+				"attack": 40,
+				"spellPower": 7
+			},
+			"value": 315
+		},
+		{
+			"id": "vampire_shield",
+			"name": "Vampire Shield",
+			"slot": "shield",
+			"type": "shield",
+			"tier": 4,
+			"stats": {
+				"armor": 14,
+				"parry": 7
+			},
+			"value": 210
+		},
+		{
+			"id": "spellbook_of_lost_souls",
+			"name": "Spellbook of Lost Souls",
+			"slot": "shield",
+			"type": "spellbook",
+			"tier": 4,
+			"stats": {
+				"spellPower": 17,
+				"maxMp": 70
+			},
+			"value": 210
+		},
+		{
+			"id": "warrior_helmet",
+			"name": "Warrior Helmet",
+			"slot": "helmet",
+			"type": "helmet",
+			"tier": 4,
+			"stats": {
+				"armor": 9,
+				"maxHp": 37
+			},
+			"value": 210
+		},
+		{
+			"id": "knight_armor",
+			"name": "Knight Armor",
+			"slot": "armor",
+			"type": "armor",
+			"tier": 4,
+			"stats": {
+				"armor": 19,
+				"maxHp": 58
+			},
+			"value": 210
+		},
+		{
+			"id": "knight_legs",
+			"name": "Knight Legs",
+			"slot": "legs",
+			"type": "legs",
+			"tier": 4,
+			"stats": {
+				"armor": 14,
+				"maxHp": 45
+			},
+			"value": 210
+		},
+		{
+			"id": "crocodile_boots",
+			"name": "Crocodile Boots",
+			"slot": "boots",
+			"type": "boots",
+			"tier": 4,
+			"stats": {
+				"armor": 9,
+				"dodge": 3
+			},
+			"value": 210
+		},
+		{
+			"id": "elven_amulet",
+			"name": "Elven Amulet",
+			"slot": "amulet",
+			"type": "amulet",
+			"tier": 4,
+			"stats": {
+				"protEnergy": 12,
+				"maxMp": 37
+			},
+			"value": 210
+		},
+		{
+			"id": "energy_ring",
+			"name": "Energy Ring",
+			"slot": "ring",
+			"type": "ring",
+			"tier": 4,
+			"stats": {
+				"spellPower": 8,
+				"manaLeech": 2
+			},
+			"value": 210
+		},
+		{
+			"id": "relic_sword",
+			"name": "Relic Sword",
+			"slot": "weapon",
+			"type": "sword",
+			"tier": 5,
+			"element": "physical",
+			"stats": {
+				"attack": 85
+			},
+			"value": 567
+		},
+		{
+			"id": "dragon_lance",
+			"name": "Dragon Lance",
+			"slot": "weapon",
+			"type": "axe",
+			"tier": 5,
+			"element": "physical",
+			"stats": {
+				"attack": 85
+			},
+			"value": 567
+		},
+		{
+			"id": "cranial_basher",
+			"name": "Cranial Basher",
+			"slot": "weapon",
+			"type": "club",
+			"tier": 5,
+			"element": "physical",
+			"stats": {
+				"attack": 85
+			},
+			"value": 567
+		},
+		{
+			"id": "crystal_crossbow",
+			"name": "Crystal Crossbow",
+			"slot": "weapon",
+			"type": "crossbow",
+			"tier": 5,
+			"element": "physical",
+			"stats": {
+				"attack": 80,
+				"critChance": 2
+			},
+			"value": 567
+		},
+		{
+			"id": "warsinger_bow",
+			"name": "Warsinger Bow",
+			"slot": "weapon",
+			"type": "bow",
+			"tier": 5,
+			"element": "energy",
+			"stats": {
+				"attack": 80,
+				"critChance": 2
+			},
+			"value": 567
+		},
+		{
+			"id": "wand_of_inferno",
+			"name": "Wand of Inferno",
+			"slot": "weapon",
+			"type": "wand",
+			"tier": 5,
+			"element": "fire",
+			"stats": {
+				"attack": 68,
+				"spellPower": 8
+			},
+			"value": 567
+		},
+		{
+			"id": "hailstorm_rod",
+			"name": "Hailstorm Rod",
+			"slot": "weapon",
+			"type": "rod",
+			"tier": 5,
+			"element": "ice",
+			"stats": {
+				"attack": 68,
+				"spellPower": 8
+			},
+			"value": 567
+		},
+		{
+			"id": "demon_shield",
+			"name": "Demon Shield",
+			"slot": "shield",
+			"type": "shield",
+			"tier": 5,
+			"stats": {
+				"armor": 17,
+				"parry": 8
+			},
+			"value": 378
+		},
+		{
+			"id": "spellbook_of_dark_mysteries",
+			"name": "Spellbook of Dark Mysteries",
+			"slot": "shield",
+			"type": "spellbook",
+			"tier": 5,
+			"stats": {
+				"spellPower": 20,
+				"maxMp": 85
+			},
+			"value": 378
+		},
+		{
+			"id": "royal_helmet",
+			"name": "Royal Helmet",
+			"slot": "helmet",
+			"type": "helmet",
+			"tier": 5,
+			"stats": {
+				"armor": 11,
+				"maxHp": 45
+			},
+			"value": 378
+		},
+		{
+			"id": "crown_armor",
+			"name": "Crown Armor",
+			"slot": "armor",
+			"type": "armor",
+			"tier": 5,
+			"stats": {
+				"armor": 23,
+				"maxHp": 70
+			},
+			"value": 378
+		},
+		{
+			"id": "crown_legs",
+			"name": "Crown Legs",
+			"slot": "legs",
+			"type": "legs",
+			"tier": 5,
+			"stats": {
+				"armor": 17,
+				"maxHp": 55
+			},
+			"value": 378
+		},
+		{
+			"id": "draken_boots",
+			"name": "Draken Boots",
+			"slot": "boots",
+			"type": "boots",
+			"tier": 5,
+			"stats": {
+				"armor": 11,
+				"dodge": 3
+			},
+			"value": 378
+		},
+		{
+			"id": "terra_amulet",
+			"name": "Terra Amulet",
+			"slot": "amulet",
+			"type": "amulet",
+			"tier": 5,
+			"stats": {
+				"protEarth": 14,
+				"maxMp": 45
+			},
+			"value": 378
+		},
+		{
+			"id": "ring_of_healing",
+			"name": "Ring of Healing",
+			"slot": "ring",
+			"type": "ring",
+			"tier": 5,
+			"stats": {
+				"hpRegen": 6
+			},
+			"value": 378
+		},
+		{
+			"id": "magic_longsword",
+			"name": "Magic Longsword",
+			"slot": "weapon",
+			"type": "sword",
+			"tier": 6,
+			"element": "physical",
+			"stats": {
+				"attack": 145
+			},
+			"value": 1020
+		},
+		{
+			"id": "stonecutter_axe",
+			"name": "Stonecutter Axe",
+			"slot": "weapon",
+			"type": "axe",
+			"tier": 6,
+			"element": "physical",
+			"stats": {
+				"attack": 145
+			},
+			"value": 1020
+		},
+		{
+			"id": "thunder_hammer",
+			"name": "Thunder Hammer",
+			"slot": "weapon",
+			"type": "club",
+			"tier": 6,
+			"element": "energy",
+			"stats": {
+				"attack": 145
+			},
+			"value": 1020
+		},
+		{
+			"id": "yols_bow",
+			"name": "Yol's Bow",
+			"slot": "weapon",
+			"type": "bow",
+			"tier": 6,
+			"element": "physical",
+			"stats": {
+				"attack": 137,
+				"critChance": 2
+			},
+			"value": 1020
+		},
+		{
+			"id": "rift_crossbow",
+			"name": "Rift Crossbow",
+			"slot": "weapon",
+			"type": "crossbow",
+			"tier": 6,
+			"element": "physical",
+			"stats": {
+				"attack": 137,
+				"critChance": 2
+			},
+			"value": 1020
+		},
+		{
+			"id": "wand_of_starstorm",
+			"name": "Wand of Starstorm",
+			"slot": "weapon",
+			"type": "wand",
+			"tier": 6,
+			"element": "energy",
+			"stats": {
+				"attack": 116,
+				"spellPower": 9
+			},
+			"value": 1020
+		},
+		{
+			"id": "springsprout_rod",
+			"name": "Springsprout Rod",
+			"slot": "weapon",
+			"type": "rod",
+			"tier": 6,
+			"element": "earth",
+			"stats": {
+				"attack": 116,
+				"spellPower": 9
+			},
+			"value": 1020
+		},
+		{
+			"id": "great_shield",
+			"name": "Great Shield",
+			"slot": "shield",
+			"type": "shield",
+			"tier": 6,
+			"stats": {
+				"armor": 20,
+				"parry": 9
+			},
+			"value": 680
+		},
+		{
+			"id": "snake_gods_wristguard",
+			"name": "Snake God's Wristguard",
+			"slot": "shield",
+			"type": "spellbook",
+			"tier": 6,
+			"stats": {
+				"spellPower": 23,
+				"maxMp": 100
+			},
+			"value": 680
+		},
+		{
+			"id": "demon_helmet",
+			"name": "Demon Helmet",
+			"slot": "helmet",
+			"type": "helmet",
+			"tier": 6,
+			"stats": {
+				"armor": 13,
+				"maxHp": 53
+			},
+			"value": 680
+		},
+		{
+			"id": "dragon_scale_mail",
+			"name": "Dragon Scale Mail",
+			"slot": "armor",
+			"type": "armor",
+			"tier": 6,
+			"stats": {
+				"armor": 27,
+				"maxHp": 82
+			},
+			"value": 680
+		},
+		{
+			"id": "golden_legs",
+			"name": "Golden Legs",
+			"slot": "legs",
+			"type": "legs",
+			"tier": 6,
+			"stats": {
+				"armor": 20,
+				"maxHp": 65
+			},
+			"value": 680
+		},
+		{
+			"id": "guardian_boots",
+			"name": "Guardian Boots",
+			"slot": "boots",
+			"type": "boots",
+			"tier": 6,
+			"stats": {
+				"armor": 13,
+				"dodge": 4
+			},
+			"value": 680
+		},
+		{
+			"id": "glacier_amulet",
+			"name": "Glacier Amulet",
+			"slot": "amulet",
+			"type": "amulet",
+			"tier": 6,
+			"stats": {
+				"protIce": 16,
+				"maxMp": 53
+			},
+			"value": 680
+		},
+		{
+			"id": "time_ring",
+			"name": "Time Ring",
+			"slot": "ring",
+			"type": "ring",
+			"tier": 6,
+			"stats": {
+				"dodge": 5
+			},
+			"value": 680
+		},
+		{
+			"id": "magic_sword",
+			"name": "Magic Sword",
+			"slot": "weapon",
+			"type": "sword",
+			"tier": 7,
+			"element": "physical",
+			"stats": {
+				"attack": 246
+			},
+			"value": 1836
+		},
+		{
+			"id": "hellforged_axe",
+			"name": "Hellforged Axe",
+			"slot": "weapon",
+			"type": "axe",
+			"tier": 7,
+			"element": "fire",
+			"stats": {
+				"attack": 246
+			},
+			"value": 1836
+		},
+		{
+			"id": "blessed_sceptre",
+			"name": "Blessed Sceptre",
+			"slot": "weapon",
+			"type": "club",
+			"tier": 7,
+			"element": "holy",
+			"stats": {
+				"attack": 246
+			},
+			"value": 1836
+		},
+		{
+			"id": "umbral_bow",
+			"name": "Umbral Bow",
+			"slot": "weapon",
+			"type": "bow",
+			"tier": 7,
+			"element": "physical",
+			"stats": {
+				"attack": 233,
+				"critChance": 2
+			},
+			"value": 1836
+		},
+		{
+			"id": "umbral_crossbow",
+			"name": "Umbral Crossbow",
+			"slot": "weapon",
+			"type": "crossbow",
+			"tier": 7,
+			"element": "physical",
+			"stats": {
+				"attack": 233,
+				"critChance": 2
+			},
+			"value": 1836
+		},
+		{
+			"id": "wand_of_voodoo",
+			"name": "Wand of Voodoo",
+			"slot": "weapon",
+			"type": "wand",
+			"tier": 7,
+			"element": "death",
+			"stats": {
+				"attack": 196,
+				"spellPower": 10
+			},
+			"value": 1836
+		},
+		{
+			"id": "underworld_rod",
+			"name": "Underworld Rod",
+			"slot": "weapon",
+			"type": "rod",
+			"tier": 7,
+			"element": "death",
+			"stats": {
+				"attack": 196,
+				"spellPower": 10
+			},
+			"value": 1836
+		},
+		{
+			"id": "mastermind_shield",
+			"name": "Mastermind Shield",
+			"slot": "shield",
+			"type": "shield",
+			"tier": 7,
+			"stats": {
+				"armor": 23,
+				"parry": 10
+			},
+			"value": 1224
+		},
+		{
+			"id": "spellbook_of_ancient_arcana",
+			"name": "Spellbook of Ancient Arcana",
+			"slot": "shield",
+			"type": "spellbook",
+			"tier": 7,
+			"stats": {
+				"spellPower": 26,
+				"maxMp": 115
+			},
+			"value": 1224
+		},
+		{
+			"id": "golden_helmet",
+			"name": "Golden Helmet",
+			"slot": "helmet",
+			"type": "helmet",
+			"tier": 7,
+			"stats": {
+				"armor": 15,
+				"maxHp": 61
+			},
+			"value": 1224
+		},
+		{
+			"id": "magic_plate_armor",
+			"name": "Magic Plate Armor",
+			"slot": "armor",
+			"type": "armor",
+			"tier": 7,
+			"stats": {
+				"armor": 31,
+				"maxHp": 94
+			},
+			"value": 1224
+		},
+		{
+			"id": "dragon_scale_legs",
+			"name": "Dragon Scale Legs",
+			"slot": "legs",
+			"type": "legs",
+			"tier": 7,
+			"stats": {
+				"armor": 23,
+				"maxHp": 75
+			},
+			"value": 1224
+		},
+		{
+			"id": "golden_boots",
+			"name": "Golden Boots",
+			"slot": "boots",
+			"type": "boots",
+			"tier": 7,
+			"stats": {
+				"armor": 15,
+				"dodge": 4
+			},
+			"value": 1224
+		},
+		{
+			"id": "lightning_pendant",
+			"name": "Lightning Pendant",
+			"slot": "amulet",
+			"type": "amulet",
+			"tier": 7,
+			"stats": {
+				"protEnergy": 18,
+				"maxMp": 61
+			},
+			"value": 1224
+		},
+		{
+			"id": "might_ring",
+			"name": "Might Ring",
+			"slot": "ring",
+			"type": "ring",
+			"tier": 7,
+			"stats": {
+				"critDamage": 25,
+				"critChance": 3
+			},
+			"value": 1224
+		},
+		{
+			"id": "umbral_masterblade",
+			"name": "Umbral Masterblade",
+			"slot": "weapon",
+			"type": "sword",
+			"tier": 8,
+			"element": "physical",
+			"stats": {
+				"attack": 419
+			},
+			"value": 3306
+		},
+		{
+			"id": "umbral_master_chopper",
+			"name": "Umbral Master Chopper",
+			"slot": "weapon",
+			"type": "axe",
+			"tier": 8,
+			"element": "physical",
+			"stats": {
+				"attack": 419
+			},
+			"value": 3306
+		},
+		{
+			"id": "umbral_master_hammer",
+			"name": "Umbral Master Hammer",
+			"slot": "weapon",
+			"type": "club",
+			"tier": 8,
+			"element": "physical",
+			"stats": {
+				"attack": 419
+			},
+			"value": 3306
+		},
+		{
+			"id": "umbral_master_bow",
+			"name": "Umbral Master Bow",
+			"slot": "weapon",
+			"type": "bow",
+			"tier": 8,
+			"element": "physical",
+			"stats": {
+				"attack": 398,
+				"critChance": 2
+			},
+			"value": 3306
+		},
+		{
+			"id": "umbral_master_crossbow",
+			"name": "Umbral Master Crossbow",
+			"slot": "weapon",
+			"type": "crossbow",
+			"tier": 8,
+			"element": "physical",
+			"stats": {
+				"attack": 398,
+				"critChance": 2
+			},
+			"value": 3306
+		},
+		{
+			"id": "wand_of_defiance",
+			"name": "Wand of Defiance",
+			"slot": "weapon",
+			"type": "wand",
+			"tier": 8,
+			"element": "energy",
+			"stats": {
+				"attack": 335,
+				"spellPower": 11
+			},
+			"value": 3306
+		},
+		{
+			"id": "glacial_rod",
+			"name": "Glacial Rod",
+			"slot": "weapon",
+			"type": "rod",
+			"tier": 8,
+			"element": "ice",
+			"stats": {
+				"attack": 335,
+				"spellPower": 11
+			},
+			"value": 3306
+		},
+		{
+			"id": "blessed_shield",
+			"name": "Blessed Shield",
+			"slot": "shield",
+			"type": "shield",
+			"tier": 8,
+			"stats": {
+				"armor": 26,
+				"parry": 11
+			},
+			"value": 2204
+		},
+		{
+			"id": "umbral_spellbook",
+			"name": "Umbral Spellbook",
+			"slot": "shield",
+			"type": "spellbook",
+			"tier": 8,
+			"stats": {
+				"spellPower": 29,
+				"maxMp": 130
+			},
+			"value": 2204
+		},
+		{
+			"id": "falcon_coif",
+			"name": "Falcon Coif",
+			"slot": "helmet",
+			"type": "helmet",
+			"tier": 8,
+			"stats": {
+				"armor": 17,
+				"maxHp": 69
+			},
+			"value": 2204
+		},
+		{
+			"id": "falcon_plate",
+			"name": "Falcon Plate",
+			"slot": "armor",
+			"type": "armor",
+			"tier": 8,
+			"stats": {
+				"armor": 35,
+				"maxHp": 106
+			},
+			"value": 2204
+		},
+		{
+			"id": "falcon_greaves",
+			"name": "Falcon Greaves",
+			"slot": "legs",
+			"type": "legs",
+			"tier": 8,
+			"stats": {
+				"armor": 26,
+				"maxHp": 85
+			},
+			"value": 2204
+		},
+		{
+			"id": "void_boots",
+			"name": "Void Boots",
+			"slot": "boots",
+			"type": "boots",
+			"tier": 8,
+			"stats": {
+				"armor": 17,
+				"dodge": 5
+			},
+			"value": 2204
+		},
+		{
+			"id": "stone_skin_amulet",
+			"name": "Stone Skin Amulet",
+			"slot": "amulet",
+			"type": "amulet",
+			"tier": 8,
+			"stats": {
+				"protPhysical": 20,
+				"maxMp": 69
+			},
+			"value": 2204
+		},
+		{
+			"id": "power_ring",
+			"name": "Power Ring",
+			"slot": "ring",
+			"type": "ring",
+			"tier": 8,
+			"stats": {
+				"physicalDamage": 12,
+				"lifeLeech": 2
+			},
+			"value": 2204
+		},
+		{
+			"id": "soulcutter",
+			"name": "Soulcutter",
+			"slot": "weapon",
+			"type": "sword",
+			"tier": 9,
+			"element": "physical",
+			"stats": {
+				"attack": 712
+			},
+			"value": 5950
+		},
+		{
+			"id": "soulbiter",
+			"name": "Soulbiter",
+			"slot": "weapon",
+			"type": "axe",
+			"tier": 9,
+			"element": "physical",
+			"stats": {
+				"attack": 712
+			},
+			"value": 5950
+		},
+		{
+			"id": "soulcrusher",
+			"name": "Soulcrusher",
+			"slot": "weapon",
+			"type": "club",
+			"tier": 9,
+			"element": "physical",
+			"stats": {
+				"attack": 712
+			},
+			"value": 5950
+		},
+		{
+			"id": "soulbleeder",
+			"name": "Soulbleeder",
+			"slot": "weapon",
+			"type": "bow",
+			"tier": 9,
+			"element": "physical",
+			"stats": {
+				"attack": 676,
+				"critChance": 2
+			},
+			"value": 5950
+		},
+		{
+			"id": "soulpiercer",
+			"name": "Soulpiercer",
+			"slot": "weapon",
+			"type": "crossbow",
+			"tier": 9,
+			"element": "physical",
+			"stats": {
+				"attack": 676,
+				"critChance": 2
+			},
+			"value": 5950
+		},
+		{
+			"id": "soultainter",
+			"name": "Soultainter",
+			"slot": "weapon",
+			"type": "wand",
+			"tier": 9,
+			"element": "death",
+			"stats": {
+				"attack": 569,
+				"spellPower": 12
+			},
+			"value": 5950
+		},
+		{
+			"id": "soulhexer",
+			"name": "Soulhexer",
+			"slot": "weapon",
+			"type": "rod",
+			"tier": 9,
+			"element": "earth",
+			"stats": {
+				"attack": 569,
+				"spellPower": 12
+			},
+			"value": 5950
+		},
+		{
+			"id": "soulbastion",
+			"name": "Soulbastion",
+			"slot": "shield",
+			"type": "shield",
+			"tier": 9,
+			"stats": {
+				"armor": 29,
+				"parry": 12
+			},
+			"value": 3967
+		},
+		{
+			"id": "umbral_master_spellbook",
+			"name": "Umbral Master Spellbook",
+			"slot": "shield",
+			"type": "spellbook",
+			"tier": 9,
+			"stats": {
+				"spellPower": 32,
+				"maxMp": 145
+			},
+			"value": 3967
+		},
+		{
+			"id": "cobra_hood",
+			"name": "Cobra Hood",
+			"slot": "helmet",
+			"type": "helmet",
+			"tier": 9,
+			"stats": {
+				"armor": 19,
+				"maxHp": 77
+			},
+			"value": 3967
+		},
+		{
+			"id": "soulmantle",
+			"name": "Soulmantle",
+			"slot": "armor",
+			"type": "armor",
+			"tier": 9,
+			"stats": {
+				"armor": 39,
+				"maxHp": 118
+			},
+			"value": 3967
+		},
+		{
+			"id": "soulshanks",
+			"name": "Soulshanks",
+			"slot": "legs",
+			"type": "legs",
+			"tier": 9,
+			"stats": {
+				"armor": 29,
+				"maxHp": 95
+			},
+			"value": 3967
+		},
+		{
+			"id": "pair_of_soulwalkers",
+			"name": "Pair of Soulwalkers",
+			"slot": "boots",
+			"type": "boots",
+			"tier": 9,
+			"stats": {
+				"armor": 19,
+				"dodge": 5
+			},
+			"value": 3967
+		},
+		{
+			"id": "ferumbras_amulet",
+			"name": "Ferumbras' Amulet",
+			"slot": "amulet",
+			"type": "amulet",
+			"tier": 9,
+			"stats": {
+				"protDeath": 22,
+				"maxMp": 77
+			},
+			"value": 3967
+		},
+		{
+			"id": "prismatic_ring",
+			"name": "Prismatic Ring",
+			"slot": "ring",
+			"type": "ring",
+			"tier": 9,
+			"stats": {
+				"spellPower": 15,
+				"critChance": 5,
+				"lifeLeech": 3
+			},
+			"value": 3967
 		}
 	]
 }
