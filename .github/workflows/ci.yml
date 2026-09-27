@@ -102,3 +102,44 @@ jobs:
       - name: Smoke test the executable
         shell: bash
         run: ./dist/rpg-typescript --version && ./dist/rpg-typescript --simulate 1 --vocation mage --difficulty easy
+
+  golang:
+    needs: detect
+    if: needs.detect.outputs.golang == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        working-directory: rpg-golang
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: rpg-golang/go.mod
+          cache-dependency-path: rpg-golang/go.sum
+      - name: Embed shared content (go generate)
+        run: go generate ./...
+      - name: Format (gofmt)
+        run: test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+      - name: Vet
+        run: go vet ./...
+      - name: Lint (golangci-lint)
+        if: runner.os == 'Linux'
+        uses: golangci/golangci-lint-action@v9.3.0
+        with:
+          version: v2.14.0
+          working-directory: rpg-golang
+      - name: Tests (unit, integration, golden, e2e) with race detector and coverage
+        if: runner.os == 'Linux'
+        run: go test -race -count=1 -coverpkg=./internal/... -coverprofile=coverage.out ./... && go tool cover -func=coverage.out | tail -1
+      - name: Tests (unit, integration, golden, e2e)
+        if: runner.os != 'Linux'
+        run: go test -count=1 ./...
+      - name: Build executable
+        run: go build -o bin/rpg-golang ./cmd/rpg
+      - name: Smoke test the executable
+        run: ./bin/rpg-golang --version && ./bin/rpg-golang --simulate 1 --vocation mage --difficulty easy
