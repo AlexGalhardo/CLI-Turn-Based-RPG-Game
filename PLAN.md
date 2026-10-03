@@ -147,11 +147,13 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 
 ## Phase 6 — C++ (M7, 1.1.0)
 
-- [ ] CMake + Ninja project (C++23), FTXUI, nlohmann/json, Catch2 via `FetchContent`; shared content embedded by CMake
-- [ ] Domain + application ported (same names/layers), `uint32_t` PRNG
-- [ ] Infrastructure + presentation (UI controller port + FTXUI renderer) matching `docs/tui.md`
-- [ ] Tests: unit, integration, golden (+ bot parity + save format), e2e through the FTXUI component (whole run by keys)
-- [ ] CMake release executable; CI cpp job (clang-format, warnings as errors, ctest + coverage, build, smoke test)
+- [x] CMake + Ninja project (C++23), FTXUI, nlohmann/json, Catch2 via `FetchContent`; shared content embedded by CMake
+- [x] Domain + application ported (same names/layers), `uint32_t` PRNG
+- [x] Infrastructure + presentation (UI controller port + FTXUI renderer) matching `docs/tui.md`
+- [x] Tests: unit, integration, golden (+ bot parity + save format), e2e through the FTXUI component (whole run by keys);
+      112 tests, 99% coverage on domain + application
+- [x] CMake release executable; CI cpp jobs (clang-format, GCC 14 and Clang 20 with warnings as errors, ctest + coverage,
+      LLVM-MinGW on Windows, build, smoke test)
 
 ## M7 — Release 1.1.0
 

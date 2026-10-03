@@ -1,0 +1,117 @@
+{
+	"steps": 204,
+	"round": 30,
+	"level": 9,
+	"gold": 56,
+	"rngState": 953959770,
+	"deathCause": "the_old_widow",
+	"stats": {
+		"damageDealt": 7596,
+		"damageTaken": 3596,
+		"healingDone": 2936,
+		"highestHit": 138,
+		"normalAttacks": 135,
+		"crits": 2,
+		"dodges": 0,
+		"parries": 5,
+		"defends": 12,
+		"goldLooted": 1501,
+		"goldSpent": 1700,
+		"goldEarned": 155,
+		"itemsSold": 4,
+		"bossesKilled": 2,
+		"spellsCast": {
+			"divine_caldera": 6,
+			"divine_missile": 4,
+			"ethereal_spear": 48
+		},
+		"potionsUsed": {
+			"health_potion": 12,
+			"mana_potion": 8,
+			"strong_health_potion": 12
+		},
+		"potionsBought": {
+			"health_potion": 7,
+			"mana_potion": 3,
+			"strong_health_potion": 12
+		},
+		"itemsDropped": {
+			"common": 3,
+			"epic": 1,
+			"rare": 5
+		},
+		"kills": {
+			"amazon": 1,
+			"bear": 1,
+			"bug": 1,
+			"cave_rat": 1,
+			"deer": 1,
+			"dwarf": 1,
+			"elf_arcanist": 1,
+			"goblin": 1,
+			"hunter": 3,
+			"minotaur_guard": 3,
+			"munster": 1,
+			"orc": 1,
+			"orc_berserker": 1,
+			"orc_spearman": 1,
+			"orc_warrior": 1,
+			"poison_spider": 1,
+			"rat": 2,
+			"rotworm": 1,
+			"snake": 1,
+			"tarantula": 1,
+			"the_horned_fox": 1,
+			"valkyrie": 1,
+			"wolf": 2
+		},
+		"statusesApplied": {},
+		"droppedItems": [
+			{
+				"itemId": "spear",
+				"rarity": "common",
+				"round": 1
+			},
+			{
+				"itemId": "leather_helmet",
+				"rarity": "rare",
+				"round": 4
+			},
+			{
+				"itemId": "scarf",
+				"rarity": "rare",
+				"round": 9
+			},
+			{
+				"itemId": "wooden_shield",
+				"rarity": "epic",
+				"round": 10
+			},
+			{
+				"itemId": "crossbow",
+				"rarity": "rare",
+				"round": 10
+			},
+			{
+				"itemId": "wooden_shield",
+				"rarity": "common",
+				"round": 12
+			},
+			{
+				"itemId": "leather_armor",
+				"rarity": "rare",
+				"round": 20
+			},
+			{
+				"itemId": "club_ring",
+				"rarity": "rare",
+				"round": 20
+			},
+			{
+				"itemId": "elvish_bow",
+				"rarity": "common",
+				"round": 24
+			}
+		]
+	}
+}

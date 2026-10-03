@@ -24,6 +24,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   application; clippy pedantic clean. Documented in `docs/rust.md`; setup scripts in `setups/`.
 - CI `rust` job (Linux and Windows): rustfmt, clippy with warnings denied, tests with `cargo llvm-cov` coverage floors,
   release build and smoke test.
+- C++23 implementation (`rpg-cpp`) at full parity: deterministic engine, bot, simulator (byte-identical report),
+  interchangeable saves (tested against fixtures produced by the Python reference), UI controller and an FTXUI terminal
+  UI; FTXUI, nlohmann/json and Catch2 fetched by CMake `FetchContent` at pinned releases with SHA-256 hashes; shared
+  content embedded by a CMake script. 112 Catch2 tests (unit, integration, golden replay, bot and save parity, e2e on a
+  100×30 FTXUI screen), 99% line coverage on domain + application. Documented in `docs/cpp.md`; setup scripts in
+  `setups/`.
+- CI `cpp` jobs: clang-format, GCC 14 and Clang 20 builds with warnings as errors, ctest, Clang source-based coverage
+  floors, LLVM-MinGW build on Windows, release build and smoke test.
 
 ### Fixed
 

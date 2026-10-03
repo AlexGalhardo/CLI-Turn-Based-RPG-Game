@@ -193,6 +193,72 @@ jobs:
       - name: Smoke test the executable
         run: ./target/release/rpg-rust --version && ./target/release/rpg-rust --simulate 1 --vocation mage --difficulty easy
 
+  cpp:
+    needs: detect
+    if: needs.detect.outputs.cpp == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rpg-cpp
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - name: Toolchains (GCC 14, Clang 20 + LLVM tools, clang-format, Ninja)
+        run: sudo apt-get update && sudo apt-get install -y g++-14 clang-20 llvm-20 clang-format-20 ninja-build
+      - name: Format (clang-format)
+        run: clang-format-20 --dry-run --Werror $(find src tests -name '*.cpp' -o -name '*.hpp')
+      - name: Build and test with GCC 14 (warnings as errors)
+        run: |
+          cmake --preset debug -DCMAKE_CXX_COMPILER=g++-14
+          cmake --build --preset debug
+          ctest --preset debug
+      - name: Tests with Clang 20 + coverage floors (80% overall, 90% domain + application)
+        run: |
+          cmake --preset coverage -DCMAKE_CXX_COMPILER=clang++-20
+          cmake --build --preset coverage
+          ctest --preset coverage
+          llvm-profdata-20 merge -sparse build/coverage/profiles/*.profraw -o build/coverage/rpg.profdata
+          cov() { llvm-cov-20 export -summary-only build/coverage/rpg_tests -instr-profile=build/coverage/rpg.profdata "$@" | jq '.data[0].totals.lines.percent'; }
+          overall=$(cov src); core=$(cov src/domain src/application)
+          echo "coverage: overall ${overall}%, domain + application ${core}%"
+          awk -v o="$overall" -v c="$core" 'BEGIN { exit !(o >= 80 && c >= 90) }'
+      - name: Build release executable
+        run: cmake --preset release -DCMAKE_CXX_COMPILER=g++-14 && cmake --build --preset release
+      - name: Smoke test the executable
+        run: ./build/release/rpg-cpp --version && ./build/release/rpg-cpp --simulate 1 --vocation mage --difficulty easy
+
+  # Windows builds with LLVM-MinGW (UCRT), the toolchain documented in docs/cpp.md, linked statically.
+  cpp-windows:
+    needs: detect
+    if: needs.detect.outputs.cpp == 'true'
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: rpg-cpp
+        shell: bash
+    env:
+      LLVM_MINGW: llvm-mingw-20260922-ucrt-x86_64
+    steps:
+      - uses: actions/checkout@v7
+      - name: LLVM-MinGW toolchain and Ninja
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl -fsSL -o llvm-mingw.zip "https://github.com/mstorsjo/llvm-mingw/releases/download/20260922/${LLVM_MINGW}.zip"
+          unzip -q llvm-mingw.zip
+          curl -fsSL -o ninja.zip https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-win.zip
+          mkdir -p ninja && unzip -q ninja.zip -d ninja
+          echo "$(cygpath -w "$PWD/ninja")" >> "$GITHUB_PATH"
+          echo "$(cygpath -w "$PWD/$LLVM_MINGW/bin")" >> "$GITHUB_PATH"
+      - name: Build and test (warnings as errors)
+        run: |
+          cmake --preset debug -DCMAKE_CXX_COMPILER=clang++
+          cmake --build --preset debug
+          ctest --preset debug
+      - name: Build release executable
+        run: cmake --preset release -DCMAKE_CXX_COMPILER=clang++ && cmake --build --preset release
+      - name: Smoke test the executable
+        run: ./build/release/rpg-cpp.exe --version && ./build/release/rpg-cpp.exe --simulate 1 --vocation mage --difficulty easy
+
   elixir:
     needs: detect
     if: needs.detect.outputs.elixir == 'true'
