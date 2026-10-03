@@ -127,11 +127,12 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 
 ## Phase 4 — Rust (M7, 1.1.0)
 
-- [ ] Cargo project (Rust 1.99, edition 2024), ratatui + crossterm, serde_json; shared content embedded by `build.rs`
-- [ ] Domain + application ported (same names/layers), `u32` wrapping PRNG
-- [ ] Infrastructure + presentation (UI controller port + ratatui renderer) matching `docs/tui.md`
-- [ ] Tests: unit, integration, golden (+ bot parity + save format), e2e through `TestBackend` (whole run by keys)
-- [ ] `cargo build --release` executable; CI rust job (rustfmt, clippy, tests + coverage, build, smoke test)
+- [x] Cargo project (Rust 1.99, edition 2024), ratatui + crossterm, serde_json; shared content embedded by `build.rs`
+- [x] Domain + application ported (same names/layers), `u32` wrapping PRNG, events and commands as serde enums
+- [x] Infrastructure + presentation (UI controller port + ratatui renderer) matching `docs/tui.md`
+- [x] Tests: unit, integration, golden (+ bot parity + save format), e2e through `TestBackend` (whole run by keys);
+      134 tests, 98.8% coverage on domain + application
+- [x] `cargo build --release` executable; CI rust job (rustfmt, clippy, tests + coverage, build, smoke test)
 
 ## Phase 5 — Elixir (M7, 1.1.0)
 

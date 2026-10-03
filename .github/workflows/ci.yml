@@ -150,6 +150,49 @@ jobs:
       - name: Smoke test the executable
         run: ./bin/rpg-golang --version && ./bin/rpg-golang --simulate 1 --vocation mage --difficulty easy
 
+  rust:
+    needs: detect
+    if: needs.detect.outputs.rust == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        working-directory: rpg-rust
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.99.0
+        with:
+          components: rustfmt, clippy, llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2.9.2
+        with:
+          workspaces: rpg-rust
+      - name: Format (rustfmt)
+        run: cargo fmt --check
+      - name: Lint (clippy)
+        run: cargo clippy --all-targets --locked -- -D warnings
+      - name: Install cargo-llvm-cov
+        if: runner.os == 'Linux'
+        uses: taiki-e/install-action@v2.87.23
+        with:
+          tool: cargo-llvm-cov
+      - name: Tests (unit, integration, golden, e2e) + coverage floors (80% overall, 90% domain + application)
+        if: runner.os == 'Linux'
+        run: |
+          cargo llvm-cov --locked --summary-only --fail-under-lines 80
+          cargo llvm-cov report --summary-only \
+            --ignore-filename-regex '(presentation|infrastructure|main\.rs|assets\.rs|version\.rs)' --fail-under-lines 90
+      - name: Tests (unit, integration, golden, e2e)
+        if: runner.os != 'Linux'
+        run: cargo test --locked
+      - name: Build executable
+        run: cargo build --release --locked
+      - name: Smoke test the executable
+        run: ./target/release/rpg-rust --version && ./target/release/rpg-rust --simulate 1 --vocation mage --difficulty easy
+
   elixir:
     needs: detect
     if: needs.detect.outputs.elixir == 'true'

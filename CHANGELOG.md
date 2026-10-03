@@ -17,6 +17,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - CI `elixir` job (Linux and Windows): `mix format`, warnings as errors, tests with coverage, escript build and smoke
   test. Commit scopes `rust`, `elixir` and `cpp`.
 
+- Rust implementation (`rpg-rust`) at full parity: deterministic engine, bot, simulator (byte-identical report),
+  interchangeable saves, UI controller and a ratatui + crossterm terminal UI; shared content embedded by `build.rs`;
+  events and commands as serde enums that serialise straight to the golden-file JSON. 134 tests (unit, integration,
+  golden replay, bot and save parity, e2e through ratatui's `TestBackend`), 98.8% line coverage on domain +
+  application; clippy pedantic clean. Documented in `docs/rust.md`; setup scripts in `setups/`.
+- CI `rust` job (Linux and Windows): rustfmt, clippy with warnings denied, tests with `cargo llvm-cov` coverage floors,
+  release build and smoke test.
+
+### Fixed
+
+- Go and TypeScript simulators now treat `--seed 0` as base seed 1 like the Python reference (`options.seed or 1`);
+  their balance reports for seed 0 differed from Python's. Found by the Rust port's simulator diff.
+
 ### Changed
 
 - `.editorconfig`: Elixir sources use 2-space indentation, the only style the Elixir formatter supports.

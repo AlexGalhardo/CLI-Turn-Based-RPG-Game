@@ -1,0 +1,49 @@
+[package]
+name = "rpg-rust"
+version = "1.0.0"
+edition = "2024"
+rust-version = "1.99"
+description = "Endless turn-based RPG for the terminal (Rust implementation)."
+license = "MIT"
+publish = false
+build = "build.rs"
+
+[lib]
+name = "rpg"
+path = "src/lib.rs"
+
+[[bin]]
+name = "rpg-rust"
+path = "src/main.rs"
+
+[dependencies]
+crossterm = "=0.29.0"
+ratatui = { version = "=0.30.2", default-features = false, features = ["crossterm_0_29"] }
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.151"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+# Game math uses i64 everywhere and converts to usize only for indexing; the values are always small and
+# non-negative, so these casts are intentional (mirrors the int arithmetic of the reference).
+cast_possible_truncation = "allow"
+cast_possible_wrap = "allow"
+cast_sign_loss = "allow"
+# The module tree mirrors the Python reference (`domain::definitions::GameData`, `application::battle::Battle`).
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_panics_doc = "allow"
+missing_errors_doc = "allow"
+too_many_lines = "allow"
+# `match` on Option reads closer to the reference than `if let … else` chains.
+single_match_else = "allow"
+# `assert!(x.is_empty())` is the clearest spelling in tests.
+assert_is_empty = "allow"
