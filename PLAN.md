@@ -150,10 +150,10 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 - [x] CMake + Ninja project (C++23), FTXUI, nlohmann/json, Catch2 via `FetchContent`; shared content embedded by CMake
 - [x] Domain + application ported (same names/layers), `uint32_t` PRNG
 - [x] Infrastructure + presentation (UI controller port + FTXUI renderer) matching `docs/tui.md`
-- [x] Tests: unit, integration, golden (+ bot parity + save format), e2e through the FTXUI component (whole run by keys);
-      112 tests, 99% coverage on domain + application
-- [x] CMake release executable; CI cpp jobs (clang-format, GCC 14 and Clang 20 with warnings as errors, ctest + coverage,
-      LLVM-MinGW on Windows, build, smoke test)
+- [x] Tests: unit, integration, golden (+ bot parity + save format), e2e through the FTXUI component
+      (whole run by keys); 112 tests, 99% coverage on domain + application
+- [x] CMake release executable; CI cpp jobs (clang-format, GCC 14 and Clang 20 with warnings as
+      errors, ctest + coverage, LLVM-MinGW on Windows, build, smoke test)
 
 ## M7 — Six implementations and per-commit releases
 
@@ -168,4 +168,4 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 - [x] `add-game-content` — add monster/item/spell/boss/achievement to shared data (+ i18n, art, checks)
 - [x] `port-feature` — implement a rule in Python first, regenerate golden, port to TS/Go
 - [x] `golden-files` — when and how to regenerate golden files
-- [x] `release` — version bump in six places, changelog, tag, release workflow
+- [x] `release` — one release per commit: `release:prepare`, changelog section, release workflow

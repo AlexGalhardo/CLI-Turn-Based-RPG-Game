@@ -46,7 +46,9 @@ cd rpg-cpp && cmake --preset debug && cmake --build --preset debug && ctest --pr
 - [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/): `type(scope): description`, scopes
   `python`, `typescript`, `golang`, `rust`, `elixir`, `cpp`, `shared`, `docs`, `ci`, `setups`, `deps`, `release`,
   `repo`.
-- Add an entry under `## [Unreleased]` in [`CHANGELOG.md`](CHANGELOG.md) for user-visible changes.
+- Every commit on `main` is a release: describe it under `## [Unreleased]` in [`CHANGELOG.md`](CHANGELOG.md), then run
+  `bun run release:prepare "<commit subject>"` before committing ([CI/CD](docs/ci-cd.md)). Pull requests may leave
+  this to the maintainer when merging.
 - Everything in English (code, comments, docs, commits). Portuguese only in `shared/i18n/pt-BR.json`.
 - Dependencies: exact, latest **stable** versions only.
 

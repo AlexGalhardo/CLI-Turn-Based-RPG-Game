@@ -13,6 +13,15 @@ commit.
 
 ## [Unreleased]
 
+## [1.3.3] - 2026-10-03
+
+### Changed
+
+- README: new tagline and column-aligned Stack and setups tables; the contributing paragraph explains that every commit
+  on `main` is a release.
+- `CONTRIBUTE.md` asks for `bun run release:prepare` before committing; the Go, Elixir and C++ guides say saves are
+  interchangeable with the other five implementations; `PLAN.md` describes the `release` skill's new flow.
+
 ## [1.3.2] - 2026-10-03
 
 ### Changed
@@ -393,7 +402,8 @@ First stable release: the same game in Python, TypeScript and Go, proven equival
 - General-purpose agent skills, agents and reference checklists in `.claude/`.
 - The 2016 Python and 2022 TypeScript code is not carried over; the originals remain in their own repositories.
 
-[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.2...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.3...HEAD
+[1.3.3]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.2.0...v1.3.0

@@ -2,7 +2,7 @@
 
 Phase 3. Written from scratch following the Python reference: same layers, file names and behaviour. It passes every
 `shared/golden` scenario, its bot issues exactly the commands recorded by the Python bot, and its run state serialises
-to the same JSON (saves are interchangeable with Python and TypeScript).
+to the same JSON (saves are interchangeable with the other five implementations).
 
 ## Stack
 

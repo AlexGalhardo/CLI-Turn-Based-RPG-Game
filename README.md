@@ -1,11 +1,11 @@
 <h1 align="center">CLI Turn-Based RPG</h1>
 
-<p align="center">An endless turn-based RPG for the terminal, implemented six times with identical rules: Python, TypeScript, Go, Rust, Elixir and C++.</p>
+<p align="center">An endless turn-based RPG for the terminal CLI, implemented six times with identical rules: Python, TypeScript, Rust, Elixir, C++ and Go - Built with ClaudeCode Opus 5.5</p>
 
 <p align="center">
 	<a href="https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/actions/workflows/ci.yml/badge.svg?branch=main"></a>
 	<a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
-	<a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-1.3.2-green.svg"></a>
+	<a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-1.3.3-green.svg"></a>
 </p>
 
 ## About
@@ -141,29 +141,29 @@ same UI controller. A regular fight:
 
 ## Stack
 
-| Implementation | Language / runtime | TUI | Quality |
-|---|---|---|---|
-| [`rpg-python`](rpg-python) (reference) | Python 3.14 + [uv](https://docs.astral.sh/uv/) | [Textual](https://textual.textualize.io/) | Ruff, mypy, pytest |
-| [`rpg-typescript`](rpg-typescript) | TypeScript 7 + [Bun](https://bun.sh) 1.4.2 (single-file executable) | [Ink](https://github.com/vadimdemedes/ink) | Biome, tsc, bun:test |
-| [`rpg-golang`](rpg-golang) | [Go](https://go.dev) 1.27 (executable) | [Bubble Tea](https://github.com/charmbracelet/bubbletea) | gofmt, golangci-lint, go test |
-| [`rpg-rust`](rpg-rust) | [Rust](https://www.rust-lang.org) 1.99, edition 2024 (executable) | [ratatui](https://ratatui.rs) + crossterm | rustfmt, clippy, cargo test, cargo-llvm-cov |
-| [`rpg-elixir`](rpg-elixir) | [Elixir](https://elixir-lang.org) 1.20 + Erlang/OTP 29 (escript), no Hex dependencies | hand-written ANSI renderer | mix format, ExUnit, `mix test --cover` |
-| [`rpg-cpp`](rpg-cpp) | C++23 + [CMake](https://cmake.org) and Ninja (executable) | [FTXUI](https://github.com/ArthurSonzogni/FTXUI) | clang-format, `-Werror`, Catch2 + ctest, llvm-cov |
-| [`shared`](shared) | JSON data, i18n, ASCII art, golden files | — | JSON Schema |
+| Implementation                         | Language / runtime                                                                    | TUI                                                      | Quality                                           |
+| -------------------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------- |
+| [`rpg-python`](rpg-python) (reference) | Python 3.14 + [uv](https://docs.astral.sh/uv/)                                        | [Textual](https://textual.textualize.io/)                | Ruff, mypy, pytest                                |
+| [`rpg-typescript`](rpg-typescript)     | TypeScript 7 + [Bun](https://bun.sh) 1.4.2 (single-file executable)                   | [Ink](https://github.com/vadimdemedes/ink)               | Biome, tsc, bun:test                              |
+| [`rpg-golang`](rpg-golang)             | [Go](https://go.dev) 1.27 (executable)                                                | [Bubble Tea](https://github.com/charmbracelet/bubbletea) | gofmt, golangci-lint, go test                     |
+| [`rpg-rust`](rpg-rust)                 | [Rust](https://www.rust-lang.org) 1.99, edition 2024 (executable)                     | [ratatui](https://ratatui.rs) + crossterm                | rustfmt, clippy, cargo test, cargo-llvm-cov       |
+| [`rpg-elixir`](rpg-elixir)             | [Elixir](https://elixir-lang.org) 1.20 + Erlang/OTP 29 (escript), no Hex dependencies | hand-written ANSI renderer                               | mix format, ExUnit, `mix test --cover`            |
+| [`rpg-cpp`](rpg-cpp)                   | C++23 + [CMake](https://cmake.org) and Ninja (executable)                             | [FTXUI](https://github.com/ArthurSonzogni/FTXUI)         | clang-format, `-Werror`, Catch2 + ctest, llvm-cov |
+| [`shared`](shared)                     | JSON data, i18n, ASCII art, golden files                                              | —                                                        | JSON Schema                                       |
 
 ## Playing locally
 
 Pick the script for your system and implementation. Each one checks the toolchain, installs dependencies and starts
 the game:
 
-| Implementation | Windows (Git Bash) | Linux/macOS |
-|---|---|---|
-| Python | [`play-on-windows-version-python.sh`](setups/play-on-windows-version-python.sh) | [`play-on-unix-version-python.sh`](setups/play-on-unix-version-python.sh) |
-| TypeScript | [`play-on-windows-version-typescript.sh`](setups/play-on-windows-version-typescript.sh) | [`play-on-unix-version-typescript.sh`](setups/play-on-unix-version-typescript.sh) |
-| Go | [`play-on-windows-version-golang.sh`](setups/play-on-windows-version-golang.sh) | [`play-on-unix-version-golang.sh`](setups/play-on-unix-version-golang.sh) |
-| Rust | [`play-on-windows-version-rust.sh`](setups/play-on-windows-version-rust.sh) | [`play-on-unix-version-rust.sh`](setups/play-on-unix-version-rust.sh) |
-| Elixir | [`play-on-windows-version-elixir.sh`](setups/play-on-windows-version-elixir.sh) | [`play-on-unix-version-elixir.sh`](setups/play-on-unix-version-elixir.sh) |
-| C++ | [`play-on-windows-version-cpp.sh`](setups/play-on-windows-version-cpp.sh) | [`play-on-unix-version-cpp.sh`](setups/play-on-unix-version-cpp.sh) |
+| Implementation | Windows (Git Bash)                                                                      | Linux/macOS                                                                       |
+| -------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Python         | [`play-on-windows-version-python.sh`](setups/play-on-windows-version-python.sh)         | [`play-on-unix-version-python.sh`](setups/play-on-unix-version-python.sh)         |
+| TypeScript     | [`play-on-windows-version-typescript.sh`](setups/play-on-windows-version-typescript.sh) | [`play-on-unix-version-typescript.sh`](setups/play-on-unix-version-typescript.sh) |
+| Go             | [`play-on-windows-version-golang.sh`](setups/play-on-windows-version-golang.sh)         | [`play-on-unix-version-golang.sh`](setups/play-on-unix-version-golang.sh)         |
+| Rust           | [`play-on-windows-version-rust.sh`](setups/play-on-windows-version-rust.sh)             | [`play-on-unix-version-rust.sh`](setups/play-on-unix-version-rust.sh)             |
+| Elixir         | [`play-on-windows-version-elixir.sh`](setups/play-on-windows-version-elixir.sh)         | [`play-on-unix-version-elixir.sh`](setups/play-on-unix-version-elixir.sh)         |
+| C++            | [`play-on-windows-version-cpp.sh`](setups/play-on-windows-version-cpp.sh)               | [`play-on-unix-version-cpp.sh`](setups/play-on-unix-version-cpp.sh)               |
 
 ```bash
 git clone https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game.git
@@ -233,8 +233,8 @@ The [`docs/`](docs) folder explains the project by area (it is also the context 
 
 Contributions are welcome. Read [`CONTRIBUTE.md`](CONTRIBUTE.md): commits follow
 [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) (checked by commitlint), versions follow
-[SemVer](https://semver.org/), and relevant changes go into the [`CHANGELOG.md`](CHANGELOG.md)
-([Keep a Changelog](https://keepachangelog.com/en/1.1.0/)). CI blocks on formatting, lint, types, tests and builds of
+[SemVer](https://semver.org/) and every commit on `main` is its own release, described in
+[`CHANGELOG.md`](CHANGELOG.md) ([Keep a Changelog](https://keepachangelog.com/en/1.1.0/)). CI blocks on formatting, lint, types, tests and builds of
 the six implementations.
 
 ## Credits and license

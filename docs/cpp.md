@@ -2,8 +2,8 @@
 
 Written from scratch following the Python reference: same layers, file names and behaviour. It passes every
 `shared/golden` scenario, its bot issues exactly the commands recorded by the Python bot, its simulator prints the same
-report byte for byte, and its run state serialises to the same JSON (saves are interchangeable with Python, TypeScript
-and Go; a save written by Python is continued in a test and must end exactly like the Python continuation).
+report byte for byte, and its run state serialises to the same JSON (saves are interchangeable with the other five
+implementations; a save written by Python is continued in a test and must end exactly like the Python continuation).
 
 The folder is named `cpp` rather than `c++` because `+` is a metacharacter in GitHub Actions path filters.
 
