@@ -1,7 +1,7 @@
 defmodule Rpg.MixProject do
   use Mix.Project
 
-  @version "1.3.3"
+  @version "1.3.4"
 
   def project do
     [

@@ -47,3 +47,11 @@ rpg-golang/rpg-golang
 # Game saves generated during local runs/tests
 .rpg-data/
 TODO.md
+
+# graphify: machine-local state (interpreter path, extraction cache, manifest timestamps, cost log, dated backups).
+# graph.json, graph.html and GRAPH_REPORT.md are committed (see CLAUDE.md).
+graphify-out/.graphify_*
+graphify-out/cache/
+graphify-out/manifest.json
+graphify-out/cost.json
+graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/

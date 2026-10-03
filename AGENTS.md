@@ -36,6 +36,18 @@ Open-source endless turn-based RPG for the terminal, implemented **six times wit
 - Each commit on `main` is a release: fill `[Unreleased]`, run `bun run release:prepare "<subject>"` (`release` skill).
 - Recurring flows become project skills in `.claude/skills/` (`golden-files`, `add-game-content`, `port-feature`, `release`).
 - Go work: always load the `golang-how-to` skill first (samber/cc-skills-golang); it routes to the other Go skills.
+- Before every push, refresh the knowledge graph in the commit itself (each commit is a release): `graphify update .`
+  (code, no LLM, ~15 s), plus `/graphify . --update` when docs changed; commit the updated `graphify-out/`.
+
+## Navigating the project (graphify)
+
+`graphify-out/` holds a knowledge graph of the six implementations, `shared/`, docs and CI (`.graphifyignore` leaves out
+`.claude/`, golden files and ASCII art). Use it as working context before broad searches:
+
+- Read `graphify-out/GRAPH_REPORT.md` first: community hubs, god nodes, surprising cross-file connections.
+- Ask the graph: `graphify query "<question>"`, `graphify path "A" "B"`, `graphify explain "X"`; open
+  `graphify-out/graph.html` for the visual map. Cite `source_location` from answers, then read only those files.
+- Install once: `uv tool install graphifyy==0.9.74`. The `/graphify` skill rebuilds everything from scratch.
 
 ## Quick commands
 

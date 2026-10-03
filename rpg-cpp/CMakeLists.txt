@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(rpg_cpp VERSION 1.3.3 DESCRIPTION "Endless turn-based RPG for the terminal (C++ port)" LANGUAGES CXX)
+project(rpg_cpp VERSION 1.3.4 DESCRIPTION "Endless turn-based RPG for the terminal (C++ port)" LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

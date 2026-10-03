@@ -34,7 +34,8 @@
 			"!.claude",
 			"!.local",
 			"!.vscode/settings.json",
-			"!shared/golden"
+			"!shared/golden",
+			"!graphify-out"
 		]
 	}
 }

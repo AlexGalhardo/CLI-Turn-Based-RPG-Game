@@ -1,0 +1,9 @@
+# Inputs left out of the knowledge graph (graphify also honours .gitignore).
+# Third-party agent skills: large, not about this project.
+.claude/
+# Generated or bulky data that adds noise, not structure.
+shared/golden/
+shared/art/
+*.lock
+bun.lock
+rpg-cpp/tests/fixtures/
