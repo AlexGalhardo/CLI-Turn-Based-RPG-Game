@@ -16,7 +16,7 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 | 0.5.0 | M4 — TypeScript at parity | done |
 | 0.6.0 | M5 — Go at parity | done |
 | 1.0.0 | M6 — Release 1.0 (three binaries/implementations) | done |
-| 1.1.0 | M7 — Rust, Elixir and C++ at parity | in progress |
+| 1.1.0–1.3.x | M7 — Rust, Elixir and C++ at parity, per-commit releases | done |
 
 ---
 
@@ -125,7 +125,7 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 - [x] README screenshots of the game (text snapshots of the real TUI, identical across versions)
 - [x] CHANGELOG 1.0.0, tag `v1.0.0`, GitHub Release
 
-## Phase 4 — Rust (M7, 1.1.0)
+## Phase 4 — Rust (M7)
 
 - [x] Cargo project (Rust 1.99, edition 2024), ratatui + crossterm, serde_json; shared content embedded by `build.rs`
 - [x] Domain + application ported (same names/layers), `u32` wrapping PRNG, events and commands as serde enums
@@ -134,7 +134,7 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
       134 tests, 98.8% coverage on domain + application
 - [x] `cargo build --release` executable; CI rust job (rustfmt, clippy, tests + coverage, build, smoke test)
 
-## Phase 5 — Elixir (M7, 1.1.0)
+## Phase 5 — Elixir (M7)
 
 - [x] Mix project (Elixir 1.20 / OTP 29) with **zero Hex dependencies**: built-in `JSON`, ExUnit, `OptionParser`
 - [x] Domain + application ported (same names/layers), immutable engine `step(engine, command) -> {engine, events}`,
@@ -145,7 +145,7 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
       184 tests, 97% coverage
 - [x] `mix escript.build` executable; CI elixir job (format, warnings as errors, tests + coverage, escript, smoke test)
 
-## Phase 6 — C++ (M7, 1.1.0)
+## Phase 6 — C++ (M7)
 
 - [x] CMake + Ninja project (C++23), FTXUI, nlohmann/json, Catch2 via `FetchContent`; shared content embedded by CMake
 - [x] Domain + application ported (same names/layers), `uint32_t` PRNG
@@ -155,11 +155,13 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 - [x] CMake release executable; CI cpp jobs (clang-format, GCC 14 and Clang 20 with warnings as errors, ctest + coverage,
       LLVM-MinGW on Windows, build, smoke test)
 
-## M7 — Release 1.1.0
+## M7 — Six implementations and per-commit releases
 
-- [ ] `release.yml`: Rust and C++ binaries + Elixir escript
-- [ ] README, docs and setup scripts cover the six implementations
-- [ ] CHANGELOG 1.1.0, tag `v1.1.0`, GitHub Release
+- [x] `release.yml`: one GitHub Release per commit on `main`; binaries for TypeScript, Go, Rust and C++ (linux-x64,
+      darwin-arm64, windows-x64) + the Elixir escript
+- [x] `scripts/release.ts` (`release:prepare`, `release:check`) and CI check that version files match the CHANGELOG
+- [x] History re-tagged retroactively from `v0.0.1`, one CHANGELOG section per commit
+- [x] README, docs, skills and setup scripts cover the six implementations
 
 ## Skills (`.claude/skills/`) — created when a flow repeats
 

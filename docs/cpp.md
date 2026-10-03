@@ -10,7 +10,7 @@ The folder is named `cpp` rather than `c++` because `+` is a metacharacter in Gi
 ## Stack
 
 - C++23, CMake ≥ 3.28 + Ninja, `CMakePresets.json` (`debug`, `release`, `coverage`)
-- Compilers: Clang 18+ or GCC 14+ (CI: ubuntu-latest); on Windows, LLVM-MinGW UCRT (`scoop install
+- Compilers: Clang 19+ or GCC 14+ (CI: ubuntu-latest); on Windows, LLVM-MinGW UCRT (`scoop install
   mingw-mstorsjo-llvm-ucrt`), linked statically so `rpg-cpp.exe` needs no DLLs
 - Libraries through CMake `FetchContent`, pinned to exact stable releases with a SHA-256 hash:
   [FTXUI](https://github.com/ArthurSonzogni/FTXUI) v7.0.3 (TUI), [nlohmann/json](https://github.com/nlohmann/json)

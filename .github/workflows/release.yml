@@ -1,16 +1,94 @@
 name: Release
 
+# Every commit on main is a release (docs/ci-cd.md): the commit already carries its version (version files) and its
+# CHANGELOG.md section, so this workflow only tags it, publishes the notes and attaches the binaries.
 on:
   push:
-    tags: ["v*"]
-  # Manual runs build every binary without publishing (dry run of the release).
+    branches: [main]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to (re)build and attach binaries to; empty = dry run of HEAD (no upload)"
+        required: false
+        default: ""
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.plan.outputs.tag }}
+      ref: ${{ steps.plan.outputs.ref }}
+      publish: ${{ steps.plan.outputs.publish }}
+      typescript: ${{ steps.plan.outputs.typescript }}
+      golang: ${{ steps.plan.outputs.golang }}
+      rust: ${{ steps.plan.outputs.rust }}
+      elixir: ${{ steps.plan.outputs.elixir }}
+      cpp: ${{ steps.plan.outputs.cpp }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          tag=""; ref=""; publish=false
+          if [ "$EVENT" = workflow_dispatch ]; then
+            if [ -n "$INPUT_TAG" ]; then
+              gh release view "$INPUT_TAG" >/dev/null
+              tag="$INPUT_TAG"; ref="$(git rev-list -n 1 "$INPUT_TAG")"; publish=true
+            else
+              ref="$AFTER"
+            fi
+          else
+            if git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then range="$BEFORE..$AFTER"; else range="$AFTER -1"; fi
+            # One release per pushed commit, oldest first; the newest one gets the binaries.
+            for sha in $(git rev-list --reverse $range); do
+              version="$(git show "$sha:package.json" | jq -r .version)"
+              parent="$(git show "$sha^:package.json" 2>/dev/null | jq -r .version || true)"
+              if [ "$version" = "$parent" ]; then
+                echo "::warning::$sha did not bump the version (run 'bun run release:prepare'); no release for it"
+                continue
+              fi
+              if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+                echo "::warning::v$version already exists; $sha is not released again"
+                continue
+              fi
+              git show "$sha:CHANGELOG.md" > changelog.md
+              bun run scripts/release.ts notes "$version" changelog.md > notes.md
+              gh release create "v$version" --target "$sha" --title "v$version" --notes-file notes.md
+              tag="v$version"; ref="$sha"; publish=true
+            done
+          fi
+          {
+            echo "tag=$tag"; echo "ref=$ref"; echo "publish=$publish"
+            for pair in typescript:rpg-typescript/package.json golang:rpg-golang/go.mod rust:rpg-rust/Cargo.toml \
+              elixir:rpg-elixir/mix.exs cpp:rpg-cpp/CMakeLists.txt; do
+              exists=false
+              [ -n "$ref" ] && git cat-file -e "$ref:${pair#*:}" 2>/dev/null && exists=true
+              echo "${pair%%:*}=$exists"
+            done
+          } >> "$GITHUB_OUTPUT"
+
   typescript:
+    needs: plan
+    if: needs.plan.outputs.typescript == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -26,6 +104,8 @@ jobs:
         working-directory: rpg-typescript
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.2
@@ -42,6 +122,8 @@ jobs:
           if-no-files-found: error
 
   golang:
+    needs: plan
+    if: needs.plan.outputs.golang == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -60,6 +142,8 @@ jobs:
         working-directory: rpg-golang
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
       - uses: actions/setup-go@v7.0.0
         with:
           go-version-file: rpg-golang/go.mod
@@ -80,31 +164,141 @@ jobs:
           path: rpg-golang/dist/${{ matrix.asset }}
           if-no-files-found: error
 
+  rust:
+    needs: plan
+    if: needs.plan.outputs.rust == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            binary: rpg-rust
+            asset: rpg-rust-linux-x64
+          - os: macos-latest
+            binary: rpg-rust
+            asset: rpg-rust-darwin-arm64
+          - os: windows-latest
+            binary: rpg-rust.exe
+            asset: rpg-rust-windows-x64.exe
+    defaults:
+      run:
+        working-directory: rpg-rust
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
+      - uses: dtolnay/rust-toolchain@1.99.0
+      - name: Build
+        run: cargo build --release --locked && mkdir -p dist && cp target/release/${{ matrix.binary }} dist/${{ matrix.asset }}
+      - name: Smoke test
+        run: ./dist/${{ matrix.asset }} --version
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: ${{ matrix.asset }}
+          path: rpg-rust/dist/${{ matrix.asset }}
+          if-no-files-found: error
+
+  cpp:
+    needs: plan
+    if: needs.plan.outputs.cpp == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            binary: rpg-cpp
+            asset: rpg-cpp-linux-x64
+          - os: macos-latest
+            binary: rpg-cpp
+            asset: rpg-cpp-darwin-arm64
+          - os: windows-latest
+            binary: rpg-cpp.exe
+            asset: rpg-cpp-windows-x64.exe
+    defaults:
+      run:
+        working-directory: rpg-cpp
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
+      - name: Toolchain (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update && sudo apt-get install -y g++-14 ninja-build
+          # libstdc++ and libgcc are linked statically so the binary runs on older distributions too.
+          echo "CMAKE_ARGS=-DCMAKE_CXX_COMPILER=g++-14 -DCMAKE_EXE_LINKER_FLAGS=-static-libstdc++\ -static-libgcc" >> "$GITHUB_ENV"
+      - name: Toolchain (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install ninja
+          echo "CMAKE_ARGS=" >> "$GITHUB_ENV"
+      - name: Toolchain (Windows, LLVM-MinGW)
+        if: runner.os == 'Windows'
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl -fsSL -o llvm-mingw.zip https://github.com/mstorsjo/llvm-mingw/releases/download/20260922/llvm-mingw-20260922-ucrt-x86_64.zip
+          unzip -q llvm-mingw.zip
+          echo "$(cygpath -w "$PWD/llvm-mingw-20260922-ucrt-x86_64/bin")" >> "$GITHUB_PATH"
+          curl -fsSL -o ninja.zip https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-win.zip
+          mkdir -p ninja && unzip -q ninja.zip -d ninja
+          echo "$(cygpath -w "$PWD/ninja")" >> "$GITHUB_PATH"
+          echo "CMAKE_ARGS=-DCMAKE_CXX_COMPILER=clang++" >> "$GITHUB_ENV"
+      - name: Build
+        run: |
+          eval "cmake --preset release $CMAKE_ARGS"
+          cmake --build --preset release
+          mkdir -p dist && cp build/release/${{ matrix.binary }} dist/${{ matrix.asset }}
+      - name: Smoke test
+        run: ./dist/${{ matrix.asset }} --version
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: ${{ matrix.asset }}
+          path: rpg-cpp/dist/${{ matrix.asset }}
+          if-no-files-found: error
+
+  elixir:
+    needs: plan
+    if: needs.plan.outputs.elixir == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rpg-elixir
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
+      - uses: erlef/setup-beam@v1.24.1
+        with:
+          otp-version: "29"
+          elixir-version: "1.20.4"
+      - name: Build the escript (portable; needs Erlang/OTP to run)
+        run: MIX_ENV=prod mix escript.build && mkdir -p dist && cp bin/rpg-elixir dist/rpg-elixir-escript
+      - name: Smoke test
+        run: ./dist/rpg-elixir-escript --version
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: rpg-elixir-escript
+          path: rpg-elixir/dist/rpg-elixir-escript
+          if-no-files-found: error
+
   publish:
-    needs: [typescript, golang]
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [plan, typescript, golang, rust, cpp, elixir]
+    # Implementations missing at older tags skip their jobs; only a failure blocks the upload.
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.plan.outputs.publish == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8.0.1
         with:
           path: assets
           merge-multiple: true
-      - name: Release notes from CHANGELOG.md
-        run: |
-          version="${GITHUB_REF_NAME#v}"
-          awk -v heading="## [${version}]" '
-            index($0, heading) == 1 { found = 1; next }
-            found && /^## \[/ { exit }
-            found { print }
-          ' CHANGELOG.md > notes.md
-          test -s notes.md || { echo "CHANGELOG.md has no section for ${version}"; exit 1; }
       - name: Checksums
         working-directory: assets
         run: sha256sum * > SHA256SUMS.txt
-      - name: Create the GitHub Release
+      - name: Attach the binaries to the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" assets/* --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+        run: gh release upload "${{ needs.plan.outputs.tag }}" assets/* --clobber --repo "${{ github.repository }}"

@@ -4,28 +4,30 @@
 
 | Workflow | Trigger | Jobs |
 |---|---|---|
-| `ci.yml` | push / PR to `main` | `repo` (commitlint on PR commits, Biome for root JSON/TS, shared data schemas + i18n key parity) · `python` (ruff format --check, ruff check, mypy, pytest + coverage) · `typescript` (biome ci, tsc --noEmit, bun test, bun build --compile) · `golang` (gofmt check, go vet, golangci-lint, go test -race, go build) |
-| `release.yml` | tag `v*` | builds TypeScript and Go binaries for linux-x64, darwin-arm64, windows-x64 and attaches them to the GitHub Release with the CHANGELOG section; a manual run (`workflow_dispatch`) only builds (dry run) |
+| `ci.yml` | push / PR to `main` | `repo` (commitlint on PR commits, Biome for root JSON/TS, shared data schemas + i18n key parity, release tooling tests, version files ↔ CHANGELOG check) · `python` (ruff format --check, ruff check, mypy, pytest + coverage) · `typescript` (biome ci, tsc --noEmit, bun test, bun build --compile) · `golang` (gofmt check, go vet, golangci-lint, go test -race, go build) · `rust` (rustfmt, clippy `-D warnings`, cargo llvm-cov floors, release build) · `elixir` (mix format, warnings as errors, mix test --cover, escript) · `cpp` (clang-format, GCC 14 and Clang 20 with `-Werror`, ctest, llvm-cov floors, release build) · `cpp-windows` (LLVM-MinGW build + ctest) |
+| `release.yml` | push to `main` | one GitHub Release per pushed commit (tag `vX.Y.Z` on that commit, notes = its CHANGELOG section); the newest commit gets the binaries: TypeScript, Go, Rust and C++ for linux-x64, darwin-arm64, windows-x64, the Elixir escript and `SHA256SUMS.txt`. Manual run (`workflow_dispatch`): with `tag`, rebuilds and attaches the binaries of an existing release; without, a dry run that only builds |
 
-Jobs for a language are skipped until that phase starts (path filters), so the pipeline is green at every phase.
+Every implementation job runs on Linux and Windows (C++ on Windows is the separate `cpp-windows` job), each with
+smoke tests of the executable. A language job is skipped while its project does not exist (`detect` job).
 
 ## Tooling per language
 
-| Concern | Python | TypeScript | Go |
-|---|---|---|---|
-| Formatter | Ruff (`indent-style = "tab"`) | Biome | gofmt (tabs by default) |
-| Linter | Ruff | Biome | go vet + golangci-lint |
-| Types | mypy (strict) | tsc 7 (`strict`) | compiler |
-| Tests | pytest + pytest-cov | bun:test | go test |
-| Build | — (runs with `uv run`) | `bun build --compile` | `go build` |
+| Concern | Python | TypeScript | Go | Rust | Elixir | C++ |
+|---|---|---|---|---|---|---|
+| Formatter | Ruff (`indent-style = "tab"`) | Biome | gofmt (tabs by default) | rustfmt (`hard_tabs`) | `mix format` (2 spaces) | clang-format (tabs) |
+| Linter | Ruff | Biome | go vet + golangci-lint | clippy (pedantic) | compiler warnings as errors | `-Wall -Wextra -Wpedantic -Werror` |
+| Types | mypy (strict) | tsc 7 (`strict`) | compiler | compiler | — (dynamic) | compiler |
+| Tests | pytest + pytest-cov | bun:test | go test | cargo test + cargo-llvm-cov | ExUnit (`--cover`) | Catch2 + ctest + llvm-cov |
+| Build | — (runs with `uv run`) | `bun build --compile` | `go build` | `cargo build --release` | `mix escript.build` | CMake presets + Ninja |
 
-`.editorconfig` at the root: tabs, width 4, LF, final newline, 120 columns (YAML uses 2 spaces as the spec requires).
+`.editorconfig` at the root: tabs, width 4, LF, final newline, 120 columns (YAML uses 2 spaces as the spec requires,
+Elixir 2 spaces because `mix format` supports nothing else).
 
 ## Commits
 
 [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/), checked by commitlint (husky
-`commit-msg` hook). Allowed scopes: `python`, `typescript`, `golang`, `shared`, `docs`, `ci`, `setups`, `deps`,
-`release`, `repo`.
+`commit-msg` hook). Allowed scopes: `python`, `typescript`, `golang`, `rust`, `elixir`, `cpp`, `shared`, `docs`, `ci`,
+`setups`, `deps`, `release`, `repo`.
 
 ```
 feat(python): add boss telegraph and defend action
@@ -33,31 +35,37 @@ fix(golang): floor percentage damage like the reference
 test(shared): regenerate golden files after crit rule change
 ```
 
-## Versioning
+## Versioning: every commit on `main` is a release
 
-[SemVer 2.0.0](https://semver.org/). **One version for the whole monorepo**, bumped together in: root `package.json`,
-`rpg-python/pyproject.toml` + `rpg-python/src/rpg/__init__.py`, `rpg-typescript/package.json` (read by
-`src/version.ts`) and `rpg-golang/internal/version/version.go`, plus the README badge.
+[SemVer 2.0.0](https://semver.org/), **one version for the whole monorepo**, and **one release per commit**. The commit
+type decides the bump:
 
-| Version | Milestone |
-|---|---|
-| 0.1.0 | Monorepo foundation, docs, plan |
-| 0.2.0 | Python alpha — clean engine, base game, infinite loop |
-| 0.3.0 | Python beta — items, spells levels, statuses, bosses, persistence, TUI |
-| 0.4.0 | Python 1.0 candidate — balance, polish, golden files |
-| 0.5.0 | TypeScript port at parity |
-| 0.6.0 | Go port at parity |
-| 1.0.0 | All three at parity, binaries released |
+| Commit | Bump | Example |
+|---|---|---|
+| `type!:` or a `BREAKING CHANGE:` footer | major | `1.3.2` → `2.0.0` |
+| `feat` | minor | `1.3.2` → `1.4.0` |
+| anything else (`fix`, `docs`, `ci`, `chore`, `test`, …) | patch | `1.3.2` → `1.3.3` |
 
-Patch bumps for fixes between milestones.
+The commit itself carries its version, so the tag points at the commit that made the change (no bot commits):
+
+1. Describe the change under `## [Unreleased]` in `CHANGELOG.md` (`Added`, `Changed`, `Deprecated`, `Removed`,
+   `Fixed`, `Security`).
+2. Run `bun run release:prepare "<commit subject>"`. It computes the next version from the current one and the
+   subject, writes it in every version file (root and README badge, Python `pyproject.toml` + `__init__.py` +
+   `uv.lock`, TypeScript `package.json`, Go `version.go`, Rust `Cargo.toml` + `Cargo.lock` + `version.rs`, Elixir
+   `mix.exs` + `version.ex`, C++ `CMakeLists.txt` + `version.hpp`) and turns `[Unreleased]` into
+   `## [X.Y.Z] - YYYY-MM-DD` with its compare link.
+3. Commit with exactly that subject and push. CI (`bun run release:check`) fails if the version files disagree or the
+   section is missing; `release.yml` tags the commit `vX.Y.Z` and publishes the release.
+
+Several commits pushed together get one release each, oldest first; only the newest gets binaries (rebuild an older
+one with a manual run and its `tag`). A commit that did not bump the version is skipped with a warning.
+
+History before this scheme was re-tagged retroactively from `v0.0.1` (first commit) with the same rules; the
+`chore(release): v1.0.0` commit kept `v1.0.0`. The former milestone tags (`v0.1.0`–`v0.6.0`) pointed at other commits
+and were replaced. `scripts/release.ts` holds the version logic and is tested by `bun run test:scripts`.
 
 ## Changelog
 
-[Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/). Every relevant change goes under `## [Unreleased]`
-(`Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`). A release moves it to `## [x.y.z] - YYYY-MM-DD`.
-
-## Release steps
-
-1. Move `[Unreleased]` entries to the new version section; update compare links.
-2. Bump the version in the four places listed above.
-3. `chore(release): vX.Y.Z` commit, tag `vX.Y.Z`, push with tags → `release.yml` publishes binaries.
+[Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), one `## [X.Y.Z] - YYYY-MM-DD` section per commit,
+newest first, with compare links at the bottom. The release notes on GitHub are that section verbatim.

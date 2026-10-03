@@ -49,6 +49,10 @@ jobs:
         run: bun run lint:ci
       - name: Shared data (schemas, i18n keys, art)
         run: bun run check:shared
+      - name: Release tooling tests
+        run: bun run test:scripts
+      - name: Version files and CHANGELOG section agree
+        run: bun run release:check
       - name: Commit messages (Conventional Commits)
         if: github.event_name == 'pull_request'
         run: bunx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
