@@ -1,9 +1,9 @@
 # Game Design — Rules and Formulas
 
-This document is the **contract** shared by the three implementations (Python, TypeScript, Go). Numbers live in
-[`shared/data/`](../shared/data) (see [data-format.md](data-format.md)); the **formulas and the order of operations**
-live here. If an implementation disagrees with this document, the implementation is wrong. If this document is wrong,
-fix it here first, then in the Python reference, regenerate the golden files and port the change.
+This document is the **contract** shared by the six implementations (Python, TypeScript, Go, Rust, Elixir, C++). Numbers
+live in [`shared/data/`](../shared/data) (see [data-format.md](data-format.md)); the **formulas and the order of
+operations** live here. If an implementation disagrees with this document, the implementation is wrong. If this document
+is wrong, fix it here first, then in the Python reference, regenerate the golden files and port the change.
 
 All arithmetic is **integer**. `pct(v, p)` means `floor(v * p / 100)` with `v, p >= 0`. Every random number comes from
 the shared PRNG described in [cross-language-parity.md](cross-language-parity.md), consumed in exactly the order written

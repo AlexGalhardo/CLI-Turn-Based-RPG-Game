@@ -1,12 +1,12 @@
 ---
 name: golden-files
-description: Use when a change alters deterministic game outcomes (rules, formulas, RNG consumption order, event shapes, bot decisions, balance numbers in shared/data) in the CLI Turn-Based RPG monorepo — explains when and how to regenerate shared/golden and keep Python, TypeScript and Go in parity.
+description: Use when a change alters deterministic game outcomes (rules, formulas, RNG consumption order, event shapes, bot decisions, balance numbers in shared/data) in the CLI Turn-Based RPG monorepo — explains when and how to regenerate shared/golden and keep Python, TypeScript, Go, Rust, Elixir and C++ in parity.
 ---
 
 # Golden files (cross-language parity)
 
-`shared/golden/*.json` are recorded by the **Python reference** and replayed by the Python, TypeScript and Go test
-suites. They are the proof that the three implementations are the same game.
+`shared/golden/*.json` are recorded by the **Python reference** and replayed by the test suites of all six
+implementations. They are the proof that the six implementations are the same game.
 
 ## When a regeneration is required
 
@@ -26,7 +26,8 @@ Any change that alters, for a fixed seed and command list, the events or the fin
 2. Implement it in `rpg-python` and make its unit/integration tests pass.
 3. Regenerate: `cd rpg-python && uv run rpg-golden` (uses `uv`; on Windows Git Bash put uv on PATH first).
 4. Run `uv run pytest` — golden replay + up-to-date tests must pass.
-5. Port the change to `rpg-typescript` and `rpg-golang`; their golden suites must pass with the new files.
+5. Port the change to `rpg-typescript`, `rpg-golang`, `rpg-rust`, `rpg-elixir` and `rpg-cpp`; their golden suites must
+   pass with the new files.
 6. Commit rule + code + golden files together, e.g. `feat(python): …` then `test(shared): regenerate golden files`,
    and note balance changes in `CHANGELOG.md`.
 

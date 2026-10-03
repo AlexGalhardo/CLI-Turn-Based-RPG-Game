@@ -1,12 +1,13 @@
 ---
 name: port-feature
-description: Use when porting the Python reference implementation (rpg-python) of the CLI Turn-Based RPG to TypeScript (rpg-typescript) or Go (rpg-golang), or when a rule/UI change made in Python must be replicated in the other languages.
+description: Use when porting the Python reference implementation (rpg-python) of the CLI Turn-Based RPG to any port (rpg-typescript, rpg-golang, rpg-rust, rpg-elixir, rpg-cpp), when adding a new language port, or when a rule/UI change made in Python must be replicated in the other languages.
 ---
 
 # Porting a feature from the Python reference
 
-Python is the reference (ADR 0005). A port is correct when **all `shared/golden/*.json` files replay identically**
-and the UI controller behaves the same.
+Python is the reference (ADR 0005). A port is correct when **all `shared/golden/*.json` files replay identically**,
+its bot issues the same commands, its `--simulate` report is byte-identical to Python's, saves are interchangeable,
+and the UI controller behaves the same. Ports: TypeScript, Go, Rust, Elixir, C++.
 
 ## Order of work (per feature or per layer)
 
@@ -16,15 +17,18 @@ and the UI controller behaves the same.
    commands, statistics, run state, loot, spawner, progression, battle, merchant, engine, bot, simulator, save game,
    profile, game session) → `infrastructure` (data loader, paths, i18n, art, repositories) → `presentation`
    (event text, render helpers, controller, CLI, TUI renderer).
-3. Keep file and type names mirrored: `battle.py` ↔ `battle.ts` ↔ `battle.go`, `GameEngine` everywhere.
+3. Keep file and type names mirrored: `battle.py` ↔ `battle.ts` ↔ `battle.go` ↔ `battle.rs` ↔ `battle.ex` ↔
+   `battle.{hpp,cpp}`, `GameEngine` everywhere.
 4. Port the tests with the code (same cases, same fixtures). Golden replay tests come right after the engine.
-5. Only then write the framework renderer (Ink / Bubble Tea) on top of the ported controller.
+5. Only then write the framework renderer (Ink / Bubble Tea / ratatui / the Elixir ANSI renderer / FTXUI) on top of
+   the ported controller.
 
 ## Parity traps (learned)
 
-- Integer math only; `pct(v, p)` floors. TypeScript: `Math.floor(v * p / 100)`; Go: `int` division (values are never
-  negative).
-- PRNG: `Math.imul` + `>>> 0` in TS; `uint32` arithmetic in Go. Check against `shared/golden/prng.json` first.
+- Integer math only; `pct(v, p)` floors. TypeScript: `Math.floor(v * p / 100)`; Go/Rust/C++: 64-bit integer division;
+  Elixir: `div/2` (values are never negative).
+- PRNG: `Math.imul` + `>>> 0` in TS; `uint32` in Go; `u32::wrapping_*` in Rust; `Bitwise` + `band(…, 0xFFFFFFFF)` in
+  Elixir; `std::uint32_t` in C++. Check against `shared/golden/prng.json` first.
 - `chance(p)` consumes nothing when `p <= 0` or `p >= 100`.
 - Every "pick"/"sorted by id" uses code-point string order (`a < b`), never locale compare.
 - Iterate JSON arrays in file order; never iterate a map/object to make a game decision (Go maps are random!).
@@ -33,6 +37,8 @@ and the UI controller behaves the same.
 - Saves use the same camelCase JSON as `RunState.to_dict()`; test that a Python save loads in the port.
 - The bot is part of the golden files: port `GreedyBot` decision by decision, including tie-breakers (`max` with
   `(value, id)` keys).
+- The reference simulator uses `options.seed or 1`: `--simulate N --seed 0` runs with base seed 1. Go and TypeScript
+  diverged here and had to be fixed, so always diff the simulator output for seed 0 too.
 
 ## Lessons from the TypeScript port (v0.5.0)
 
@@ -46,7 +52,48 @@ and the UI controller behaves the same.
 - Never import helpers from a `*.test.ts` file (bun re-runs that file's tests); keep them in `tests/helpers.ts`.
 - `node:util` `parseArgs` throws `TypeError` for usage errors; wrap them to match argparse's exit code 2.
 
+## Lessons from the Rust port
+
+- Events and commands as serde enums with `#[serde(tag = "type", rename_all = "snake_case", rename_all_fields =
+  "camelCase")]` produce the golden JSON for free, and exhaustive `match` flags every consumer of a new event.
+- Python's `max` keeps the first maximum, Rust's `max_by` the last; the unique id at the end of every bot key makes
+  them agree. Check this whenever a key could tie.
+- Saves: serde serialises fields in declaration order, so declare them in `to_dict()` order and use `BTreeMap` for
+  maps to get the reference key order.
+- Mimic argparse exactly: a negative number like `-1` is accepted as a value and then rejected with "must be >= 0";
+  usage is printed before `rpg: error: …`; exit code 2.
+- `std::env::set_var` is `unsafe` in edition 2024: keep path resolution pure (`resolve_data_dir_from(cli, env, home)`)
+  and spawn the binary with `Command::env` in tests.
+- `rustfmt.toml` with `use_small_heuristics = "Max"` keeps the repository's 120-column style; use
+  `ratatui::try_init()` (returns an error) instead of `init()` (panics).
+
+## Lessons from the Elixir port
+
+- Events as string-keyed maps compare directly with `JSON.decode!` of the golden files; no conversion layer needed.
+- An immutable PRNG returning `{value, rng}`, threaded through a `%Battle{}` struct, makes the draw order explicit.
+- `max(key=(v, id))` → `Enum.max_by(list, &{v, &1.id})`.
+- Maps with more than 32 keys are unordered: keep definitions as lists in file order, maps only as lookup indexes.
+- Regexes that touch multibyte characters (box drawing, accents) need the `u` flag.
+- `@tag :tmp_dir` creates folders inside the repository; use `System.tmp_dir!()` where that matters. Tests that mutate
+  environment variables must be `async: false`.
+- Windows: scoop's `.bat` shims for `mix`/`elixir` don't run from Git Bash (put the Elixir `bin` folder on the
+  `PATH`), and escripts run as `escript bin/rpg-elixir` (no shebang support).
+
+## Lessons from the C++ port
+
+- Never read a counter with `std::map::operator[]`: it inserts a zero entry that leaks into saves. Use a `count_of()`.
+- A temporary in a range-for initializer only gets lifetime extension from C++23 (P2718); keep a named local.
+- CMake ≥ 3.28 with C++20/23 scans for modules by default → set `CMAKE_CXX_SCAN_FOR_MODULES OFF`.
+- Clang ≤ 18 cannot compile libstdc++'s `std::expected`; use Clang ≥ 19 (or GCC 14+). GCC warns about partial
+  designated initializers (`-Wmissing-field-initializers`), which `-Werror` turns into a build failure.
+- When embedding `shared/` as raw strings, normalise CRLF and split long literals only at line ends (never inside a
+  UTF-8 sequence).
+- FTXUI: empty screen cells have `character == ""`, not a space; account for it when reading the screen in e2e tests.
+
 ## Done when
 
-- `shared/golden` replay passes, unit/integration/e2e suites pass, coverage ≥ 90% on domain/application.
-- `bun run check:shared` and the language's CI job are green; PLAN.md boxes ticked; CHANGELOG updated.
+- `shared/golden` replay passes, unit/integration/e2e suites pass, coverage floors met (see `docs/testing.md`).
+- Bot commands match Python's, the simulator report is byte-identical (including seed 0), and a Python save continues
+  identically in the port.
+- `bun run check:shared` and the language's CI job(s) in `.github/workflows/ci.yml` are green; PLAN.md boxes ticked;
+  CHANGELOG updated.

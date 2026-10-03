@@ -17,3 +17,5 @@ remain on GitHub for history.
 
 - A rule change and its three ports can land and be reviewed together; CI enforces parity.
 - CI must run per-language jobs; path filters keep it fast.
+
+Later note: the Rust, Elixir and C++ ports (`rpg-rust/`, `rpg-elixir/`, `rpg-cpp/`) joined under the same decision.

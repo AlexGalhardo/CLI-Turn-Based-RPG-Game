@@ -5,7 +5,7 @@ description: Use when adding or changing monsters, bosses, items, affixes, spell
 
 # Adding game content (shared/)
 
-Content is data, not code (ADR 0002). All three implementations load the same files.
+Content is data, not code (ADR 0002). All six implementations load the same files.
 
 ## Checklist
 

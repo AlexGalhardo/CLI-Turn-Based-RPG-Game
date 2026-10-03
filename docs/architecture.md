@@ -13,12 +13,15 @@
 ├── rpg-python/             # Phase 1 — reference implementation (uv, Textual)
 ├── rpg-typescript/         # Phase 2 — port (Bun, TypeScript 7, Ink)
 ├── rpg-golang/             # Phase 3 — port (Go, Bubble Tea)
+├── rpg-rust/               # Phase 4 — port (Rust, ratatui)
+├── rpg-elixir/             # Phase 5 — port (Elixir, hand-written ANSI TUI, escript)
+├── rpg-cpp/                # Phase 6 — port (C++23, CMake, FTXUI)
 ├── setups/                 # one-command play scripts per OS/implementation
 ├── docs/                   # this documentation (also the context for AI agents)
 └── .github/workflows/      # CI per language + shared data checks + release
 ```
 
-## Layers (Clean Architecture, identical in the three languages)
+## Layers (Clean Architecture, identical in the six languages)
 
 ```
 presentation ──► application ──► domain
@@ -33,7 +36,7 @@ Dependencies point **inwards only**. The domain knows nothing about files, termi
 | `domain` | Pure rules and entities. Integer math, PRNG, no I/O. | `Rng`, `Player`, `Monster`, `ItemInstance`, `Stats`, `formulas`, `StatusEffect` |
 | `application` | Use cases: the **game engine** (`step(state, command) → events`), run creation, merchant, loot, progression, statistics, achievements/profile service, simulator bot. Defines ports (interfaces). | `GameEngine`, `Command`, `Event`, `SaveRepository` (port), `Clock` (port) |
 | `infrastructure` | Adapters: JSON data loader, file save/profile/history repositories, i18n loader, system clock, paths. | `JsonGameDataLoader`, `FileSaveRepository` |
-| `presentation` | TUI screens, widgets (HP/MP bars, monster art animation, combat log), CLI arguments, simulator report. | Textual / Ink / Bubble Tea apps |
+| `presentation` | TUI screens, widgets (HP/MP bars, monster art animation, combat log), CLI arguments, simulator report. | Textual / Ink / Bubble Tea / ratatui / ANSI renderer (Elixir) / FTXUI apps |
 
 ### Key design decisions
 
@@ -50,13 +53,17 @@ See the ADRs in [`docs/adr/`](adr) for the reasoning behind each choice.
 
 ## Per-language folder mapping
 
-| Concept | Python (`rpg-python/src/rpg/`) | TypeScript (`rpg-typescript/src/`) | Go (`rpg-golang/internal/`) |
-|---|---|---|---|
-| domain | `domain/` | `domain/` | `domain/` |
-| application | `application/` | `application/` | `application/` |
-| infrastructure | `infrastructure/` | `infrastructure/` | `infrastructure/` |
-| presentation | `presentation/` (Textual) | `presentation/` (Ink/React) | `presentation/` (Bubble Tea) |
-| entry point | `__main__.py` | `main.ts` | `cmd/rpg/main.go` |
+Every implementation has the same four layer folders (`domain/`, `application/`, `infrastructure/`,
+`presentation/`) under its source root:
 
-File and type names mirror each other (`snake_case.py` / `kebab-case.ts` / `snake_case.go`) so a reader can open the
-same concept in three languages side by side.
+| Implementation | Source root | Presentation (TUI) | Entry point |
+|---|---|---|---|
+| Python | `rpg-python/src/rpg/` | Textual | `__main__.py` |
+| TypeScript | `rpg-typescript/src/` | Ink/React | `main.tsx` |
+| Go | `rpg-golang/internal/` | Bubble Tea | `rpg-golang/cmd/rpg/main.go` |
+| Rust | `rpg-rust/src/` | ratatui | `main.rs` (library in `lib.rs`) |
+| Elixir | `rpg-elixir/lib/rpg/` | hand-written ANSI renderer | `main.ex` (escript entry point) |
+| C++ | `rpg-cpp/src/` | FTXUI | `main.cpp` → `main_run.cpp` |
+
+File and type names mirror each other (`snake_case.py` / `kebab-case.ts` / `snake_case.go` / `snake_case.rs` /
+`snake_case.ex` / `snake_case.{hpp,cpp}`) so a reader can open the same concept in six languages side by side.

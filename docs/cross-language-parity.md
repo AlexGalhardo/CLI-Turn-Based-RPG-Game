@@ -1,16 +1,19 @@
 # Cross-Language Parity
 
-The three implementations must produce the **same game**: same seed + same commands ⇒ same events, byte for byte
-after JSON normalisation. This is what makes the project a fair side-by-side comparison of Python, TypeScript and Go,
-and it is enforced by the golden tests.
+The six implementations must produce the **same game**: same seed + same commands ⇒ same events, byte for byte
+after JSON normalisation. This is what makes the project a fair side-by-side comparison of Python, TypeScript, Go,
+Rust, Elixir and C++, and it is enforced by the golden tests.
 
 ## 1. Rules that make parity possible
 
 1. **One source of numbers**: everything tunable lives in `shared/data/*.json`. No magic numbers in code.
 2. **Integer math only** in the engine. Percentages use `pct(v, p) = floor(v * p / 100)` with non-negative operands.
    - Python: `v * p // 100` · TypeScript: `Math.floor((v * p) / 100)` · Go: `v * p / 100` on `int` (64-bit)
+   - Rust: `v * p / 100` on `i64` · Elixir: `div(v * p, 100)` · C++: `v * p / 100` on `std::int64_t` (`pct()`
+     rejects negative operands, since C++ division truncates towards zero)
    - Never use floats, `round()` or language-specific division of negative numbers.
-3. **One PRNG** (below), never `random`, `Math.random` or `math/rand` in the engine.
+3. **One PRNG** (below), never the language's own random generator (`random`, `Math.random`, `math/rand`, the `rand`
+   crate, `:rand`, `<random>`) in the engine.
 4. **Deterministic iteration**: lists from JSON keep file order; whenever a rule says "sorted by id", sort by the
    string `id` with a plain code-point comparison. Never iterate over a hash map to make a game decision.
 5. **Engine is pure**: no clock, no I/O, no global state. Timestamps and file access live outside the engine.
@@ -29,7 +32,9 @@ next():
 ```
 
 `imul` is 32-bit wrapping multiplication (`Math.imul` in JS; `uint32` multiply in Go; `(a * b) & 0xFFFFFFFF` in
-Python). All intermediate values are masked to 32 bits.
+Python; `u32::wrapping_mul` / `wrapping_add` in Rust; `Bitwise` operators with every intermediate masked by
+`band(…, 0xFFFFFFFF)` in Elixir; `std::uint32_t` arithmetic, which wraps, in C++). All intermediate values are masked
+to 32 bits.
 
 Derived helpers (the only ones the engine may use):
 

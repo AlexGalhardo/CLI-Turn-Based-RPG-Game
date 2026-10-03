@@ -13,6 +13,16 @@ commit.
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-10-03
+
+### Changed
+
+- Documentation describes the six implementations: README (stack, setups, downloads, commands), `CLAUDE.md`/`AGENTS.md`
+  (rules, scopes, quick commands, per-commit release flow), `CONTRIBUTE.md`, architecture, testing, TUI, parity, data,
+  persistence and game design docs, with a later note in ADRs 0001 and 0004.
+- `port-feature` skill covers every port and records the lessons of the Rust, Elixir and C++ ports (including the
+  simulator seed-0 finding); `golden-files` and `add-game-content` skills list the six implementations.
+
 ## [1.3.1] - 2026-10-03
 
 ### Added
@@ -383,7 +393,8 @@ First stable release: the same game in Python, TypeScript and Go, proven equival
 - General-purpose agent skills, agents and reference checklists in `.claude/`.
 - The 2016 Python and 2022 TypeScript code is not carried over; the originals remain in their own repositories.
 
-[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.2...HEAD
+[1.3.2]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.1.2...v1.2.0

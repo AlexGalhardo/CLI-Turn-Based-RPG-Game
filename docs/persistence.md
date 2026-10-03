@@ -1,7 +1,7 @@
 # Persistence — Saves, History and Profile
 
-All three implementations read and write the **same files with the same format**, so a run started in Python can be
-continued in Go or TypeScript.
+All six implementations read and write the **same files with the same format**, so a run started in Python can be
+continued in TypeScript, Go, Rust, Elixir or C++ (and the other way round).
 
 ## Location
 
