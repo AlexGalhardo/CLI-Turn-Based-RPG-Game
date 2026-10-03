@@ -37,8 +37,9 @@ export function runSimulator(options: CliOptions, write: (text: string) => void)
 	const vocations = options.vocation ? [options.vocation] : data.vocations.map((v) => v.id);
 	const difficulties = options.difficulty ? [options.difficulty] : data.balance.difficulties.map((d) => d.id);
 	try {
+		// Like the reference (`options.seed or 1`), seed 0 means "no seed" for the simulator.
 		const summaries = vocations.flatMap((v) =>
-			difficulties.map((d) => simulate(data, v, d, options.simulate ?? 1, options.seed ?? 1)),
+			difficulties.map((d) => simulate(data, v, d, options.simulate ?? 1, options.seed || 1)),
 		);
 		write(renderReport(summaries, data));
 		return 0;
