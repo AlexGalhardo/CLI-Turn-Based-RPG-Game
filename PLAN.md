@@ -18,6 +18,7 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 | 1.0.0 | M6 — Release 1.0 (three binaries/implementations) | done |
 | 1.1.0–1.3.x | M7 — Rust, Elixir and C++ at parity, per-commit releases | done |
 | 1.4.0 | M8 — ARPG update (elites, rarities, auto-equip, auto-battle, win at round 100) | done |
+| next | M9 — Vocation balance, equipment screen paging | planned |
 
 ---
 
@@ -178,6 +179,26 @@ equipment), `docs/persistence.md` (schema 2), new events in `docs/cross-language
       equipment screen with comparison, sell lists only unequipped items
 - [x] Python reference + golden files; ports to TypeScript, Go, Rust, Elixir and C++ at parity
 - [x] Balance gate script (`bun run balance:check`) with targets EASY ~75%, NORMAL ~50%, HARD ~25% win rate
+
+## M9 — Next session: vocation balance and equipment screen paging
+
+State at the end of the last session (1.4.0 published): the balance gate now also requires every vocation to stay
+within target ± `vocationTolerancePct` (5) and **currently fails** on the Archer (82.4% / 59.1% / 32.0%).
+
+- [ ] **Vocation balance** (data only, no code): these values were found to pass the gate with 1000 runs per
+      vocation and difficulty (every vocation within ±3.7 points: EASY 74.8%, NORMAL 51.3%, HARD 23.5%) —
+      `vocations.json`: Warrior `hpPerLevel` 16 and `hpRegen` 4, Archer `hpPerLevel` 9 and `startHp` 140, Mage
+      `hpPerLevel` 6; `balance.json` difficulties: easy `xpPct` 90, hard `hpPct`/`damagePct` 37. Apply them, run
+      `bun run balance:check`, regenerate the golden files (`cd rpg-python && uv run rpg-golden`).
+- [ ] **Fix the aging death tests first**: with the new numbers seed 3 (mage, hard) *wins*, so the "death writes
+      history" test fails in Python (`tests/integration/test_persistence.py`), Rust (`tests/integration_persistence.rs`),
+      Elixir and C++ (TypeScript and Go passed). Pick a seed that still dies with the reference bot and use it in all
+      six, or make the test drive a death explicitly. Then `bash scripts/ci-local.sh --all` must be green.
+- [ ] Update `docs/game-design.md` §4 (per-level HP) and the §12 gate table with the new numbers.
+- [ ] **Equipment screen paging** (UI, controller-level, all six): with a full bag the screen overflows 100 × 30
+      (Python scrolls, Elixir truncates with `…`). Spec it in `docs/tui.md` (e.g. bag list paged 8 items per page with
+      `N`/`P`, slots always visible), implement in Python, then port in parallel worktrees (`port-feature` skill).
+- [ ] Optional: automated tests for the real-terminal auto-battle timer loops; play each TUI by hand once.
 
 ## Skills (`.claude/skills/`) — created when a flow repeats
 

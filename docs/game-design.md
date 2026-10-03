@@ -308,7 +308,10 @@ vocations is off target ± `tolerancePct`:
 | NORMAL | ~50% |
 | HARD | ~25% |
 
-Last gate run (Python simulator, 1000 seeded runs per vocation and difficulty, 1.4.0):
+Each vocation must also stay within target ± `vocationTolerancePct` (5), so no class is the obvious pick.
+
+Last gate run (Python simulator, 1000 seeded runs per vocation and difficulty, 1.4.0; the Archer is still outside
+the vocation tolerance, see PLAN.md M9):
 
 | Difficulty | Win rate | Warrior | Archer | Mage |
 |---|---|---|---|---|

@@ -5,6 +5,6 @@
 namespace rpg {
 
 // The monorepo version (bumped together with the other implementations, see docs/ci-cd.md).
-inline constexpr std::string_view version = "1.4.0";
+inline constexpr std::string_view version = "1.4.1";
 
 } // namespace rpg

@@ -3,6 +3,7 @@
 	"runsPerVocation": 1000,
 	"baseSeed": 1,
 	"tolerancePct": 5,
+	"vocationTolerancePct": 5,
 	"winRatePct": {
 		"easy": 75,
 		"normal": 50,

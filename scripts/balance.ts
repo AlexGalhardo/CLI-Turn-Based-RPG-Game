@@ -18,6 +18,7 @@ interface Targets {
 	readonly runsPerVocation: number;
 	readonly baseSeed: number;
 	readonly tolerancePct: number;
+	readonly vocationTolerancePct: number;
 	readonly winRatePct: Readonly<Record<string, number>>;
 }
 
@@ -127,20 +128,23 @@ async function main(): Promise<number> {
 		const rate = rates.get(difficulty) ?? 0;
 		const ok = Math.abs(rate - target) <= targets.tolerancePct;
 		failed ||= !ok;
-		const perVocation = vocations
-			.map((vocation) => {
-				const mine = rows.filter((r) => r.difficulty === difficulty && r.vocation === vocation);
-				const total = mine.reduce((a, r) => ({ runs: a.runs + r.runs, wins: a.wins + r.wins }), {
-					runs: 0,
-					wins: 0,
-				});
-				return `${vocation} ${Math.round((total.wins * 1000) / Math.max(1, total.runs)) / 10}%`;
-			})
-			.join(", ");
+		const perVocation = vocations.map((vocation) => {
+			const mine = rows.filter((r) => r.difficulty === difficulty && r.vocation === vocation);
+			const total = mine.reduce((a, r) => ({ runs: a.runs + r.runs, wins: a.wins + r.wins }), {
+				runs: 0,
+				wins: 0,
+			});
+			const vocationRate = Math.round((total.wins * 1000) / Math.max(1, total.runs)) / 10;
+			// Each vocation must also be close to the target, so no class is the obvious pick.
+			const vocationOk = Math.abs(vocationRate - target) <= targets.vocationTolerancePct;
+			failed ||= !vocationOk;
+			return `${vocationOk ? "" : "!"}${vocation} ${vocationRate}%`;
+		});
 		console.log(
-			`${ok ? "ok  " : "FAIL"} ${difficulty.padEnd(7)} win rate ${rate}% (target ${target}% ± ${targets.tolerancePct}) — ${perVocation}`,
+			`${ok ? "ok  " : "FAIL"} ${difficulty.padEnd(7)} win rate ${rate}% (target ${target}% ± ${targets.tolerancePct}) — ${perVocation.join(", ")}`,
 		);
 	}
+	if (failed) console.log(`a vocation marked ! is outside target ± ${targets.vocationTolerancePct}`);
 	return failed ? 1 : 0;
 }
 

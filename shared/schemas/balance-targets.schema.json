@@ -5,12 +5,13 @@
 	"description": "Win-rate targets checked by the balance gate (bun run balance:check); not read by the game.",
 	"type": "object",
 	"additionalProperties": false,
-	"required": ["runsPerVocation", "baseSeed", "tolerancePct", "winRatePct"],
+	"required": ["runsPerVocation", "baseSeed", "tolerancePct", "vocationTolerancePct", "winRatePct"],
 	"properties": {
 		"$schema": { "type": "string" },
 		"runsPerVocation": { "type": "integer", "minimum": 1 },
 		"baseSeed": { "type": "integer", "minimum": 1 },
 		"tolerancePct": { "type": "integer", "minimum": 0, "maximum": 100 },
+		"vocationTolerancePct": { "type": "integer", "minimum": 0, "maximum": 100 },
 		"winRatePct": {
 			"type": "object",
 			"additionalProperties": { "type": "integer", "minimum": 0, "maximum": 100 }
