@@ -1,0 +1,8 @@
+/_build/
+/deps/
+/cover/
+/bin/
+/rpg-elixir
+erl_crash.dump
+*.ez
+/tmp/

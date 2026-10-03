@@ -21,6 +21,9 @@ jobs:
       python: ${{ steps.detect.outputs.python }}
       typescript: ${{ steps.detect.outputs.typescript }}
       golang: ${{ steps.detect.outputs.golang }}
+      rust: ${{ steps.detect.outputs.rust }}
+      elixir: ${{ steps.detect.outputs.elixir }}
+      cpp: ${{ steps.detect.outputs.cpp }}
     steps:
       - uses: actions/checkout@v7
       - id: detect
@@ -28,6 +31,9 @@ jobs:
           echo "python=$([ -f rpg-python/pyproject.toml ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           echo "typescript=$([ -f rpg-typescript/tsconfig.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           echo "golang=$([ -f rpg-golang/go.mod ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "rust=$([ -f rpg-rust/Cargo.toml ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "elixir=$([ -f rpg-elixir/mix.exs ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "cpp=$([ -f rpg-cpp/CMakeLists.txt ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
   repo:
     runs-on: ubuntu-latest
@@ -143,3 +149,33 @@ jobs:
         run: go build -o bin/rpg-golang ./cmd/rpg
       - name: Smoke test the executable
         run: ./bin/rpg-golang --version && ./bin/rpg-golang --simulate 1 --vocation mage --difficulty easy
+
+  elixir:
+    needs: detect
+    if: needs.detect.outputs.elixir == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        working-directory: rpg-elixir
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: erlef/setup-beam@v1.24.1
+        with:
+          otp-version: "29"
+          elixir-version: "1.20.4"
+      - name: Format (mix format)
+        run: mix format --check-formatted
+      - name: Compile (warnings as errors)
+        run: mix compile --warnings-as-errors
+      - name: Tests (unit, integration, golden, e2e) + coverage
+        run: mix test --cover --warnings-as-errors
+      - name: Build escript
+        run: MIX_ENV=prod mix escript.build
+      # On Windows an escript has no shebang support, so it runs through the escript launcher.
+      - name: Smoke test the escript
+        run: escript bin/rpg-elixir --version && escript bin/rpg-elixir --simulate 1 --vocation mage --difficulty easy

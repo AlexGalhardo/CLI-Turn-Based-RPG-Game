@@ -1,10 +1,10 @@
-# PLAN — CLI Turn-Based RPG (Python · TypeScript · Go)
+# PLAN — CLI Turn-Based RPG (Python · TypeScript · Go · Rust · Elixir · C++)
 
 Master plan of the project. Check items off (`[x]`) in the same commit that completes them. Rules and formulas are in
 [`docs/game-design.md`](docs/game-design.md); decisions in [`docs/adr/`](docs/adr); the confirmed idea in
 [`docs/ideas/rpg-2026.md`](docs/ideas/rpg-2026.md).
 
-**Phases:** 1 Python (reference) → 2 TypeScript (port) → 3 Go (port).
+**Phases:** 1 Python (reference) → 2 TypeScript (port) → 3 Go (port) → 4 Rust, 5 Elixir, 6 C++ (ports).
 **Milestones per phase:** Alpha (clean core) → Beta (all features) → 1.0 refinement (balance, polish, parity).
 
 | Version | Milestone | Status |
@@ -16,6 +16,7 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 | 0.5.0 | M4 — TypeScript at parity | done |
 | 0.6.0 | M5 — Go at parity | done |
 | 1.0.0 | M6 — Release 1.0 (three binaries/implementations) | done |
+| 1.1.0 | M7 — Rust, Elixir and C++ at parity | in progress |
 
 ---
 
@@ -123,6 +124,39 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 - [x] `release.yml`: binaries for linux-x64, darwin-arm64, windows-x64 (TypeScript + Go)
 - [x] README screenshots of the game (text snapshots of the real TUI, identical across versions)
 - [x] CHANGELOG 1.0.0, tag `v1.0.0`, GitHub Release
+
+## Phase 4 — Rust (M7, 1.1.0)
+
+- [ ] Cargo project (Rust 1.99, edition 2024), ratatui + crossterm, serde_json; shared content embedded by `build.rs`
+- [ ] Domain + application ported (same names/layers), `u32` wrapping PRNG
+- [ ] Infrastructure + presentation (UI controller port + ratatui renderer) matching `docs/tui.md`
+- [ ] Tests: unit, integration, golden (+ bot parity + save format), e2e through `TestBackend` (whole run by keys)
+- [ ] `cargo build --release` executable; CI rust job (rustfmt, clippy, tests + coverage, build, smoke test)
+
+## Phase 5 — Elixir (M7, 1.1.0)
+
+- [x] Mix project (Elixir 1.20 / OTP 29) with **zero Hex dependencies**: built-in `JSON`, ExUnit, `OptionParser`
+- [x] Domain + application ported (same names/layers), immutable engine `step(engine, command) -> {engine, events}`,
+      PRNG threaded explicitly
+- [x] Infrastructure (shared content embedded at compile time) + presentation (UI controller port + hand-written ANSI
+      renderer with OTP raw-mode input) matching `docs/tui.md`
+- [x] Tests: unit, integration, golden (+ bot parity + save format), e2e through the pure TUI app (whole run by keys);
+      184 tests, 97% coverage
+- [x] `mix escript.build` executable; CI elixir job (format, warnings as errors, tests + coverage, escript, smoke test)
+
+## Phase 6 — C++ (M7, 1.1.0)
+
+- [ ] CMake + Ninja project (C++23), FTXUI, nlohmann/json, Catch2 via `FetchContent`; shared content embedded by CMake
+- [ ] Domain + application ported (same names/layers), `uint32_t` PRNG
+- [ ] Infrastructure + presentation (UI controller port + FTXUI renderer) matching `docs/tui.md`
+- [ ] Tests: unit, integration, golden (+ bot parity + save format), e2e through the FTXUI component (whole run by keys)
+- [ ] CMake release executable; CI cpp job (clang-format, warnings as errors, ctest + coverage, build, smoke test)
+
+## M7 — Release 1.1.0
+
+- [ ] `release.yml`: Rust and C++ binaries + Elixir escript
+- [ ] README, docs and setup scripts cover the six implementations
+- [ ] CHANGELOG 1.1.0, tag `v1.1.0`, GitHub Release
 
 ## Skills (`.claude/skills/`) — created when a flow repeats
 

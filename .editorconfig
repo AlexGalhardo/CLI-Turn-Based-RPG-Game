@@ -27,3 +27,8 @@ indent_size = 2
 [*.lock]
 insert_final_newline = unset
 trim_trailing_whitespace = unset
+
+# The Elixir formatter (mix format) only supports 2-space indentation.
+[*.{ex,exs,heex}]
+indent_style = space
+indent_size = 2

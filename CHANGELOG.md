@@ -7,6 +7,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Elixir implementation (`rpg-elixir`) at full parity with the Python, TypeScript and Go versions, with zero Hex
+  dependencies: immutable deterministic engine, bot, simulator (byte-identical report), interchangeable saves, UI
+  controller and a hand-written ANSI terminal UI with OTP raw-mode input; shared content embedded at compile time;
+  `mix escript.build` executable. 184 ExUnit tests (unit, integration, golden replay, bot and save parity, e2e by keys),
+  97% coverage. Documented in `docs/elixir.md`; setup scripts in `setups/`.
+- CI `elixir` job (Linux and Windows): `mix format`, warnings as errors, tests with coverage, escript build and smoke
+  test. Commit scopes `rust`, `elixir` and `cpp`.
+
+### Changed
+
+- `.editorconfig`: Elixir sources use 2-space indentation, the only style the Elixir formatter supports.
+
 ## [1.0.0] - 2026-09-27
 
 First stable release: the same game in Python, TypeScript and Go, proven equivalent by shared golden files.
