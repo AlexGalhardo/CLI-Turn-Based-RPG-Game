@@ -1,5 +1,20 @@
 # CI/CD, Versioning and Releases
 
+## Where CI runs: locally, in the pre-push hook
+
+The GitHub workflows below are kept in the repository but **disabled** on GitHub (`gh workflow disable ci.yml` /
+`release.yml`; re-enable with `gh workflow enable`). The same checks run on the developer's machine:
+
+- `.husky/pre-push` runs `scripts/ci-local.sh`, which mirrors `ci.yml` job by job (repo, python, typescript, golang,
+  rust, elixir, cpp) for the projects touched by the commits being pushed (`shared/`, root tooling or workflow changes
+  run every job). A failing job blocks the push. `bash scripts/ci-local.sh --all` runs everything;
+  `SKIP_LOCAL_CI=1 git push` skips it once. Differences from GitHub: one OS (the local one), no `-race` for Go, no
+  C++ coverage gate.
+- `.husky/post-commit` creates the per-commit release tag `vX.Y.Z` (annotated, message = the commit's CHANGELOG
+  section) when the commit bumped the version; with `git config push.followTags true` the tag is pushed with the
+  commit. GitHub Release pages with binaries are not created while `release.yml` is disabled (a manual
+  `gh workflow run release.yml -f tag=vX.Y.Z` after re-enabling it builds and attaches them).
+
 ## Workflows (`.github/workflows/`)
 
 | Workflow | Trigger | Jobs |

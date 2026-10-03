@@ -1,6 +1,6 @@
 {
   "name": "cli-turn-based-rpg-game",
-  "version": "1.3.5",
+  "version": "1.3.6",
   "private": true,
   "description": "Monorepo tooling (Biome, commitlint, husky, release scripts) for the CLI Turn-Based RPG in Python, TypeScript, Go, Rust, Elixir and C++",
   "license": "MIT",

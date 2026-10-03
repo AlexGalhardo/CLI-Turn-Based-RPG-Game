@@ -1,0 +1,11 @@
+# Per-commit release tag (the GitHub release workflow is disabled): an annotated vX.Y.Z tag whose message is the
+# commit's CHANGELOG section. `git config push.followTags true` pushes it with the commit.
+version="$(sed -n 's/^  "version": "\([0-9.]*\)".*/\1/p' package.json | head -1)"
+if [ -n "$version" ] && ! git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+	parent="$(git show HEAD~1:package.json 2>/dev/null | sed -n 's/^  "version": "\([0-9.]*\)".*/\1/p' | head -1)"
+	if [ "$version" != "$parent" ]; then
+		notes="$(git rev-parse --git-dir)/RELEASE_NOTES"
+		bun run scripts/release.ts notes "$version" > "$notes" 2>/dev/null || echo "v$version" > "$notes"
+		git tag -a "v$version" -F "$notes" --cleanup=verbatim && echo "tagged v$version"
+	fi
+fi

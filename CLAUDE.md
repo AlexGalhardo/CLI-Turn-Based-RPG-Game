@@ -34,6 +34,8 @@ Open-source endless turn-based RPG for the terminal, implemented **six times wit
 - Before committing: format, lint, type-check and test the touched project (commands in the per-language docs).
 - Record relevant changes in [`CHANGELOG.md`](CHANGELOG.md) (Keep a Changelog) and tick `PLAN.md` checkboxes.
 - Each commit on `main` is a release: fill `[Unreleased]`, run `bun run release:prepare "<subject>"` (`release` skill).
+- CI runs locally: the husky `pre-push` hook runs `scripts/ci-local.sh` (GitHub workflows are disabled); a post-commit
+  hook tags `vX.Y.Z` and `git config push.followTags true` pushes the tag.
 - Recurring flows become project skills in `.claude/skills/` (`golden-files`, `add-game-content`, `port-feature`, `release`).
 - Go work: always load the `golang-how-to` skill first (samber/cc-skills-golang); it routes to the other Go skills.
 - The husky `pre-commit` hook runs `graphify update .` (code, no LLM, ~15 s) and stages `graphify-out/`, so every

@@ -1,17 +1,17 @@
-# Graph Report - jogo-CLI-turn-based-rpgs  (2026-10-03)
+# Graph Report - ciwt  (2026-10-03)
 
 ## Corpus Check
-- 444 files · ~200,555 words
+- 445 files · ~201,546 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 15 file(s) not represented in the graph (top: (none) 11, .toml 2, .cmake 1)
+- Unclassified: 18 file(s) not represented in the graph (top: (none) 14, .toml 2, .cmake 1)
 
 ## Summary
-- 6505 nodes · 15780 edges · 335 communities (262 shown, 73 thin omitted)
+- 6518 nodes · 15808 edges · 342 communities (263 shown, 79 thin omitted)
 - Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 1103 edges (avg confidence: 0.89)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `20ecf95a`
+- Built from commit: `0d6eeb8f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -30,15 +30,14 @@
 - Battle
 - definitions.ts
 - GameData
-- ports.hpp
+- format
 - controller.ex
 - Controller
-- string
 - Controller
 - Rpg.Presentation.Controller
 - LoadGameData
 - GameData
-- rng_test.cpp
+- algorithm
 - Rng
 - persistence_test.exs
 - Profile
@@ -60,7 +59,7 @@
 - services
 - persistence_test.cpp
 - game-session.ts
-- App
+- app.cpp
 - controller_test.cpp
 - RunState
 - RunStatistics
@@ -79,11 +78,11 @@
 - Battle<'a>
 - cli_and_simulator_test.cpp
 - commands.hpp
-- PlayerView
+- Services
 - Rpg.Presentation.Tui.App
 - Rpg.Application.SaveGame
 - engine.cpp
-- integration_formulas.rs
+- formulas.rs
 - Rpg.Infrastructure.I18n
 - rpg-typescript/package.json
 - bot.cpp
@@ -100,7 +99,7 @@
 - statuses.schema.json
 - data_loader.rs
 - integration_game_data.rs
-- simulator.rs
+- integration_cli_and_simulator.rs
 - achievements.schema.json
 - app.rs
 - repositories.rs
@@ -172,9 +171,9 @@
 - MonsterAttack
 - Rng
 - ErrorCode
-- app.cpp
+- controller_fixture.hpp
 - i18n.rs
-- SharedFs
+- .format_fields
 - character.cpp
 - MonsterInstance
 - RunState
@@ -186,11 +185,11 @@
 - Rpg.Presentation.Render
 - generate_item
 - Merchant<'a>
-- string_view
+- ci-local.sh
 - Slot
 - properties
 - type
-- art.rs
+- SharedFs
 - Rpg.Application.GreedyBot
 - Rpg.Application.GameSession
 - Action
@@ -204,11 +203,10 @@
 - properties
 - spells.schema.json
 - vocations.schema.json
-- helpers.cpp
 - Shared Data Format
 - enums.rs
 - formulas.cpp
-- Scaling
+- .after_cast
 - Rpg.E2e.TuiTest
 - SessionError
 - Element
@@ -221,7 +219,7 @@
 - PotionDef
 - ItemInstance
 - ArtLibrary
-- Services
+- IsolatedEnvironment
 - resistances
 - items
 - resistances
@@ -239,7 +237,7 @@
 - items
 - properties
 - Architecture
-- .status_text
+- Event
 - Rpg.MixProject
 - commands.cpp
 - Caps
@@ -248,7 +246,7 @@
 - AffixRoll
 - Rpg.Main
 - Rpg.Unit.ControllerTest
-- App::App
+- TemplateValue
 - Services
 - caps
 - bosses
@@ -258,11 +256,17 @@
 - Rpg.Presentation.SimulatorReport
 - SpellLevelDef
 - Settings
+- string
+- FakeClock
 - Rpg.Application.Progression
 - Rpg.Integration.PersistenceTest
+- new_engine
+- fixed_attack
 - BattleOutcome
 - Phase
+- .new
 - Rpg.Unit.MerchantAndLootTest
+- TempDir
 - Phase
 - defendDamagePct
 - id
@@ -328,6 +332,7 @@
 - github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/rpg-golang
 - rpg
 - rpg-rust
+- BattleOutcome
 
 ## God Nodes (most connected - your core abstractions)
 1. `GameData` - 128 edges
@@ -383,7 +388,7 @@
 - **Per-language mechanisms embedding shared/ into the binary** — docs_typescript_embedded_shared, docs_golang_go_generate_embed, docs_rust_build_rs_embedding, docs_elixir_assets_embedding, docs_cpp_embed_shared_cmake [INFERRED 0.85]
 - **Per-commit release flow (release:prepare, CHANGELOG section, release workflow)** — changelog_release_script, changelog_changelog, changelog_per_commit_release_versioning, _github_workflows_release_plan, _github_workflows_release_build_jobs, _github_workflows_release_publish [INFERRED 0.95]
 
-## Communities (335 total, 73 thin omitted)
+## Communities (342 total, 79 thin omitted)
 
 ### Community 0 - "controller.py"
 Cohesion: 0.06
@@ -426,8 +431,8 @@ Cohesion: 0.06
 Nodes (31): ArtLibrary, frame_for(), parse_art(), MonsterView, PlayerView, View, bar(), hp_color() (+23 more)
 
 ### Community 10 - "controller.rs"
-Cohesion: 0.03
-Nodes (32): "a full bag auto-sells drops", "buying from the merchant stock", "buying potions follows the rules", "equip swaps, sell and unequip", "hard difficulty boosts non-common weights", "item generation is deterministic with unique affix stats", "item generation without candidates consumes nothing", loot_data() (+24 more)
+Cohesion: 0.04
+Nodes (28): StepResult, achievements, events, STUN, STUN_COOLDOWN_TURNS, HEAL_THRESHOLD_PCT, MANA_POTION_THRESHOLD_PCT, MAX_POTION_STOCK (+20 more)
 
 ### Community 11 - "Battle"
 Cohesion: 0.08
@@ -441,9 +446,9 @@ Nodes (47): BattleOutcome, itemScore(), ErrorCode, canUse(), generateItem(), Ite
 Cohesion: 0.08
 Nodes (32): item_score(), can_use(), generate_item(), rarity_weights(), stock_price(), build_sheet(), item_stats(), item_value() (+24 more)
 
-### Community 14 - "ports.hpp"
-Cohesion: 0.12
-Nodes (8): Clock, HistoryRepository, ProfileRepository, Repositories, history, profile, saves, SaveRepository
+### Community 14 - "format"
+Cohesion: 0.11
+Nodes (6): percentile(), play_one(), simulate(), join(), render_report(), trim_right()
 
 ### Community 15 - "controller.ex"
 Cohesion: 0.10
@@ -452,10 +457,6 @@ Nodes (18): Rpg.Application.Events, Rpg.Application.Loot, can_use(), generate_it
 ### Community 16 - "Controller"
 Cohesion: 0.10
 Nodes (9): StepResult, xp_for_level(), Controller, action(), action(), action(), MenuOption, Services (+1 more)
-
-### Community 17 - "string"
-Cohesion: 0.11
-Nodes (3): StepResult, achievements, events
 
 ### Community 18 - "Controller"
 Cohesion: 0.08
@@ -473,9 +474,9 @@ Nodes (46): Animations, Frame, rawAttack, rawCreature, rawStatusOnHit, CliResult
 Cohesion: 0.08
 Nodes (24): AchievementDef, AffixDef, Balance, Caps, DataIndex, DifficultyDef, GameContent, GameData (+16 more)
 
-### Community 22 - "rng_test.cpp"
+### Community 22 - "algorithm"
 Cohesion: 0.03
-Nodes (47): "a new run rejects an invalid config", "different seeds diverge", engine_for(), play_to_death(), "restoring mid-run continues identically", "the bot plays until death", "the same seed gives the same events", "cross references are valid" (+39 more)
+Nodes (54): "cross references are valid", "invalid data raises DataError naming the problem", "lookup errors", "the content meets the requirements", "the data directory resolves flag, environment, then home", "a weapon with an element changes the melee element", "enums and counters", "game data lookups" (+46 more)
 
 ### Community 23 - "Rng"
 Cohesion: 0.05
@@ -510,8 +511,8 @@ Cohesion: 0.07
 Nodes (22): _percentile(), simulate(), SimulationSummary, find_shared_dir(), resolve_data_dir(), main(), run_simulator(), build_parser() (+14 more)
 
 ### Community 31 - "common/mod.rs"
-Cohesion: 0.13
-Nodes (10): COUNTER, data(), FakeClock, services(), shared(), shared_dir(), TempDir, test_item() (+2 more)
+Cohesion: 0.11
+Nodes (8): COUNTER, data(), FakeClock, services(), shared(), shared_dir(), TempDir, test_item()
 
 ### Community 32 - "CI detect job (per-implementation presence)"
 Cohesion: 0.11
@@ -530,15 +531,15 @@ Cohesion: 0.08
 Nodes (24): Battle, data_, progression_, rng_, state_, consume_stun(), find_status(), has_status() (+16 more)
 
 ### Community 36 - "Controller"
-Cohesion: 0.06
-Nodes (21): Controller, animation_cues, difficulty_, error, exit_requested, input_buffer, language_return_, locale (+13 more)
+Cohesion: 0.05
+Nodes (22): Controller, animation_cues, difficulty_, error, exit_requested, input_buffer, language_return_, locale (+14 more)
 
 ### Community 37 - "package.json"
 Cohesion: 0.05
 Nodes (41): description, devDependencies, ajv, @biomejs/biome, @commitlint/cli, @commitlint/config-conventional, husky, lint-staged (+33 more)
 
 ### Community 38 - "repositories.cpp"
-Cohesion: 0.07
+Cohesion: 0.08
 Nodes (12): file_repositories(), FileHistoryRepository, dir_, FileProfileRepository, path_, FileSaveRepository, path_, read_json() (+4 more)
 
 ### Community 39 - "properties"
@@ -554,20 +555,20 @@ Cohesion: 0.09
 Nodes (31): SessionInfo, FileHistoryRepository, FileProfileRepository, FileSaveRepository, Settings, BuildServices(), NewProfile(), CheckSchema() (+23 more)
 
 ### Community 42 - "persistence_test.cpp"
-Cohesion: 0.12
-Nodes (13): "a new session autosaves at the merchant", "a newer schema is refused", "a save written by the Python reference continues identically", "an invalid config does not start a session", context_for(), "death writes history and profile, and deletes the save", "profile round trip and Hall of Fame order", "quitting mid-battle resumes from the last merchant" (+5 more)
+Cohesion: 0.06
+Nodes (21): Clock, HistoryRepository, ProfileRepository, Repositories, history, profile, saves, SaveRepository (+13 more)
 
 ### Community 43 - "game-session.ts"
 Cohesion: 0.09
 Nodes (16): GameSession, SessionContext, StepResult, Clock, HistoryRepository, SaveRepository, compareHallOfFame(), ProfileService (+8 more)
 
-### Community 44 - "App"
-Cohesion: 0.12
-Nodes (10): App, animate_, art_, controller_, cues_, height_, on_quit, track_terminal (+2 more)
+### Community 44 - "app.cpp"
+Cohesion: 0.10
+Nodes (18): color, App, animate_, App::App(), art_, controller_, cues_, height_ (+10 more)
 
 ### Community 45 - "controller_test.cpp"
-Cohesion: 0.05
-Nodes (24): SessionContext, clock, game_version, repositories, ArtFormatError, frame_for(), parse_art(), trim() (+16 more)
+Cohesion: 0.08
+Nodes (17): ArtFormatError, frame_for(), parse_art(), trim(), any_contains(), "art parsing", "battle submenus and messages", "bestiary paging and reveal" (+9 more)
 
 ### Community 46 - "RunState"
 Cohesion: 0.10
@@ -578,7 +579,7 @@ Cohesion: 0.06
 Nodes (26): DroppedItem, item_id, rarity, round, RunStatistics, bosses_killed, crits, damage_dealt (+18 more)
 
 ### Community 48 - "integration_battle.rs"
-Cohesion: 0.15
+Cohesion: 0.12
 Nodes (32): fight(), new_engine(), types(), warrior(), boss_drops_and_full_bag_auto_sells(), boss_telegraphs_then_charges(), defend_halves_incoming_damage(), every_vocation_spell_can_be_cast() (+24 more)
 
 ### Community 49 - "RunRecord"
@@ -618,28 +619,28 @@ Cohesion: 0.10
 Nodes (22): spawn_monster(), Balance, DifficultyDef, UnknownIdError, armor_mitigation(), clamp(), mana_for_magic_level(), round_info() (+14 more)
 
 ### Community 58 - "controller.cpp"
-Cohesion: 0.12
-Nodes (4): seed_source_, is_battle_view(), is_paged(), is_text_input()
+Cohesion: 0.11
+Nodes (9): Controller::Controller(), is_battle_view(), is_paged(), is_printable_character(), is_text_input(), join(), random_seed(), trim() (+1 more)
 
 ### Community 59 - "tui_test.cpp"
 Cohesion: 0.09
 Nodes (15): "a whole run by keys until game over", "animation cues play once per tick", "battle, merchant, save & quit, then continue", contains(), "first launch: language, then a new run reaches the merchant", Harness, app_, art_ (+7 more)
 
 ### Community 60 - "Battle<'a>"
-Cohesion: 0.06
-Nodes (20): Battle, Battle<'a>, BattleOutcome, Defeat, Ongoing, Victory, consume_stun(), Progression (+12 more)
+Cohesion: 0.18
+Nodes (3): Battle<'a>, consume_stun(), pct()
 
 ### Community 61 - "cli_and_simulator_test.cpp"
-Cohesion: 0.06
-Nodes (19): parse_cli(), parse_integer(), join(), render_report(), trim_right(), "argument parsing: defaults and validation", "main prints version, help and usage errors", "main rejects an unknown simulator vocation" (+11 more)
+Cohesion: 0.07
+Nodes (16): parse_cli(), parse_integer(), "argument parsing: defaults and validation", "main prints version, help and usage errors", "main rejects an unknown simulator vocation", "main runs the simulator and prints the report", parse(), run_main() (+8 more)
 
 ### Community 62 - "commands.hpp"
 Cohesion: 0.06
 Nodes (19): Attack, BuyPotion, potion_id, quantity, BuyStockItem, index, Cast, spell_id (+11 more)
 
-### Community 63 - "PlayerView"
-Cohesion: 0.10
-Nodes (20): MenuOption, key, label, MonsterView, creature_id, details, element, hp (+12 more)
+### Community 63 - "Services"
+Cohesion: 0.06
+Nodes (27): MenuOption, key, label, MonsterView, creature_id, details, element, hp (+19 more)
 
 ### Community 64 - "Rpg.Presentation.Tui.App"
 Cohesion: 0.11
@@ -653,9 +654,9 @@ Nodes (16): Clock, HistoryRepository, ProfileRepository, Rpg.Application.Ports, 
 Cohesion: 0.15
 Nodes (5): append(), GameEngine, data_, rng_, single()
 
-### Community 67 - "integration_formulas.rs"
-Cohesion: 0.13
-Nodes (5): round_info(), boss_ignores_position_scaling(), round_info_cycles_through_tiers(), scaling_combines_difficulty_cycle_and_position(), maps_serialise_with_sorted_keys_like_the_reference()
+### Community 67 - "formulas.rs"
+Cohesion: 0.10
+Nodes (12): spawn_monster(), armor_mitigation(), mana_for_magic_level(), pct_rejects_negative(), round_info(), RoundInfo, scale_reward(), scale_stat() (+4 more)
 
 ### Community 68 - "Rpg.Infrastructure.I18n"
 Cohesion: 0.09
@@ -718,12 +719,12 @@ Cohesion: 0.09
 Nodes (13): Achievements, Affixes, Bosses, DataError, Families, Items, Monsters, optional() (+5 more)
 
 ### Community 84 - "integration_game_data.rs"
-Cohesion: 0.08
+Cohesion: 0.09
 Nodes (8): load_game_data(), DATA_DIR_ENV, DEFAULT_DATA_DIR_NAME, resolve_data_dir(), resolve_data_dir_from(), art_parsing(), invalid_data_raises_data_error(), optional_files_default_to_empty_lists()
 
-### Community 85 - "simulator.rs"
-Cohesion: 0.10
-Nodes (15): MAX_STEPS_PER_RUN, percentile(), play_one(), RunResult, simulate(), SimulationSummary, HEADER, render_report() (+7 more)
+### Community 85 - "integration_cli_and_simulator.rs"
+Cohesion: 0.15
+Nodes (9): HEADER, render_report(), width(), binary(), binary_prints_version_help_and_simulator_report(), play_one_reports_the_death(), report_aligns_columns_like_the_reference(), seed_zero_falls_back_to_one_like_the_reference() (+1 more)
 
 ### Community 86 - "achievements.schema.json"
 Cohesion: 0.07
@@ -731,7 +732,7 @@ Nodes (26): items, minItems, type, additionalProperties, $id, pattern, type, add
 
 ### Community 87 - "app.rs"
 Cohesion: 0.09
-Nodes (16): rarity_color(), ACCENT, ANIMATION_INTERVAL, ART_WIDTH, color(), COLUMN_WIDTH, LOG_HEIGHT, LOG_LINES (+8 more)
+Nodes (15): ACCENT, ANIMATION_INTERVAL, ART_WIDTH, build_services(), COLUMN_WIDTH, LOG_HEIGHT, LOG_LINES, MENU_MIN_HEIGHT (+7 more)
 
 ### Community 88 - "repositories.rs"
 Cohesion: 0.12
@@ -774,8 +775,8 @@ Cohesion: 0.21
 Nodes (9): battle_merchant_save_quit_and_continue(), first_launch_language_then_new_run_flow(), full_run_until_game_over(), Harness, keys_ctrl_c_release_events_and_animation_ticks(), keys_for(), paged_views_hide_the_combat_log_and_use_two_columns(), SIZE (+1 more)
 
 ### Community 98 - "i18n.cpp"
-Cohesion: 0.12
-Nodes (10): is_supported_locale(), is_word(), load_locale(), TemplateValue, text_, Translator, fallback_, locale_ (+2 more)
+Cohesion: 0.18
+Nodes (8): is_supported_locale(), is_word(), load_locale(), Translator, fallback_, locale_, messages_, Translator::Translator()
 
 ### Community 99 - "Model"
 Cohesion: 0.13
@@ -814,7 +815,7 @@ Cohesion: 0.18
 Nodes (18): CliOptions, CliResult, Exit, Run, error(), help_and_version_exit(), help_text(), invalid() (+10 more)
 
 ### Community 109 - "View"
-Cohesion: 0.10
+Cohesion: 0.09
 Nodes (20): View, Achievements, Battle, Bestiary, BuyPotions, Character, Difficulty, Equipment (+12 more)
 
 ### Community 111 - "int64_t"
@@ -862,11 +863,11 @@ Cohesion: 0.13
 Nodes (20): minimum, type, additionalProperties, propertyNames, type, additionalProperties, propertyNames, type (+12 more)
 
 ### Community 123 - "golden.rs"
-Cohesion: 0.18
+Cohesion: 0.24
 Nodes (8): bot_issues_exactly_the_recorded_commands(), events_json(), final_state(), golden_dir(), load(), prng_matches_reference_vectors(), replay_matches_every_golden_file(), scenario_files()
 
 ### Community 124 - ".menu"
-Cohesion: 0.26
+Cohesion: 0.27
 Nodes (4): Go, Step, MenuOption, list_key()
 
 ### Community 125 - "SimulationSummary"
@@ -886,8 +887,8 @@ Cohesion: 0.18
 Nodes (8): check_schema(), from_document(), PersistenceError, Invalid, Io, NewerSchema, Settings, SettingsRepository
 
 ### Community 129 - "build_sheet"
-Cohesion: 0.18
-Nodes (8): build_sheet(), CharacterSheet, item_stats(), item_value(), protections_are_capped(), sheet_adds_vocation_level_and_equipment(), equip_swap_sell_and_unequip(), unequip_with_full_bag_and_hp_clamp()
+Cohesion: 0.11
+Nodes (11): build_sheet(), CharacterSheet, item_stats(), item_value(), with_test_items(), melee_damage_is_within_sheet_range(), protections_are_capped(), sheet_adds_vocation_level_and_equipment() (+3 more)
 
 ### Community 130 - "items"
 Cohesion: 0.14
@@ -902,11 +903,11 @@ Cohesion: 0.13
 Nodes (10): Rpg.Test.Helpers, data(), item(), new_engine(), update_monster(), with_test_items(), Rpg.Unit.BattleTest, fight() (+2 more)
 
 ### Community 133 - "GreedyBot<'a>"
-Cohesion: 0.12
-Nodes (6): GreedyBot, GreedyBot<'a>, item_score(), EventFormatter, key(), value_text()
+Cohesion: 0.20
+Nodes (3): GreedyBot, GreedyBot<'a>, item_score()
 
 ### Community 135 - "render.cpp"
-Cohesion: 0.23
+Cohesion: 0.21
 Nodes (8): bar(), element_color(), hp_color(), list_index(), lookup(), rarity_color(), repeat(), utf8_pop_back()
 
 ### Community 136 - "Game Design - Rules and Formulas"
@@ -914,7 +915,7 @@ Cohesion: 0.23
 Nodes (15): Game Design - Rules and Formulas, Battle Turn Order of Operations, Boss Telegraph / Charged Attack Pattern, Derived Stats and Caps, Difficulty Table (EASY/NORMAL/HARD), Elements and Resistances, Game Loop (Title -> Merchant <-> Battle -> Game Over), Item Generation (base + rarity + affixes) (+7 more)
 
 ### Community 137 - "main.rs"
-Cohesion: 0.21
+Cohesion: 0.19
 Nodes (8): main(), main_simulate_prints_report(), main_simulate_rejects_unknown_vocation(), run(), run_game(), run_simulator(), run_text(), usage_errors_exit_with_2_and_help_exits_with_0()
 
 ### Community 138 - "SpellDef"
@@ -946,7 +947,7 @@ Cohesion: 0.12
 Nodes (16): VocationDef, hp_per_level, hp_regen, id, melee_max, melee_min, melee_per_level, mp_per_level (+8 more)
 
 ### Community 145 - "entities.rs"
-Cohesion: 0.17
+Cohesion: 0.19
 Nodes (5): ActiveStatus, AffixRoll, ItemInstance, MonsterInstance, Player
 
 ### Community 146 - "CliOptions"
@@ -962,8 +963,8 @@ Cohesion: 0.12
 Nodes (16): common, epic, legendary, rare, common, epic, legendary, rare (+8 more)
 
 ### Community 149 - "golden_files_test.cpp"
-Cohesion: 0.09
-Nodes (11): percentile(), play_one(), simulate(), config_of(), "every golden scenario replays identically", final_state(), "golden files exist", load() (+3 more)
+Cohesion: 0.08
+Nodes (15): config_of(), "every golden scenario replays identically", final_state(), "golden files exist", load(), "PRNG matches the reference vectors", scenario_files(), "the bot issues exactly the recorded Python commands" (+7 more)
 
 ### Community 151 - "MonsterDef"
 Cohesion: 0.13
@@ -985,24 +986,24 @@ Nodes (12): MonsterAttack, element, id, max, min, status, weight, StatusDef (+4 
 Cohesion: 0.14
 Nodes (14): ErrorCode, BagFull, CannotEquip, InvalidItem, InvalidPhase, InvalidQuantity, NoPotion, NotEnoughGold (+6 more)
 
-### Community 157 - "app.cpp"
-Cohesion: 0.35
-Nodes (6): color, hex(), option_color(), panel(), styled(), upper()
+### Community 157 - "controller_fixture.hpp"
+Cohesion: 0.16
+Nodes (7): SessionContext, clock, game_version, repositories, make_controller(), services_for(), start_run()
 
 ### Community 158 - "i18n.rs"
 Cohesion: 0.19
 Nodes (5): DEFAULT_LOCALE, load(), substitute(), SUPPORTED_LOCALES, Translator
 
-### Community 159 - "SharedFs"
-Cohesion: 0.21
-Nodes (3): SharedFs, build_services(), run_tui()
+### Community 159 - ".format_fields"
+Cohesion: 0.27
+Nodes (3): EventFormatter, key(), value_text()
 
 ### Community 160 - "character.cpp"
 Cohesion: 0.28
 Nodes (4): build_sheet(), item_stats(), item_value(), total_of()
 
 ### Community 161 - "MonsterInstance"
-Cohesion: 0.15
+Cohesion: 0.14
 Nodes (12): MonsterInstance, attacks, boss_actions, creature_id, gold_max, gold_min, hp, is_boss (+4 more)
 
 ### Community 163 - "Framework-Independent UI Controller (press(key))"
@@ -1010,8 +1011,8 @@ Cohesion: 0.28
 Nodes (6): Engine Event Catalog (flat camelCase JSON events), Hand-Written ANSI Renderer (raw keyboard input), Bubble Tea v2 + Lip Gloss TUI, Textual TUI, Rust Implementation (rpg-rust), ratatui + crossterm TUI
 
 ### Community 165 - "render.rs"
-Cohesion: 0.17
-Nodes (5): BAR_WIDTH, element_color(), LIST_KEYS, MIN_COLUMNS, MIN_ROWS
+Cohesion: 0.13
+Nodes (8): BAR_WIDTH, element_color(), LIST_KEYS, MIN_COLUMNS, MIN_ROWS, rarity_color(), color(), option_style()
 
 ### Community 167 - "Rpg.Application.Merchant"
 Cohesion: 0.26
@@ -1022,12 +1023,12 @@ Cohesion: 0.24
 Nodes (5): can_use(), generate_item(), rarity_weights(), generate_item_without_candidates_consumes_nothing(), hard_difficulty_boosts_non_common_weights()
 
 ### Community 170 - "Merchant<'a>"
-Cohesion: 0.19
-Nodes (5): available_potions(), Merchant, Merchant<'a>, stock_price(), merchant_stock_purchase()
+Cohesion: 0.20
+Nodes (4): available_potions(), Merchant, Merchant<'a>, stock_price()
 
-### Community 171 - "string_view"
-Cohesion: 0.19
-Nodes (5): Controller::Controller(), is_printable_character(), random_seed(), trim(), utf8_length()
+### Community 171 - "ci-local.sh"
+Cohesion: 0.36
+Nodes (12): changed_jobs(), job_cpp(), job_elixir(), job_golang(), job_python(), job_repo(), job_rust(), job_typescript() (+4 more)
 
 ### Community 172 - "Slot"
 Cohesion: 0.18
@@ -1041,9 +1042,9 @@ Nodes (12): enum, properties, enum, minimum, type, type, element, kind (+4 more)
 Cohesion: 0.20
 Nodes (12): pattern, type, shieldTypes, spells, weaponTypes, items, type, items (+4 more)
 
-### Community 175 - "art.rs"
-Cohesion: 0.35
-Nodes (3): ArtLibrary, frame_for(), parse_art()
+### Community 175 - "SharedFs"
+Cohesion: 0.18
+Nodes (4): SharedFs, ArtLibrary, frame_for(), parse_art()
 
 ### Community 176 - "Rpg.Application.GreedyBot"
 Cohesion: 0.35
@@ -1093,10 +1094,6 @@ Nodes (9): additionalProperties, $id, properties, $schema, required, $schema, ty
 Cohesion: 0.20
 Nodes (9): additionalProperties, $id, properties, $schema, required, $schema, type, title (+1 more)
 
-### Community 189 - "helpers.cpp"
-Cohesion: 0.06
-Nodes (18): contains_event(), event_to_json(), events_to_json(), FakeClock, current_, find_event(), fixed_attack(), IsolatedEnvironment (+10 more)
-
 ### Community 190 - "Shared Data Format"
 Cohesion: 0.14
 Nodes (18): Bot Full-Run Golden (end-to-end parity), Golden Tests (shared/golden replay), Shared Data Format, Adding Content Workflow, ASCII Art Format (@animation, %% frames), i18n Locale Files (en default, pt-BR), TibiaWiki Display Names (original stats), Balance Targets and Simulator (greedy bot) (+10 more)
@@ -1106,12 +1103,12 @@ Cohesion: 0.25
 Nodes (6): protection_by_element(), SLOTS, SpellKind, Attack, Heal, strings_match_the_json_values()
 
 ### Community 192 - "formulas.cpp"
-Cohesion: 0.42
-Nodes (7): armor_mitigation(), clamp(), mana_for_magic_level(), pct(), scale_reward(), scale_stat(), xp_for_level()
+Cohesion: 0.18
+Nodes (13): armor_mitigation(), clamp(), mana_for_magic_level(), pct(), round_info(), scale_reward(), scale_stat(), Scaling (+5 more)
 
-### Community 193 - "Scaling"
-Cohesion: 0.25
-Nodes (6): round_info(), Scaling, damage_pct_product, hp_pct_product, reward_gold_pct_product, reward_xp_pct_product
+### Community 193 - ".after_cast"
+Cohesion: 0.23
+Nodes (4): Progression, Progression<'a>, spell_level_for_uses(), xp_for_level()
 
 ### Community 194 - "Rpg.E2e.TuiTest"
 Cohesion: 0.33
@@ -1157,9 +1154,9 @@ Nodes (6): ItemInstance, affixes, item_id, rarity, tier, uid
 Cohesion: 0.25
 Nodes (3): ArtLibrary, cache_, shared_
 
-### Community 206 - "Services"
-Cohesion: 0.17
-Nodes (7): Services, clock, data, repositories, settings, shared, version
+### Community 206 - "IsolatedEnvironment"
+Cohesion: 0.25
+Nodes (4): IsolatedEnvironment, data_dir_, read_file(), write_file()
 
 ### Community 207 - "resistances"
 Cohesion: 0.25
@@ -1182,7 +1179,7 @@ Cohesion: 0.29
 Nodes (7): DifficultyDef, damage_pct, gold_pct, hp_pct, id, non_common_weight_pct, xp_pct
 
 ### Community 212 - "enums.cpp"
-Cohesion: 0.43
+Cohesion: 0.36
 Nodes (3): phase_from_string(), protection_stat(), to_string()
 
 ### Community 213 - "RoundInfo"
@@ -1221,6 +1218,10 @@ Nodes (7): additionalProperties, properties, type, chance, cleanse, level3Bonus,
 Cohesion: 0.25
 Nodes (4): Architecture, Monorepo Layout (shared/ + six rpg-* ports), shared/data JSON Files (balance, vocations, spells, monsters, bosses, items, affixes, potions, statuses, achievements, families), Behaviours as Ports (Clock, SaveRepository, ...)
 
+### Community 224 - "Event"
+Cohesion: 0.39
+Nodes (4): contains_event(), event_to_json(), events_to_json(), find_event()
+
 ### Community 225 - "Rpg.MixProject"
 Cohesion: 0.40
 Nodes (3): Rpg.MixProject, elixirc_paths(), project()
@@ -1238,7 +1239,7 @@ Cohesion: 0.33
 Nodes (4): ActiveStatus, per_turn, status_id, turns
 
 ### Community 229 - "build.rs"
-Cohesion: 0.40
+Cohesion: 0.33
 Nodes (3): collect(), EMBEDDED_FOLDERS, main()
 
 ### Community 230 - "AffixRoll"
@@ -1280,6 +1281,10 @@ Nodes (3): Rpg.Presentation.SimulatorReport, render_report(), row()
 ### Community 242 - "SpellLevelDef"
 Cohesion: 0.40
 Nodes (5): SpellLevelDef, effect_pct, level, mana_pct, uses
+
+### Community 244 - "string"
+Cohesion: 0.33
+Nodes (3): set_env(), types_of(), unset_env()
 
 ### Community 246 - "Rpg.Application.Progression"
 Cohesion: 0.60
@@ -1433,6 +1438,10 @@ Nodes (3): startHp, minimum, type
 Cohesion: 0.67
 Nodes (3): startMp, minimum, type
 
+### Community 341 - "BattleOutcome"
+Cohesion: 0.50
+Nodes (4): BattleOutcome, Defeat, Ongoing, Victory
+
 ## Ambiguous Edges - Review These
 - `Endless Roguelite Direction (Tibia-inspired)` → `Monorepo Layout (shared/ + six rpg-* ports)`  [AMBIGUOUS]
   docs/ideas/rpg-2026.md · relation: conceptually_related_to
@@ -1440,14 +1449,14 @@ Nodes (3): startMp, minimum, type
 ## Knowledge Gaps
 - **1369 isolated node(s):** `$schema`, `enabled`, `clientKind`, `useIgnoreFile`, `useEditorconfig` (+1364 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2384 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **73 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **79 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **What is the exact relationship between `Endless Roguelite Direction (Tibia-inspired)` and `Monorepo Layout (shared/ + six rpg-* ports)`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `Controller` connect `Controller` to `.status_text`, `.t`, `string_view`, `.menu`, `Services`, `string`, `integration_game_data.rs`, `View`, `controller.cpp`, `PlayerView`?**
+- **Why does `Controller` connect `Controller` to `.t`, `.menu`, `string`, `integration_game_data.rs`, `View`, `controller.cpp`, `Services`?**
   _High betweenness centrality (0.021) - this node is a cross-community bridge._
 - **Why does `RunStatistics` connect `RunStatistics` to `string`?**
   _High betweenness centrality (0.013) - this node is a cross-community bridge._

@@ -16,9 +16,10 @@ Every commit on `main` is a release (`docs/ci-cd.md`). The commit carries its ow
 3. Decide the exact commit subject (its type decides the version), then run
    `bun run release:prepare "<subject>"`. It bumps every version file, moves `[Unreleased]` into
    `## [X.Y.Z] - date` and updates the compare links.
-4. `bun run release:check && bun run lint:ci`, then commit with that same subject and push.
-5. Watch CI (`gh run watch <id> --exit-status`) and the Release run: one release per pushed commit; the newest gets
-   the binaries of the six implementations.
+4. `bun run release:check && bun run lint:ci`, then commit with that same subject: the `post-commit` hook tags
+   `vX.Y.Z` with the CHANGELOG section as message.
+5. `git push` (with `push.followTags true` the tags go along). The `pre-push` hook runs the local CI
+   (`scripts/ci-local.sh`) for the touched projects; GitHub workflows are disabled, so no Release page is created.
 
 Several commits in one push: prepare each one before committing it (versions chain: 1.3.1, 1.3.2, …).
 

@@ -13,6 +13,16 @@ commit.
 
 ## [Unreleased]
 
+## [1.3.6] - 2026-10-03
+
+### Changed
+
+- CI runs locally: the GitHub `CI` and `Release` workflows are kept but disabled, and the husky `pre-push` hook runs
+  `scripts/ci-local.sh`, which mirrors `ci.yml` job by job for the projects touched by the pushed commits (`--all`,
+  `CI_JOBS`, `SKIP_LOCAL_CI=1`). A `post-commit` hook creates the per-commit annotated tag `vX.Y.Z` with the
+  CHANGELOG section, pushed along with `push.followTags`. Documented in `docs/ci-cd.md`, `CLAUDE.md`/`AGENTS.md` and
+  the `release` skill.
+
 ## [1.3.5] - 2026-10-03
 
 ### Changed
@@ -421,7 +431,8 @@ First stable release: the same game in Python, TypeScript and Go, proven equival
 - General-purpose agent skills, agents and reference checklists in `.claude/`.
 - The 2016 Python and 2022 TypeScript code is not carried over; the originals remain in their own repositories.
 
-[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.5...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.6...HEAD
+[1.3.6]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.5...v1.3.6
 [1.3.5]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.4...v1.3.5
 [1.3.4]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.3...v1.3.4
 [1.3.3]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.2...v1.3.3
