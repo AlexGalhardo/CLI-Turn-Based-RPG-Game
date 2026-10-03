@@ -32,6 +32,7 @@ Several commits in one push: prepare each one before committing it (versions cha
   dry run (builds everything, publishes nothing) — use it after touching `release.yml`, from a branch with
   `--ref <branch>`.
 - The husky `pre-commit` hook runs `gofmt` and `ruff` through lint-staged: Go and uv must be on `PATH` in the shell
-  that commits, or the commit is reverted.
+  that commits, or the commit is reverted. It also runs `graphify update .` (when installed) and stages
+  `graphify-out/`, adding ~15 s per commit.
 - Old tag-triggered `release.yml` files still exist in historical commits: before creating or re-creating tags in
   bulk, `gh workflow disable release.yml` and enable it again afterwards.

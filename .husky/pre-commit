@@ -1,1 +1,10 @@
 bunx lint-staged
+
+# Keep the committed knowledge graph current (CLAUDE.md: every commit is a release). Code only, no LLM;
+# doc changes still need `/graphify . --update`. Contributors without graphify are not blocked.
+if command -v graphify >/dev/null 2>&1; then
+	graphify update . >/dev/null 2>&1 || { echo "graphify update failed; run it manually" >&2; exit 1; }
+	git add graphify-out/GRAPH_REPORT.md graphify-out/graph.json graphify-out/graph.html
+else
+	echo "graphify not installed: knowledge graph not refreshed (uv tool install graphifyy==0.9.74)" >&2
+fi

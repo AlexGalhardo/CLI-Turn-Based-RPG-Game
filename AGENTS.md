@@ -36,8 +36,8 @@ Open-source endless turn-based RPG for the terminal, implemented **six times wit
 - Each commit on `main` is a release: fill `[Unreleased]`, run `bun run release:prepare "<subject>"` (`release` skill).
 - Recurring flows become project skills in `.claude/skills/` (`golden-files`, `add-game-content`, `port-feature`, `release`).
 - Go work: always load the `golang-how-to` skill first (samber/cc-skills-golang); it routes to the other Go skills.
-- Before every push, refresh the knowledge graph in the commit itself (each commit is a release): `graphify update .`
-  (code, no LLM, ~15 s), plus `/graphify . --update` when docs changed; commit the updated `graphify-out/`.
+- The husky `pre-commit` hook runs `graphify update .` (code, no LLM, ~15 s) and stages `graphify-out/`, so every
+  commit (= release) carries a current graph; when docs changed, run `/graphify . --update` before committing.
 
 ## Navigating the project (graphify)
 

@@ -1,7 +1,7 @@
 # Graph Report - jogo-CLI-turn-based-rpgs  (2026-10-03)
 
 ## Corpus Check
-- 444 files · ~200,174 words
+- 444 files · ~200,555 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 15 file(s) not represented in the graph (top: (none) 11, .toml 2, .cmake 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `5234be3d`
+- Built from commit: `20ecf95a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -344,14 +344,14 @@
 ## Surprising Connections (you probably didn't know these)
 - `Per-language checks that CI runs` --semantically_similar_to--> `CI workflow`  [INFERRED] [semantically similar]
   CONTRIBUTE.md → .github/workflows/ci.yml
-- `Dependabot weekly updates (bun, uv, gomod, github-actions)` --conceptually_related_to--> `Non-negotiable rules (English, no balance numbers in code, pure engine, pinned deps)`  [INFERRED]
-  .github/dependabot.yml → AGENTS.md
 - `ADR 0001 - Single monorepo` --rationale_for--> `CI detect job (per-implementation presence)`  [INFERRED]
   docs/adr/0001-monorepo.md → .github/workflows/ci.yml
 - `ADR 0002 - Game content and balance in shared JSON` --rationale_for--> `CI golang job (go generate, gofmt, vet, golangci-lint, race tests)`  [INFERRED]
   docs/adr/0002-shared-json-data.md → .github/workflows/ci.yml
-- `ADR 0001 - Single monorepo` --rationale_for--> `CHANGELOG (Keep a Changelog, SemVer)`  [EXTRACTED]
-  docs/adr/0001-monorepo.md → CHANGELOG.md
+- `Dependabot weekly updates (bun, uv, gomod, github-actions)` --conceptually_related_to--> `Non-negotiable rules (English, no balance numbers in code, pure engine, pinned deps)`  [INFERRED]
+  .github/dependabot.yml → AGENTS.md
+- `PLAN master plan (phases and milestones M0-M7)` --conceptually_related_to--> `ADR 0005 - Python built first as the reference`  [INFERRED]
+  PLAN.md → docs/adr/0005-python-first-reference.md
 
 ## Import Cycles
 - 3-file cycle: `rpg-golang/internal/application/loot.go -> rpg-golang/internal/domain/formulas_test.go -> rpg-golang/internal/infrastructure/repositories.go -> rpg-golang/internal/application/loot.go`

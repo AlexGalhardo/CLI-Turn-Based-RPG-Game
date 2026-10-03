@@ -13,6 +13,14 @@ commit.
 
 ## [Unreleased]
 
+## [1.3.5] - 2026-10-03
+
+### Changed
+
+- The husky `pre-commit` hook runs `graphify update .` and stages `graphify-out/`, so every commit (and release)
+  carries a current knowledge graph; without graphify installed it only prints a reminder. `CLAUDE.md`/`AGENTS.md`
+  and the `release` skill describe it.
+
 ## [1.3.4] - 2026-10-03
 
 ### Added
@@ -413,7 +421,8 @@ First stable release: the same game in Python, TypeScript and Go, proven equival
 - General-purpose agent skills, agents and reference checklists in `.claude/`.
 - The 2016 Python and 2022 TypeScript code is not carried over; the originals remain in their own repositories.
 
-[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.4...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.5...HEAD
+[1.3.5]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.4...v1.3.5
 [1.3.4]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.3...v1.3.4
 [1.3.3]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.1...v1.3.2

@@ -49706,7 +49706,7 @@
       "source_file": "rpg-python/pyproject.toml",
       "source_location": "L1",
       "type": "package",
-      "version": "1.3.3"
+      "version": "1.3.5"
     },
     {
       "id": "pkg_rpg_rust",
@@ -49720,7 +49720,7 @@
       "source_file": "rpg-rust/Cargo.toml",
       "source_location": "L1",
       "type": "package",
-      "version": "1.3.3"
+      "version": "1.3.5"
     },
     {
       "id": "rpg_elixir_formatter",
@@ -259422,5 +259422,5 @@
       "source_file": "CHANGELOG.md"
     }
   ],
-  "built_at_commit": "5234be3d9fe4b2e8599fc81062f7b09a9f79bda7"
+  "built_at_commit": "20ecf95a51aeb08be142c1892f342a2ee7dd87fe"
 }
