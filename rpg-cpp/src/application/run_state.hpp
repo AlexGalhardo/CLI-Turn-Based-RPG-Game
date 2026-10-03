@@ -18,6 +18,7 @@ struct RunConfig {
 	std::string name;
 	std::string vocation_id;
 	std::string difficulty_id;
+	bool auto_equip = false;
 
 	bool operator==(const RunConfig&) const = default;
 };
@@ -35,6 +36,7 @@ struct RunState {
 	std::vector<domain::ItemInstance> merchant_stock;
 	std::int64_t next_item_uid = 1;
 	std::optional<std::string> death_cause;
+	bool won = false;
 	RunStatistics stats;
 
 	// The next item uid; advances the counter.

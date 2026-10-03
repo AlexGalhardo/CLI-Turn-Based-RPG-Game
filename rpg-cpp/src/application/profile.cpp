@@ -28,6 +28,7 @@ ordered_json to_json(const Profile& profile) {
 		    {"round", entry.round},
 		    {"level", entry.level},
 		    {"endedAt", entry.ended_at},
+		    {"won", entry.won},
 		});
 	}
 	return ordered_json{
@@ -62,6 +63,7 @@ Profile profile_from_json(const json& document) {
 		    entry.at("round").get<std::int64_t>(),
 		    entry.at("level").get<std::int64_t>(),
 		    entry.at("endedAt").get<std::string>(),
+		    entry.value("won", false),
 		});
 	}
 	return profile;
@@ -135,6 +137,9 @@ std::int64_t ProfileService::progress(const domain::AchievementDef& achievement,
 	if (type == "hard_round_reached") {
 		return state.config.difficulty_id == "hard" ? state.round : 0;
 	}
+	if (type == "run_won") {
+		return state.won ? 1 : 0;
+	}
 	return 0;
 }
 
@@ -142,6 +147,9 @@ void ProfileService::record_finished_run(const HallOfFameEntry& entry) {
 	std::vector<HallOfFameEntry> ranking = profile.hall_of_fame;
 	ranking.push_back(entry);
 	std::ranges::stable_sort(ranking, [](const HallOfFameEntry& a, const HallOfFameEntry& b) {
+		if (a.won != b.won) {
+			return a.won;
+		}
 		if (a.round != b.round) {
 			return a.round > b.round;
 		}

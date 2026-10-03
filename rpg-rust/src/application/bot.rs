@@ -7,7 +7,7 @@ use crate::application::commands::Command;
 use crate::application::loot::can_use;
 use crate::application::merchant::available_potions;
 use crate::application::run_state::RunState;
-use crate::domain::character::{build_sheet, item_stats};
+use crate::domain::character::{build_sheet, item_score, required_level};
 use crate::domain::definitions::{GameData, PotionDef, SpellDef};
 use crate::domain::entities::{ItemInstance, MonsterInstance};
 use crate::domain::enums::{Phase, Resource, SpellKind};
@@ -16,10 +16,6 @@ use crate::domain::formulas::{pct, spell_level_for_uses};
 pub const HEAL_THRESHOLD_PCT: i64 = 45;
 pub const MANA_POTION_THRESHOLD_PCT: i64 = 25;
 pub const MAX_POTION_STOCK: i64 = 20;
-
-pub fn item_score(item: &ItemInstance, data: &GameData) -> i64 {
-	item_stats(item, data).values().sum()
-}
 
 /// Python's `max(items, key=...)` keeps the first maximum; every key here ends with a unique id, so ties cannot
 /// happen and `Iterator::max_by` (which keeps the last maximum) picks the same element.
@@ -35,6 +31,9 @@ impl<'a> GreedyBot<'a> {
 	pub fn choose(&self, state: &RunState) -> Command {
 		if state.phase == Phase::Battle {
 			return self.battle(state);
+		}
+		if state.phase == Phase::Victory {
+			return Command::EndRun;
 		}
 		self.merchant(state)
 	}
@@ -123,7 +122,7 @@ impl<'a> GreedyBot<'a> {
 		bag.sort_by_key(|item| item.uid);
 		for item in &bag {
 			let definition = self.data.item(&item.item_id);
-			if !can_use(definition, vocation) {
+			if !can_use(definition, vocation) || required_level(item, self.data) > player.level {
 				continue;
 			}
 			let better = match player.equipment.get(&definition.slot) {

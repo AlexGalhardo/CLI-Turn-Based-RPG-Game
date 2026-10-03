@@ -1,10 +1,19 @@
 /** Cross-run profile: bestiary, achievements and Hall of Fame (docs/game-design.md §11). */
 import type { AchievementDef, GameData } from "../domain/definitions";
-import { field, type JsonObject, type JsonValue, jsonInt, jsonList, jsonObj, jsonStr } from "../domain/json-types";
+import {
+	field,
+	type JsonObject,
+	type JsonValue,
+	jsonBool,
+	jsonInt,
+	jsonList,
+	jsonObj,
+	jsonStr,
+} from "../domain/json-types";
 import type { Event } from "./events";
 import type { RunState } from "./run-state";
 
-const PROFILE_SCHEMA_VERSION = 1;
+const PROFILE_SCHEMA_VERSION = 2;
 export const HALL_OF_FAME_SIZE = 10;
 export const BESTIARY_REVEAL_KILLS = 5;
 
@@ -26,6 +35,7 @@ export interface HallOfFameEntry {
 	readonly round: number;
 	readonly level: number;
 	readonly endedAt: string;
+	readonly won: boolean;
 }
 
 function hallEntryToJson(entry: HallOfFameEntry): JsonObject {
@@ -37,6 +47,7 @@ function hallEntryToJson(entry: HallOfFameEntry): JsonObject {
 		round: entry.round,
 		level: entry.level,
 		endedAt: entry.endedAt,
+		won: entry.won,
 	};
 }
 
@@ -50,6 +61,7 @@ function hallEntryFromJson(raw: JsonValue): HallOfFameEntry {
 		round: jsonInt(field(data, "round")),
 		level: jsonInt(field(data, "level")),
 		endedAt: jsonStr(field(data, "endedAt")),
+		won: jsonBool(field(data, "won")),
 	};
 }
 
@@ -102,6 +114,7 @@ export class Profile {
 }
 
 function compareHallOfFame(a: HallOfFameEntry, b: HallOfFameEntry): number {
+	if (a.won !== b.won) return a.won ? -1 : 1;
 	if (a.round !== b.round) return b.round - a.round;
 	if (a.level !== b.level) return b.level - a.level;
 	return a.endedAt < b.endedAt ? -1 : a.endedAt > b.endedAt ? 1 : 0;
@@ -161,6 +174,8 @@ export class ProfileService {
 				return this.profile.bestiary.size;
 			case "hard_round_reached":
 				return state.config.difficultyId === "hard" ? state.round : 0;
+			case "run_won":
+				return state.won ? 1 : 0;
 			default:
 				return 0;
 		}

@@ -9,7 +9,9 @@ import (
 	"github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/rpg-golang/internal/domain"
 )
 
-var reportHeader = []string{"vocation", "difficulty", "runs", "min", "p10", "median", "p90", "max", "avg lvl", "top killers"}
+var reportHeader = []string{
+	"vocation", "difficulty", "runs", "wins", "win %", "min", "p10", "median", "p90", "max", "avg lvl", "top killers",
+}
 
 // RenderReport renders simulator summaries as an aligned table (same output as the reference).
 func RenderReport(summaries []application.SimulationSummary, data *domain.GameData) string {
@@ -22,7 +24,8 @@ func RenderReport(summaries []application.SimulationSummary, data *domain.GameDa
 		}
 
 		rows = append(rows, []string{
-			s.Vocation, s.Difficulty, strconv.Itoa(s.Runs), strconv.Itoa(s.MinRound), strconv.Itoa(s.P10Round),
+			s.Vocation, s.Difficulty, strconv.Itoa(s.Runs), strconv.Itoa(s.Wins), strconv.Itoa(s.WinRatePct()) + "%",
+			strconv.Itoa(s.MinRound), strconv.Itoa(s.P10Round),
 			strconv.Itoa(s.MedianRound), strconv.Itoa(s.P90Round), strconv.Itoa(s.MaxRound), strconv.Itoa(s.MeanLevel),
 			strings.Join(killers, ", "),
 		})

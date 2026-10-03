@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "application/auto_equip.hpp"
 #include "application/loot.hpp"
 #include "domain/character.hpp"
 #include "domain/formulas.hpp"
@@ -37,7 +38,6 @@ std::vector<std::string> available_potions(const RunState& state, const domain::
 
 std::vector<Event> Merchant::enter() {
 	RunState& state = *state_;
-	const domain::DifficultyDef& difficulty = data_->balance.difficulty(state.config.difficulty_id);
 	const domain::VocationDef& vocation = data_->vocation(state.player.vocation_id);
 	const std::int64_t tier = domain::round_info(state.round + 1, data_->balance, data_->tier_count()).tier;
 	state.merchant_stock.clear();
@@ -45,8 +45,7 @@ std::vector<Event> Merchant::enter() {
 		const ItemRequest request{
 		    .vocation = &vocation,
 		    .tier = tier,
-		    .table = "merchant",
-		    .difficulty = &difficulty,
+		    .weights = &data_->balance.rarity_weights.at("merchant"),
 		    .uid = state.next_item_uid,
 		};
 		if (auto item = generate_item(*data_, *rng_, request)) {
@@ -112,6 +111,9 @@ std::vector<Event> Merchant::equip(std::int64_t uid) {
 	if (!can_use(definition, data_->vocation(player.vocation_id))) {
 		return single(error_event(error_code::cannot_equip));
 	}
+	if (domain::required_level(*found, *data_) > player.level) {
+		return single(error_event(error_code::level_too_low));
+	}
 
 	std::vector<Event> events;
 	const domain::ItemInstance item = *found;
@@ -162,7 +164,14 @@ std::vector<Event> Merchant::buy_stock(std::int64_t index) {
 	state.player.gold -= price;
 	state.merchant_stock.erase(position);
 	state.player.bag.push_back(item);
-	return single(Event{"item_bought", {{"uid", item.uid}, {"itemId", item.item_id}, {"gold", price}}});
+	std::vector<Event> events =
+	    single(Event{"item_bought", {{"uid", item.uid}, {"itemId", item.item_id}, {"gold", price}}});
+	if (state.config.auto_equip) {
+		for (Event& event : auto_equip(state, *data_)) {
+			events.push_back(std::move(event));
+		}
+	}
+	return events;
 }
 
 void Merchant::clamp_resources() {

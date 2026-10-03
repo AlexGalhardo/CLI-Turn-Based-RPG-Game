@@ -4,9 +4,12 @@ defmodule Rpg.Infrastructure.DataLoader do
   alias Rpg.Domain.Definitions.{
     AchievementDef,
     AffixDef,
+    AutoBattleDef,
+    AutoBattleModeDef,
     Balance,
     Caps,
     DifficultyDef,
+    EnemyClassDef,
     GameData,
     ItemDef,
     Level3Bonus,
@@ -139,12 +142,15 @@ defmodule Rpg.Infrastructure.DataLoader do
   defp balance(raw) do
     caps = field(raw, "caps")
     magic = field(raw, "magicLevel")
+    classes = JsonTypes.obj(field(raw, "enemyClasses"))
 
     %Balance{
       rounds_per_tier: int(raw, "roundsPerTier"),
       cycle_stat_pct: int(raw, "cycleStatPct"),
       cycle_reward_pct: int(raw, "cycleRewardPct"),
       position_pct: int(raw, "positionPct"),
+      final_round: int(raw, "finalRound"),
+      elite_chance_pct: int(raw, "eliteChancePct"),
       difficulties:
         Enum.map(objects(raw, "difficulties"), fn d ->
           %DifficultyDef{
@@ -152,12 +158,14 @@ defmodule Rpg.Infrastructure.DataLoader do
             hp_pct: int(d, "hpPct"),
             damage_pct: int(d, "damagePct"),
             gold_pct: int(d, "goldPct"),
-            xp_pct: int(d, "xpPct"),
-            non_common_weight_pct: int(d, "nonCommonWeightPct")
+            xp_pct: int(d, "xpPct")
           }
         end),
+      enemy_classes: Enum.map(Enums.enemy_classes(), &enemy_class(&1, JsonTypes.obj(field(classes, &1)))),
       crit_multiplier_pct: int(raw, "critMultiplierPct"),
       defend_damage_pct: int(raw, "defendDamagePct"),
+      parry_reflect_pct: int(raw, "parryReflectPct"),
+      monster_heal_pct: int(raw, "monsterHealPct"),
       boss_telegraph_every: int(raw, "bossTelegraphEvery"),
       boss_charge_damage_pct: int(raw, "bossChargeDamagePct"),
       caps: %Caps{
@@ -181,8 +189,9 @@ defmodule Rpg.Infrastructure.DataLoader do
       starting_gold: int(raw, "startingGold"),
       starting_potions: Enum.map(objects(raw, "startingPotions"), &{str(&1, "potionId"), int(&1, "quantity")}),
       bag_capacity: int(raw, "bagCapacity"),
-      drop_chance_pct: int(raw, "dropChancePct"),
-      boss_drops: int(raw, "bossDrops"),
+      item_level_per_tier: int(raw, "itemLevelPerTier"),
+      item_score_weights:
+        Map.new(JsonTypes.obj(field(raw, "itemScoreWeights")), fn {k, v} -> {Enums.stat!(k), JsonTypes.int(v)} end),
       rarities:
         Enum.map(objects(raw, "rarities"), fn r ->
           %RarityDef{
@@ -194,12 +203,48 @@ defmodule Rpg.Infrastructure.DataLoader do
           }
         end),
       rarity_weights:
-        Map.new(JsonTypes.obj(field(raw, "rarityWeights")), fn {table, weights} ->
-          {table, Map.new(JsonTypes.obj(weights), fn {rarity, weight} -> {rarity, JsonTypes.int(weight)} end)}
-        end),
+        Map.new(JsonTypes.obj(field(raw, "rarityWeights")), fn {table, weights} -> {table, weights(weights)} end),
       merchant_stock_size: int(raw, "merchantStockSize"),
       merchant_markup_pct: int(raw, "merchantMarkupPct"),
-      spell_status_damage_pct: int(raw, "spellStatusDamagePct")
+      spell_status_damage_pct: int(raw, "spellStatusDamagePct"),
+      auto_battle: auto_battle(JsonTypes.obj(field(raw, "autoBattle")))
+    }
+  end
+
+  defp weights(raw), do: Map.new(JsonTypes.obj(raw), fn {rarity, weight} -> {rarity, JsonTypes.int(weight)} end)
+
+  defp enemy_class(class_id, raw) do
+    %EnemyClassDef{
+      id: class_id,
+      stat_pct: int(raw, "statPct"),
+      reward_pct: int(raw, "rewardPct"),
+      dodge: int(raw, "dodge"),
+      parry: int(raw, "parry"),
+      crit: int(raw, "crit"),
+      heal: int(raw, "heal"),
+      drop_chance_pct: int(raw, "dropChancePct"),
+      drops: int(raw, "drops"),
+      potion_drop_pct: int(raw, "potionDropPct"),
+      rarity_weights: weights(field(raw, "rarityWeights"))
+    }
+  end
+
+  # Modes are only looked up by id; sorting the keys keeps the list deterministic (maps have no order).
+  defp auto_battle(raw) do
+    modes = JsonTypes.obj(field(raw, "modes"))
+
+    %AutoBattleDef{
+      heal_below_pct: int(raw, "healBelowPct"),
+      mana_below_pct: int(raw, "manaBelowPct"),
+      emergency_heal_below_pct: int(raw, "emergencyHealBelowPct"),
+      modes:
+        modes
+        |> Map.keys()
+        |> Enum.sort()
+        |> Enum.map(fn id ->
+          mode = JsonTypes.obj(Map.fetch!(modes, id))
+          %AutoBattleModeDef{id: id, offense: str(mode, "offense"), support_every: int(mode, "supportEvery")}
+        end)
     }
   end
 

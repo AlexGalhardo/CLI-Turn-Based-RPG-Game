@@ -10,6 +10,7 @@ from rpg.application.commands import (
 	Cast,
 	Command,
 	Defend,
+	EndRun,
 	Equip,
 	NextFight,
 	SellItem,
@@ -18,19 +19,15 @@ from rpg.application.commands import (
 from rpg.application.loot import can_use
 from rpg.application.merchant import available_potions
 from rpg.application.run_state import RunState
-from rpg.domain.character import build_sheet, item_stats
+from rpg.domain.character import build_sheet, item_score, required_level
 from rpg.domain.definitions import GameData, PotionDef, SpellDef
-from rpg.domain.entities import ItemInstance, MonsterInstance
+from rpg.domain.entities import MonsterInstance
 from rpg.domain.enums import Phase, Resource, SpellKind
 from rpg.domain.formulas import pct, spell_level_for_uses
 
 HEAL_THRESHOLD_PCT = 45
 MANA_POTION_THRESHOLD_PCT = 25
 MAX_POTION_STOCK = 20
-
-
-def item_score(item: ItemInstance, data: GameData) -> int:
-	return sum(item_stats(item, data).values())
 
 
 class GreedyBot:
@@ -40,6 +37,8 @@ class GreedyBot:
 	def choose(self, state: RunState) -> Command:
 		if state.phase is Phase.BATTLE:
 			return self._battle(state)
+		if state.phase is Phase.VICTORY:
+			return EndRun()
 		return self._merchant(state)
 
 	# ── battle ────────────────────────────────────────────────────────────────
@@ -106,7 +105,7 @@ class GreedyBot:
 		vocation = self._data.vocation(player.vocation_id)
 		for item in sorted(player.bag, key=lambda i: i.uid):
 			definition = self._data.item(item.item_id)
-			if not can_use(definition, vocation):
+			if not can_use(definition, vocation) or required_level(item, self._data) > player.level:
 				continue
 			current = player.equipment.get(definition.slot)
 			if current is None or item_score(item, self._data) > item_score(current, self._data):

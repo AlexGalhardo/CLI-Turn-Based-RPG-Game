@@ -107,7 +107,7 @@ class GameSession:
 		now = format_timestamp(self._clock.now())
 		unlocked = self.profile.observe(events, self.state, now, self.info.run_id)
 		profile_changed = bool(unlocked) or any(e["type"] == "monster_killed" for e in events)
-		if self.state.phase is Phase.MERCHANT:
+		if self.state.phase in {Phase.MERCHANT, Phase.VICTORY}:
 			self._merchant_snapshot = (copy.deepcopy(self.state), self.engine.rng_state)
 			self._write_save()
 		elif self.state.phase is Phase.GAME_OVER and self.finished_record is None:
@@ -118,7 +118,7 @@ class GameSession:
 		return unlocked
 
 	def save_and_quit(self) -> None:
-		"""Persists play time. Mid-battle quits resume from the last merchant visit."""
+		"""Persists play time. Mid-battle quits resume from the last merchant (or victory) snapshot."""
 		if self.state.phase is not Phase.GAME_OVER:
 			self._write_save()
 
@@ -165,6 +165,7 @@ class GameSession:
 			level=state.player.level,
 			magic_level=state.player.magic_level,
 			death_cause=state.death_cause or "",
+			won=state.won,
 			stats=state.stats,
 		)
 		self._repositories.history.add(record)
@@ -178,6 +179,7 @@ class GameSession:
 				round=record.round,
 				level=record.level,
 				ended_at=record.ended_at,
+				won=record.won,
 			)
 		)
 		self.finished_record = record

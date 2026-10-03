@@ -8,19 +8,9 @@ defmodule Rpg.Unit.ControllerTest do
   alias Rpg.Presentation.{Controller, Render}
   alias Rpg.Test.Helpers
 
+  import Rpg.Test.ControllerHelpers
+
   @moduletag :tmp_dir
-
-  def make_controller(dir, lang \\ "en") do
-    services = Rpg.Main.build_services(Helpers.data(), dir)
-    Controller.new(services, seed: 7, locale_override: lang)
-  end
-
-  def press(controller, keys) when is_list(keys), do: Enum.reduce(keys, controller, &Controller.press(&2, &1))
-  def press(controller, key), do: Controller.press(controller, key)
-
-  def start_run(controller, name \\ "Zed", vocation_key \\ "1") do
-    controller |> press(["2", "2"]) |> press(String.graphemes(name)) |> press(["enter", vocation_key])
-  end
 
   defp update_player(controller, fun) do
     session = controller.session
@@ -62,10 +52,14 @@ defmodule Rpg.Unit.ControllerTest do
 
   test "language switch from the title", %{tmp_dir: dir} do
     c = make_controller(dir) |> press("6")
+    assert c.view == :settings
+    c = press(c, "1")
     assert c.view == :language
     c = press(c, "2")
-    assert c.view == :title
+    assert c.view == :settings
     assert c.locale == "pt-BR"
+    c = press(c, "0")
+    assert c.view == :title
     assert Controller.title(c) == "CLI Turn-Based RPG"
     assert Enum.any?(Controller.options(c), &(&1.label == "Sair"))
     assert make_controller(dir, nil).locale == "pt-BR"
@@ -95,6 +89,9 @@ defmodule Rpg.Unit.ControllerTest do
     assert Enum.any?(labels, &String.contains?(&1, "Hand Axe"))
     refute Enum.any?(labels, &String.contains?(&1, "Bow"))
     c = press(c, "1")
+    assert c.view == :compare
+    c = press(c, "1")
+    assert c.view == :equipment
     assert player(c).equipment["weapon"].uid in [900, 1]
     c = press(c, ["0", "2"])
     sell_keys = Enum.map(Controller.options(c), & &1.key)

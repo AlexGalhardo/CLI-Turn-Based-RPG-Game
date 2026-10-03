@@ -1,0 +1,11 @@
+{
+	"$schema": "../schemas/balance-targets.schema.json",
+	"runsPerVocation": 1000,
+	"baseSeed": 1,
+	"tolerancePct": 5,
+	"winRatePct": {
+		"easy": 75,
+		"normal": 50,
+		"hard": 25
+	}
+}

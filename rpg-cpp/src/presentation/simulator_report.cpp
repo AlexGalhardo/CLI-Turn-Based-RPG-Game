@@ -11,8 +11,8 @@ namespace rpg::presentation {
 
 namespace {
 
-constexpr std::array<std::string_view, 10> report_header{
-    "vocation", "difficulty", "runs", "min", "p10", "median", "p90", "max", "avg lvl", "top killers"};
+constexpr std::array<std::string_view, 12> report_header{
+    "vocation", "difficulty", "runs", "wins", "win %", "min", "p10", "median", "p90", "max", "avg lvl", "top killers"};
 
 std::string join(const std::vector<std::string>& parts, std::string_view separator) {
 	std::string result;
@@ -40,9 +40,9 @@ std::string render_report(std::span<const application::SimulationSummary> summar
 			killers.push_back(std::format("{} ({})", data.creature(creature_id).name, count));
 		}
 		rows.push_back({summary.vocation, summary.difficulty, std::to_string(summary.runs),
-		    std::to_string(summary.min_round), std::to_string(summary.p10_round), std::to_string(summary.median_round),
-		    std::to_string(summary.p90_round), std::to_string(summary.max_round), std::to_string(summary.mean_level),
-		    join(killers, ", ")});
+		    std::to_string(summary.wins), std::format("{}%", summary.win_rate_pct()), std::to_string(summary.min_round),
+		    std::to_string(summary.p10_round), std::to_string(summary.median_round), std::to_string(summary.p90_round),
+		    std::to_string(summary.max_round), std::to_string(summary.mean_level), join(killers, ", ")});
 	}
 
 	// Column widths in characters (creature names may contain non-ASCII letters).

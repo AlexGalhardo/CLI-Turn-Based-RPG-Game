@@ -1,9 +1,10 @@
 """Item factory: base item + rarity + affixes (docs/game-design.md §8)."""
 
-from rpg.domain.definitions import DifficultyDef, GameData, ItemDef, VocationDef
+from collections.abc import Mapping
+
+from rpg.domain.definitions import GameData, ItemDef, RarityDef, VocationDef
 from rpg.domain.entities import AffixRoll, ItemInstance
 from rpg.domain.enums import Slot, Stat
-from rpg.domain.formulas import pct
 from rpg.domain.rng import Rng
 
 
@@ -15,15 +16,15 @@ def can_use(item: ItemDef, vocation: VocationDef) -> bool:
 	return True
 
 
-def rarity_weights(data: GameData, table: str, difficulty: DifficultyDef) -> list[int]:
-	weights = data.balance.rarity_weights[table]
-	result: list[int] = []
-	for rarity in data.balance.rarities:
-		weight = weights.get(rarity.id, 0)
-		if rarity.id != "common":
-			weight = pct(weight, difficulty.non_common_weight_pct)
-		result.append(weight)
-	return result
+def roll_rarity(data: GameData, rng: Rng, weights: Mapping[str, int]) -> RarityDef:
+	"""Weighted roll in the order of `balance.rarities`; zero weights are skipped and a single option is not rolled."""
+	options = [(rarity, weights.get(rarity.id, 0)) for rarity in data.balance.rarities]
+	options = [(rarity, weight) for rarity, weight in options if weight > 0]
+	if not options:
+		raise ValueError("rarity table without a positive weight")
+	if len(options) == 1:
+		return options[0][0]
+	return options[rng.weighted([weight for _, weight in options])][0]
 
 
 def generate_item(
@@ -32,8 +33,7 @@ def generate_item(
 	*,
 	vocation: VocationDef,
 	tier: int,
-	table: str,
-	difficulty: DifficultyDef,
+	weights: Mapping[str, int],
 	uid: int,
 ) -> ItemInstance | None:
 	"""Returns None (consuming no randomness) when no item fits the vocation and tier."""
@@ -45,7 +45,7 @@ def generate_item(
 	if not candidates:
 		return None
 	base = rng.pick(candidates)
-	rarity = data.balance.rarities[rng.weighted(rarity_weights(data, table, difficulty))]
+	rarity = roll_rarity(data, rng, weights)
 	affix_count = rng.roll(rarity.affix_min, rarity.affix_max)
 
 	rolls: list[AffixRoll] = []

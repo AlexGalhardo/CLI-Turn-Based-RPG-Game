@@ -1,9 +1,10 @@
 /** The game engine: a pure state machine `step(command) -> events` (docs/architecture.md). */
 import { buildSheet, itemValue } from "../domain/character";
-import { type GameData, UnknownIdError } from "../domain/definitions";
-import { Player } from "../domain/entities";
+import { type EnemyClassDef, type GameData, UnknownIdError } from "../domain/definitions";
+import { type MonsterInstance, Player } from "../domain/entities";
 import { roundInfo } from "../domain/formulas";
 import { Rng } from "../domain/rng";
+import { autoEquip } from "./auto-equip";
 import { Battle } from "./battle";
 import type { BattleCommand, Command } from "./commands";
 import { ErrorCode, type Event, error, event } from "./events";
@@ -83,6 +84,10 @@ export class GameEngine {
 			case "next_fight":
 				if (phase !== "merchant") return [error(ErrorCode.INVALID_PHASE)];
 				return this.nextFight();
+			case "end_run":
+			case "continue_run":
+				if (phase !== "victory") return [error(ErrorCode.INVALID_PHASE)];
+				return command.type === "end_run" ? this.endRun() : this.continueRun();
 			default:
 				if (phase !== "merchant") return [error(ErrorCode.INVALID_PHASE)];
 				return new Merchant(this.data, this.rng, this.state).handle(command);
@@ -105,6 +110,7 @@ export class GameEngine {
 				cycle: info.cycle,
 				monsterId: monster.creatureId,
 				isBoss: monster.isBoss,
+				enemyClass: monster.enemyClass,
 				hp: monster.hp,
 			}),
 		];
@@ -125,13 +131,20 @@ export class GameEngine {
 		const player = state.player;
 		const monster = state.monster;
 		if (monster === null) throw new Error("victory without a monster");
-		const events: Event[] = [event("monster_killed", { monsterId: monster.creatureId, isBoss: monster.isBoss })];
+		const events: Event[] = [
+			event("monster_killed", {
+				monsterId: monster.creatureId,
+				isBoss: monster.isBoss,
+				enemyClass: monster.enemyClass,
+			}),
+		];
 		events.push(...new Progression(this.data).gainExperience(player, monster.xp));
 
 		const gold = this.rng.roll(monster.goldMin, monster.goldMax);
 		player.gold += gold;
 		events.push(event("gold_looted", { amount: gold }));
-		events.push(...this.drops(monster.isBoss));
+		events.push(...this.drops(monster));
+		if (state.config.autoEquip) events.push(...autoEquip(state, this.data));
 
 		player.statuses = [];
 		player.stunCooldown = 0;
@@ -140,51 +153,71 @@ export class GameEngine {
 		player.hp = Math.min(player.hp, sheet.maxHp);
 		player.mp = Math.min(player.mp, sheet.maxMp);
 		state.monster = null;
-		state.phase = "merchant";
 		state.turn = 0;
+		if (state.round === this.data.balance.finalRound) {
+			state.won = true;
+			state.phase = "victory";
+			events.push(event("run_won", { round: state.round }));
+			return events;
+		}
+		state.phase = "merchant";
 		events.push(...new Merchant(this.data, this.rng, state).enter());
 		return events;
 	}
 
-	private drops(isBoss: boolean): Event[] {
+	/** One rule for the three classes: chance(100) and chance(0) consume nothing (docs/game-design.md §8). */
+	private drops(monster: MonsterInstance): Event[] {
+		const row = this.data.balance.enemyClass(monster.enemyClass);
+		const events: Event[] = [];
+		if (this.rng.chance(row.dropChancePct)) {
+			for (let i = 0; i < row.drops; i++) events.push(...this.dropItem(row));
+		}
+		if (this.rng.chance(row.potionDropPct)) events.push(...this.dropPotion());
+		return events;
+	}
+
+	private dropItem(row: EnemyClassDef): Event[] {
 		const state = this.state;
 		const balance = this.data.balance;
-		let count: number;
-		let table: string;
-		if (isBoss) {
-			count = balance.bossDrops;
-			table = "boss";
-		} else if (this.rng.chance(balance.dropChancePct)) {
-			count = 1;
-			table = "monster";
+		const item = generateItem(this.data, this.rng, {
+			vocation: this.data.vocation(state.player.vocationId),
+			tier: roundInfo(state.round, balance, this.data.tierCount).tier,
+			weights: row.rarityWeights,
+			uid: state.nextItemUid,
+		});
+		if (item === null) return [];
+		state.takeItemUid();
+		const events: Event[] = [event("item_dropped", { uid: item.uid, itemId: item.itemId, rarity: item.rarity })];
+		if (state.player.bag.length >= balance.bagCapacity) {
+			const value = itemValue(item, this.data);
+			state.player.gold += value;
+			events.push(event("item_auto_sold", { uid: item.uid, itemId: item.itemId, gold: value }));
 		} else {
-			return [];
-		}
-
-		const tier = roundInfo(state.round, balance, this.data.tierCount).tier;
-		const difficulty = balance.difficulty(state.config.difficultyId);
-		const vocation = this.data.vocation(state.player.vocationId);
-		const events: Event[] = [];
-		for (let i = 0; i < count; i++) {
-			const item = generateItem(this.data, this.rng, {
-				vocation,
-				tier,
-				table,
-				difficulty,
-				uid: state.nextItemUid,
-			});
-			if (item === null) continue;
-			state.takeItemUid();
-			events.push(event("item_dropped", { uid: item.uid, itemId: item.itemId, rarity: item.rarity }));
-			if (state.player.bag.length >= balance.bagCapacity) {
-				const value = itemValue(item, this.data);
-				state.player.gold += value;
-				events.push(event("item_auto_sold", { uid: item.uid, itemId: item.itemId, gold: value }));
-			} else {
-				state.player.bag.push(item);
-			}
+			state.player.bag.push(item);
 		}
 		return events;
+	}
+
+	private dropPotion(): Event[] {
+		const state = this.state;
+		const unlocked = this.data.potions.filter((potion) => potion.unlockRound <= state.round);
+		if (unlocked.length === 0) return [];
+		const potion = this.rng.pick(unlocked);
+		state.player.potions.set(potion.id, state.player.potionCount(potion.id) + 1);
+		return [event("potion_dropped", { potionId: potion.id })];
+	}
+
+	private endRun(): Event[] {
+		const state = this.state;
+		state.phase = "game_over";
+		state.deathCause = null;
+		return [event("run_ended", { won: state.won })];
+	}
+
+	private continueRun(): Event[] {
+		const state = this.state;
+		state.phase = "merchant";
+		return new Merchant(this.data, this.rng, state).enter();
 	}
 
 	private defeat(): Event[] {

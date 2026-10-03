@@ -42,8 +42,28 @@ TEST_CASE("events format to English sentences", "[unit][event_text]") {
 	        "Round 10: the boss Munster challenges you! (5 HP)"},
 	    {Event{"item_sold", {{"uid", I{3}}, {"itemId", S("sword")}, {"gold", I{25}}}}, "You sold Sword for 25 gold."},
 	    {application::error_event("not_enough_mana"), "Not enough mana."},
+	    {application::error_event("level_too_low"), "Your level is too low for that item."},
+	    {Event{"round_started", {{"round", I{3}}, {"tier", I{0}}, {"cycle", I{0}}, {"monsterId", S("rat")},
+	                                {"isBoss", false}, {"enemyClass", S("elite")}, {"hp", I{90}}}},
+	        "Round 3: an ELITE Rat appears! (90 HP)"},
+	    {Event{"monster_attacked", {{"attackId", S("bite")}, {"damage", I{9}}, {"element", S("physical")},
+	                                   {"charged", false}, {"crit", true}}},
+	        "CRITICAL! Rat hits you for 9 physical damage."},
+	    {Event{"monster_dodged"}, "Rat dodges your attack!"},
+	    {Event{"monster_parried", {{"reflected", I{4}}}}, "Rat parries your attack: you take 4 damage!"},
+	    {Event{"monster_healed", {{"amount", I{12}}}}, "Rat heals 12 HP."},
+	    {Event{"attack_parried", {{"attackId", S("bite")}, {"reflected", I{3}}}},
+	        "You parry the attack and reflect 3 damage!"},
+	    {Event{"item_auto_equipped", {{"uid", I{5}}, {"itemId", S("sword")}, {"slot", S("weapon")}, {"score", I{60}}}},
+	        "Auto-equipped Sword (score 60)."},
+	    {Event{"item_auto_sold", {{"uid", I{6}}, {"itemId", S("bow")}, {"gold", I{30}}}},
+	        "Sold Bow for 30 gold (auto-sell)."},
+	    {Event{"potion_dropped", {{"potionId", S("mana_potion")}}}, "Loot: Mana Potion!"},
+	    {Event{"run_won", {{"round", I{100}}}}, "VICTORY! You defeated the final boss on round 100!"},
+	    {Event{"run_ended", {{"won", true}}}, "Your victory is recorded in the Hall of Fame."},
 	}));
-	const auto engine = rpg::testing::new_engine(rpg::testing::test_data());
+	auto engine = rpg::testing::new_engine(rpg::testing::test_data());
+	engine.state.monster = domain::MonsterInstance{"rat", false, "normal", 10, 10, 1, 1, 1, {}, {}, 0, 0};
 	REQUIRE(format(event, engine.state) == expected);
 }
 

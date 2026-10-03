@@ -32,6 +32,8 @@ func (c *Controller) body() []string {
 		return c.characterSheet()
 	case ViewGameOver:
 		return c.gameOverSummary()
+	case ViewVictory:
+		return c.victorySummary()
 	case ViewHallOfFame:
 		return c.hallOfFame()
 	case ViewBestiary:
@@ -96,13 +98,13 @@ func (c *Controller) characterSheet() []string {
 
 	for _, stat := range stats {
 		if stat.value != 0 {
-			lines = append(lines, c.T("character.stat_line", map[string]any{"stat": c.T(stat.key, nil), "value": stat.value}))
+			lines = append(lines, c.T("character.stat_line", map[string]any{paramStat: c.T(stat.key, nil), paramValue: stat.value}))
 		}
 	}
 
 	for _, element := range domain.Elements {
 		if value := sheet.Protection(element); value != 0 {
-			lines = append(lines, c.T("character.stat_line", map[string]any{"stat": c.T("element."+string(element), nil), "value": fmt.Sprintf("%d%%", value)}))
+			lines = append(lines, c.T("character.stat_line", map[string]any{paramStat: c.T("element."+string(element), nil), paramValue: fmt.Sprintf("%d%%", value)}))
 		}
 	}
 
@@ -112,7 +114,7 @@ func (c *Controller) characterSheet() []string {
 		slotName := c.T("slot."+string(slot), nil)
 		if item, ok := player.Equipment[slot]; ok {
 			lines = append(lines, c.T("character.slot", map[string]any{
-				"slot": slotName, "item": data.Item(item.ItemID).Name, "rarity": c.T("rarity."+item.Rarity, nil),
+				"slot": slotName, "item": data.Item(item.ItemID).Name, paramRarity: c.T("rarity."+item.Rarity, nil),
 			}))
 		} else {
 			lines = append(lines, c.T("character.empty_slot", map[string]any{"slot": slotName}))
@@ -122,21 +124,50 @@ func (c *Controller) characterSheet() []string {
 	return append(lines, c.T("character.bag", map[string]any{"count": len(player.Bag), "capacity": data.Balance.BagCapacity}))
 }
 
-func (c *Controller) gameOverSummary() []string {
+func (c *Controller) runStatsLine() string {
 	state := c.Session.State()
 
-	monster := "?"
-	if cause := state.DeathCauseOr(""); cause != "" {
-		monster = c.Services.Data.Creature(cause).Name
+	return c.T("gameover.stats", map[string]any{
+		"level": state.Player.Level, "damage": state.Stats.DamageDealt, "kills": state.Stats.TotalKills(),
+		"elites": state.Stats.ElitesKilled, "bosses": state.Stats.BossesKilled,
+	})
+}
+
+func (c *Controller) gameOverSummary() []string {
+	state := c.Session.State()
+	params := map[string]any{
+		"name": state.Player.Name, "vocation": c.T("vocation."+state.Player.VocationID, nil), "round": state.Round,
 	}
 
+	var summary string
+
+	switch cause := state.DeathCauseOr(""); {
+	case cause != "":
+		params["monster"] = c.Services.Data.Creature(cause).Name
+		summary = c.T("gameover.summary", params)
+	case state.Won:
+		summary = c.T("gameover.won_summary", params)
+	default:
+		params["monster"] = "?"
+		summary = c.T("gameover.summary", params)
+	}
+
+	return []string{summary, c.runStatsLine()}
+}
+
+func (c *Controller) victorySummary() []string {
+	state := c.Session.State()
+	data := c.Services.Data
+	boss := data.BossOfTier(domain.RoundInfoFor(state.Round, &data.Balance, data.TierCount()).Tier)
+
 	return []string{
-		c.T("gameover.summary", map[string]any{
-			"name": state.Player.Name, "vocation": c.T("vocation."+state.Player.VocationID, nil), "round": state.Round, "monster": monster,
+		c.T("victory.summary", map[string]any{
+			"name": state.Player.Name, "vocation": c.T("vocation."+state.Player.VocationID, nil),
+			"monster": boss.Name, "round": state.Round,
 		}),
-		c.T("gameover.stats", map[string]any{
-			"level": state.Player.Level, "damage": state.Stats.DamageDealt, "kills": state.Stats.TotalKills(), "bosses": state.Stats.BossesKilled,
-		}),
+		c.runStatsLine(),
+		"",
+		c.T("victory.choice", nil),
 	}
 }
 
@@ -148,7 +179,12 @@ func (c *Controller) hallOfFame() []string {
 
 	lines := make([]string, len(hall))
 	for index, entry := range hall {
-		lines[index] = c.T("hall.entry", map[string]any{
+		key := "hall.entry"
+		if entry.Won {
+			key = "hall.entry_won"
+		}
+
+		lines[index] = c.T(key, map[string]any{
 			"position": index + 1, "name": entry.Name, "vocation": c.T("vocation."+entry.Vocation, nil),
 			"difficulty": c.T("difficulty."+entry.Difficulty, nil), "round": entry.Round, "level": entry.Level,
 			"date": entry.EndedAt[:min(10, len(entry.EndedAt))],
@@ -222,7 +258,7 @@ func (c *Controller) achievements() []string {
 
 	for _, achievement := range c.Services.Data.Achievements {
 		name := c.T("achievement."+achievement.ID+".name", nil)
-		description := c.T("achievement."+achievement.ID+".description", map[string]any{"value": achievement.Value})
+		description := c.T("achievement."+achievement.ID+".description", map[string]any{paramValue: achievement.Value})
 
 		if unlock, ok := unlocked[achievement.ID]; ok {
 			lines = append(lines, c.T("achievements.unlocked", map[string]any{

@@ -128,8 +128,8 @@ defmodule Rpg.Unit.MerchantAndLootTest do
   test "generate item is deterministic and affixes are unique" do
     data = loot_data()
     vocation = GameData.vocation(data, "warrior")
-    normal = Balance.difficulty(data.balance, "normal")
-    opts = fn tier, uid -> [vocation: vocation, tier: tier, table: "boss", difficulty: normal, uid: uid] end
+    weights = Balance.enemy_class(data.balance, "boss").rarity_weights
+    opts = fn tier, uid -> [vocation: vocation, tier: tier, weights: weights, uid: uid] end
     first = Enum.map(0..19, &elem(Loot.generate_item(data, Rng.new(5), opts.(0, &1)), 0))
     second = Enum.map(0..19, &elem(Loot.generate_item(data, Rng.new(5), opts.(0, &1)), 0))
     assert first == second
@@ -137,7 +137,7 @@ defmodule Rpg.Unit.MerchantAndLootTest do
     Enum.reduce(0..199, Rng.new(11), fn uid, rng ->
       {item, rng} = Loot.generate_item(data, rng, opts.(1, uid))
       assert item != nil
-      assert item.rarity != "common"
+      assert item.rarity in ["legendary", "mythic"]
       stats = Enum.map(item.affixes, & &1.stat)
       assert length(stats) == length(Enum.uniq(stats))
       assert Loot.can_use(GameData.item(data, item.item_id), vocation)
@@ -147,19 +147,40 @@ defmodule Rpg.Unit.MerchantAndLootTest do
 
   test "generate item without candidates consumes nothing" do
     data = Helpers.data()
-    normal = Balance.difficulty(data.balance, "normal")
     empty = GameData.replace(data, items: [])
     rng = Rng.new(3)
-    opts = [vocation: GameData.vocation(data, "mage"), tier: 9, table: "monster", difficulty: normal, uid: 1]
+    weights = Balance.enemy_class(data.balance, "normal").rarity_weights
+    opts = [vocation: GameData.vocation(data, "mage"), tier: 9, weights: weights, uid: 1]
     assert Loot.generate_item(empty, rng, opts) == {nil, rng}
   end
 
-  test "hard difficulty boosts non-common weights" do
+  test "roll_rarity skips zero weights and single options" do
     data = Helpers.data()
-    [normal_common | normal] = Loot.rarity_weights(data, "monster", Balance.difficulty(data.balance, "normal"))
-    [hard_common | hard] = Loot.rarity_weights(data, "monster", Balance.difficulty(data.balance, "hard"))
-    assert hard_common == normal_common
-    assert Enum.zip(hard, normal) |> Enum.all?(fn {h, n} -> h >= n end)
+    rng = Rng.new(1)
+    assert {%{id: "rare"}, ^rng} = Loot.roll_rarity(data, rng, %{"rare" => 5})
+    assert {%{id: "mythic"}, ^rng} = Loot.roll_rarity(data, rng, %{"common" => 0, "mythic" => 3})
+
+    {rolled, rolled_rng} =
+      Enum.map_reduce(1..40, rng, fn _, rng ->
+        {rarity, rng} = Loot.roll_rarity(data, rng, %{"common" => 1, "legendary" => 1})
+        {rarity.id, rng}
+      end)
+
+    assert MapSet.new(rolled) == MapSet.new(["common", "legendary"])
+    assert Rng.state(rolled_rng) != 1
+    assert_raise ArgumentError, ~r/positive/, fn -> Loot.roll_rarity(data, rng, %{"common" => 0}) end
+  end
+
+  for {rarity, attack, affixes} <- [{"common", 20, 0}, {"rare", 30, 1}, {"legendary", 40, 2}, {"mythic", 60, 2}] do
+    @rarity rarity
+    @attack attack
+    @affixes affixes
+    test "rarity #{rarity} scales base stats and affix counts" do
+      data = Helpers.with_test_items(Helpers.data())
+      assert Character.item_stats(item(1, "test_axe", @rarity), data) == %{"attack" => @attack}
+      definition = Balance.rarity(data.balance, @rarity)
+      assert {definition.affix_min, definition.affix_max} == {@affixes, @affixes}
+    end
   end
 
   test "item stats apply rarity and affixes" do
@@ -173,8 +194,51 @@ defmodule Rpg.Unit.MerchantAndLootTest do
       affixes: [%AffixRoll{stat: "maxHp", value: 7}]
     }
 
-    assert Character.item_stats(helmet, data) == %{"armor" => 15, "maxHp" => 82}
-    assert Character.item_value(helmet, data) == 1000
+    assert Character.item_stats(helmet, data) == %{"armor" => 20, "maxHp" => 107}
+    assert Character.item_value(helmet, data) == 600
+  end
+
+  test "item score weights the final stats" do
+    data = Helpers.with_test_items(Helpers.data())
+    weights = data.balance.item_score_weights
+    common = item(1, "test_helmet")
+    assert Character.item_score(common, data) == 10 * weights["armor"] + 50 * weights["maxHp"]
+    scores = Enum.map(["common", "rare", "legendary"], &Character.item_score(item(1, "test_helmet", &1), data))
+    assert scores == Enum.sort(scores)
+    assert length(Enum.uniq(scores)) == 3
+    with_affix = %{common | affixes: [%AffixRoll{stat: "dodge", value: 2}]}
+    assert Character.item_score(with_affix, data) == Character.item_score(common, data) + 2 * weights["dodge"]
+  end
+
+  test "required level grows with the item tier" do
+    data = Helpers.data()
+    per_tier = data.balance.item_level_per_tier
+    assert Character.required_level(%ItemInstance{uid: 1, item_id: "sword", rarity: "common", tier: 0}, data) == 1
+    sword = %ItemInstance{uid: 1, item_id: "sword", rarity: "common", tier: 3}
+    assert Character.required_level(sword, data) == 1 + 3 * per_tier
+  end
+
+  test "equip rejects items above the player level" do
+    data = Helpers.with_test_items(Helpers.data())
+    axe = %ItemInstance{uid: 60, item_id: "test_axe", rarity: "common", tier: 5}
+    engine = new_engine(data: data) |> update_player(&%{&1 | bag: &1.bag ++ [axe]})
+    rng_state = GameEngine.rng_state(engine)
+    {engine, events} = step(engine, %Equip{uid: 60})
+    assert events == [%{"type" => "error", "code" => "level_too_low"}]
+    assert axe in engine.state.player.bag
+    assert GameEngine.rng_state(engine) == rng_state
+    engine = update_player(engine, &%{&1 | level: Character.required_level(axe, data)})
+    {_engine, events} = step(engine, %Equip{uid: 60})
+    assert List.last(events) == %{"type" => "item_equipped", "uid" => 60, "itemId" => "test_axe", "slot" => "weapon"}
+  end
+
+  test "selling an equipped uid is rejected" do
+    engine = new_engine()
+    weapon = engine.state.player.equipment["weapon"]
+    {after_sell, events} = step(engine, %SellItem{uid: weapon.uid})
+    assert events == [%{"type" => "error", "code" => "invalid_item"}]
+    assert after_sell.state.player.equipment["weapon"] == weapon
+    assert after_sell.state.player.gold == engine.state.player.gold
   end
 
   test "shields follow the vocation shield types" do

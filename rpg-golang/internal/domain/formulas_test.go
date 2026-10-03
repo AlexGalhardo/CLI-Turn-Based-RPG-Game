@@ -154,8 +154,10 @@ func TestScalingFor(t *testing.T) {
 		t.Fatal("reward scaling is wrong")
 	}
 
-	boss := domain.ScalingFor(domain.RoundInfoFor(10, balance, data.TierCount()), balance, balance.MustDifficulty("normal"))
-	if boss.HPPctProduct != 1_000_000 {
+	normal := balance.MustDifficulty("normal")
+
+	boss := domain.ScalingFor(domain.RoundInfoFor(10, balance, data.TierCount()), balance, normal)
+	if boss.HPPctProduct != normal.HPPct*100*100 {
 		t.Fatal("bosses ignore position scaling")
 	}
 }

@@ -2,8 +2,7 @@
 
 #include <algorithm>
 #include <set>
-
-#include "domain/formulas.hpp"
+#include <stdexcept>
 
 namespace rpg::application {
 
@@ -17,20 +16,24 @@ bool can_use(const domain::ItemDef& item, const domain::VocationDef& vocation) {
 	return true;
 }
 
-std::vector<std::int64_t> rarity_weights(
-    const domain::GameData& data, const std::string& table, const domain::DifficultyDef& difficulty) {
-	const auto& weights = data.balance.rarity_weights.at(table);
-	std::vector<std::int64_t> result;
-	result.reserve(data.balance.rarities.size());
+const domain::RarityDef& roll_rarity(
+    const domain::GameData& data, domain::Rng& rng, const domain::RarityWeights& weights) {
+	std::vector<const domain::RarityDef*> options;
+	std::vector<std::int64_t> option_weights;
 	for (const domain::RarityDef& rarity : data.balance.rarities) {
-		const auto found = weights.find(rarity.id);
-		std::int64_t weight = found == weights.end() ? 0 : found->second;
-		if (rarity.id != "common") {
-			weight = domain::pct(weight, difficulty.non_common_weight_pct);
+		const std::int64_t weight = domain::count_of(weights, rarity.id);
+		if (weight > 0) {
+			options.push_back(&rarity);
+			option_weights.push_back(weight);
 		}
-		result.push_back(weight);
 	}
-	return result;
+	if (options.empty()) {
+		throw std::invalid_argument("rarity table without a positive weight");
+	}
+	if (options.size() == 1) {
+		return *options.front();
+	}
+	return *options[rng.weighted(option_weights)];
 }
 
 std::optional<domain::ItemInstance> generate_item(
@@ -48,8 +51,7 @@ std::optional<domain::ItemInstance> generate_item(
 
 	std::ranges::sort(candidates, {}, &domain::ItemDef::id);
 	const domain::ItemDef& base = *rng.pick(candidates);
-	const domain::RarityDef& rarity =
-	    data.balance.rarities[rng.weighted(rarity_weights(data, request.table, *request.difficulty))];
+	const domain::RarityDef& rarity = roll_rarity(data, rng, *request.weights);
 	const std::int64_t affix_count = rng.roll(rarity.affix_min, rarity.affix_max);
 
 	std::vector<domain::AffixRoll> rolls;

@@ -8,6 +8,7 @@ import type { Command } from "../../src/application/commands";
 import { canUse } from "../../src/application/loot";
 import { availablePotions } from "../../src/application/merchant";
 import { ArtLibrary } from "../../src/infrastructure/art";
+import { SettingsRepository } from "../../src/infrastructure/repositories";
 import { Controller, type View } from "../../src/presentation/controller";
 import { listKey } from "../../src/presentation/render";
 import { App } from "../../src/presentation/tui/app";
@@ -19,10 +20,10 @@ const ESCAPE_WAIT_MS = 100;
 const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 const tick = (): Promise<void> => delay(0);
 
-function mount(dir: string, lang: string | null = "en") {
+function mount(dir: string, lang: string | null = "en", animate = false) {
 	const controller = new Controller(makeServices(dir), { seed: 42, localeOverride: lang });
 	const instance = render(
-		<App controller={controller} art={new ArtLibrary()} animate={false} columns={100} rows={30} />,
+		<App controller={controller} art={new ArtLibrary()} animate={animate} columns={100} rows={30} />,
 	);
 	const press = async (...keys: string[]): Promise<void> => {
 		for (const key of keys) {
@@ -67,10 +68,12 @@ function keysFor(command: Command, controller: Controller): string[] {
 			const usable = state.player.bag
 				.filter((item) => canUse(DATA.item(item.itemId), vocation))
 				.map((i) => i.uid);
-			return ["3", listKey(usable.indexOf(command.uid)), "0"];
+			return ["3", listKey(usable.indexOf(command.uid)), "1", "0"];
 		}
 		case "buy_stock_item":
 			return ["4", listKey(command.index), "0"];
+		case "end_run":
+			return ["1"];
 		default:
 			throw new Error(`unexpected command ${command.type}`);
 	}
@@ -87,6 +90,8 @@ describe("Ink TUI", () => {
 		await press("2", "3", "A", "n", "a", ENTER);
 		expect(view()).toBe("vocation");
 		await press("3");
+		expect(view()).toBe("auto_equip");
+		await press("2");
 		expect(view()).toBe("merchant");
 		expect(screen()).toContain("Ana");
 		expect(screen()).toContain("Mago");
@@ -96,7 +101,7 @@ describe("Ink TUI", () => {
 
 	test("battle, merchant, save & quit and continue", async () => {
 		const { controller, press, screen, view } = mount(tempDir());
-		await press("2", "2", "B", "o", ENTER, "1");
+		await press("2", "2", "B", "o", ENTER, "1", "2");
 		expect(view()).toBe("merchant");
 		await press("1", "1", "1", ENTER);
 		expect(controller.session?.state.player.potionCount("health_potion")).toBe(6);
@@ -106,6 +111,10 @@ describe("Ink TUI", () => {
 		expect(view()).toBe("battle");
 		expect(screen()).toContain("HP");
 		expect(screen()).toContain("Round 1");
+		const monster = controller.session?.state.monster ?? null;
+		if (monster === null) throw new Error("no monster");
+		monster.hp = 1_000_000;
+		monster.maxHp = 1_000_000;
 		await press("1", "2");
 		expect(view()).toBe("spells");
 		await press(listKey(0), "3");
@@ -124,14 +133,20 @@ describe("Ink TUI", () => {
 		const dir = tempDir();
 		const { controller, instance, press, screen, view } = mount(dir);
 		const bot = new GreedyBot(DATA);
-		await press("2", "3", "H", "e", "r", "o", ENTER, "1");
+		await press("2", "3", "H", "e", "r", "o", ENTER, "1", "2");
+		let jumped = false;
 		for (let i = 0; i < 5000 && controller.session?.state.phase !== "game_over"; i++) {
 			const session = controller.session;
 			if (session === null) throw new Error("session lost");
+			if (!jumped && session.state.phase === "merchant" && session.state.stats.kills.total() > 0) {
+				// After the first kill, skip ahead so the run ends quickly (each fight costs many key presses).
+				session.state.round = 95;
+				jumped = true;
+			}
 			await press(...keysFor(bot.choose(session.state), controller));
 		}
 		expect(view()).toBe("game_over");
-		expect(screen()).toContain("GAME OVER");
+		expect(screen()).toContain(controller.session?.state.won === true ? "RUN COMPLETE" : "GAME OVER");
 		await press("2", "3");
 		expect(screen()).toContain("Hero");
 		await press("0", "5");
@@ -144,6 +159,53 @@ describe("Ink TUI", () => {
 		expect(existsSync(join(dir, "save.json"))).toBe(false);
 		expect(readdirSync(join(dir, "history"))).toHaveLength(1);
 	}, 120_000);
+
+	test("a whole run with auto-battle (instant without animation)", async () => {
+		const dir = tempDir();
+		const { controller, press, screen, view } = mount(dir);
+		await press("2", "1", "A", "u", "t", "o", ENTER, "2", "1");
+		const session = controller.session;
+		if (session === null) throw new Error("no session");
+		expect(session.state.config.autoEquip).toBe(true);
+		const modes = ["1", "2", "3"];
+		for (let fight = 0; fight < 5000 && session.state.phase !== "game_over"; fight++) {
+			if (session.state.phase === "victory") {
+				expect(screen()).toContain("VICTORY");
+				await press("1");
+				continue;
+			}
+			await press("0", "5", modes[fight % modes.length] ?? "1");
+			expect(controller.autoBattleActive).toBe(false);
+		}
+		expect(view()).toBe("game_over");
+		expect(session.state.round).toBeGreaterThanOrEqual(1);
+		expect(readdirSync(join(dir, "history"))).toHaveLength(1);
+	}, 120_000);
+
+	test("auto-battle is paced by a timer", async () => {
+		const dir = tempDir();
+		new SettingsRepository(dir).save({ locale: "en", autoEquip: false, battleSpeed: 2 });
+		const { controller, instance, press, view } = mount(dir, null, true);
+		await press("2", "1", "T", "i", "m", ENTER, "1", "2", "0");
+		expect(view()).toBe("battle");
+		const session = controller.session;
+		const monster = session?.state.monster ?? null;
+		if (session === null || monster === null) throw new Error("no fight");
+		monster.hp = 1_000_000;
+		monster.maxHp = 1_000_000;
+		session.state.player.hp = 1_000_000;
+		await press("5", "1");
+		expect(controller.autoBattleActive).toBe(true);
+		const turn = session.state.turn;
+		await delay(controller.autoBattleIntervalMs() * 3);
+		expect(session.state.turn).toBeGreaterThan(turn);
+		await press("4");
+		monster.hp = 1;
+		for (let i = 0; i < 20 && controller.autoBattleActive; i++) await delay(controller.autoBattleIntervalMs());
+		expect(controller.autoBattleActive).toBe(false);
+		expect(view()).not.toBe("battle");
+		instance.unmount();
+	}, 30_000);
 
 	test("small terminals get a resize message", () => {
 		const controller = new Controller(makeServices(tempDir()), { localeOverride: "en" });

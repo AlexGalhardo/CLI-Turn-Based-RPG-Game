@@ -11,8 +11,12 @@ use serde_json::ser::{PrettyFormatter, Serializer};
 
 use crate::application::ports::{Clock, HistoryRepository, ProfileRepository, SaveRepository};
 use crate::application::profile::Profile;
-use crate::application::save_game::{PersistenceError, RunRecord, SaveGame, check_schema};
+use crate::application::save_game::{PersistenceError, RunRecord, SCHEMA_VERSION, SaveGame, check_schema};
 use crate::infrastructure::i18n::SUPPORTED_LOCALES;
+use crate::infrastructure::migrations::{migrate_history, migrate_profile, migrate_save, migrate_settings};
+
+/// Auto-battle paces (docs/tui.md); the first one is the default.
+pub const BATTLE_SPEEDS: [i64; 2] = [1, 2];
 
 fn io_error(path: &Path, error: &std::io::Error) -> PersistenceError {
 	PersistenceError::Io(format!("{}: {error}", path.display()))
@@ -61,9 +65,17 @@ impl Clock for SystemClock {
 	}
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Settings {
 	pub locale: Option<String>,
+	pub auto_equip: bool,
+	pub battle_speed: i64,
+}
+
+impl Default for Settings {
+	fn default() -> Settings {
+		Settings { locale: None, auto_equip: false, battle_speed: BATTLE_SPEEDS[0] }
+	}
 }
 
 #[derive(Debug, Clone)]
@@ -81,8 +93,16 @@ impl SettingsRepository {
 			return Ok(Settings::default());
 		};
 		check_schema(&data, "settings.json")?;
+		let data = migrate_settings(data);
+		let invalid = |key: &str| PersistenceError::Invalid(format!("settings.json: invalid {key}"));
 		let locale = data.get("locale").and_then(Value::as_str).filter(|locale| SUPPORTED_LOCALES.contains(locale));
-		Ok(Settings { locale: locale.map(str::to_owned) })
+		let auto_equip = data.get("autoEquip").and_then(Value::as_bool).ok_or_else(|| invalid("autoEquip"))?;
+		let speed = data.get("battleSpeed").and_then(Value::as_i64).ok_or_else(|| invalid("battleSpeed"))?;
+		Ok(Settings {
+			locale: locale.map(str::to_owned),
+			auto_equip,
+			battle_speed: if BATTLE_SPEEDS.contains(&speed) { speed } else { BATTLE_SPEEDS[0] },
+		})
 	}
 
 	pub fn save(&self, settings: &Settings) -> Result<(), PersistenceError> {
@@ -92,8 +112,18 @@ impl SettingsRepository {
 			schema_version: i64,
 			#[serde(skip_serializing_if = "Option::is_none")]
 			locale: Option<&'a str>,
+			auto_equip: bool,
+			battle_speed: i64,
 		}
-		write_json_atomic(&self.path, &SettingsDocument { schema_version: 1, locale: settings.locale.as_deref() })
+		write_json_atomic(
+			&self.path,
+			&SettingsDocument {
+				schema_version: SCHEMA_VERSION,
+				locale: settings.locale.as_deref(),
+				auto_equip: settings.auto_equip,
+				battle_speed: settings.battle_speed,
+			},
+		)
 	}
 }
 
@@ -110,7 +140,11 @@ impl FileSaveRepository {
 
 impl SaveRepository for FileSaveRepository {
 	fn load(&self) -> Result<Option<SaveGame>, PersistenceError> {
-		read_json(&self.path)?.map(|raw| SaveGame::from_json(&raw)).transpose()
+		let Some(document) = read_json(&self.path)? else {
+			return Ok(None);
+		};
+		check_schema(&document, "save.json")?;
+		SaveGame::from_json(&migrate_save(document)).map(Some)
 	}
 
 	fn save(&self, save: &SaveGame) -> Result<(), PersistenceError> {
@@ -153,7 +187,15 @@ impl HistoryRepository for FileHistoryRepository {
 			.filter(|path| path.extension().is_some_and(|extension| extension == "json"))
 			.collect();
 		paths.sort();
-		paths.iter().filter_map(|path| read_json(path).transpose()).map(|raw| RunRecord::from_json(&raw?)).collect()
+		let mut records = Vec::new();
+		for path in &paths {
+			let Some(document) = read_json(path)? else {
+				continue;
+			};
+			check_schema(&document, "history record")?;
+			records.push(RunRecord::from_json(&migrate_history(document))?);
+		}
+		Ok(records)
 	}
 }
 
@@ -172,7 +214,10 @@ impl ProfileRepository for FileProfileRepository {
 	fn load(&self) -> Result<Profile, PersistenceError> {
 		match read_json(&self.path)? {
 			None => Ok(Profile::default()),
-			Some(raw) => Profile::from_json(&raw),
+			Some(raw) => {
+				check_schema(&raw, "profile.json")?;
+				Profile::from_json(&migrate_profile(raw))
+			}
 		}
 	}
 

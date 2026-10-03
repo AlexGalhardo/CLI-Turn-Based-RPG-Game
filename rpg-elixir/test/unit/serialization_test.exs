@@ -8,7 +8,9 @@ defmodule Rpg.Unit.SerializationTest do
     BuyPotion,
     BuyStockItem,
     Cast,
+    ContinueRun,
     Defend,
+    EndRun,
     Equip,
     NextFight,
     SellItem,
@@ -31,7 +33,9 @@ defmodule Rpg.Unit.SerializationTest do
     %SellItem{uid: 4},
     %Equip{uid: 5},
     %Unequip{slot: "ring"},
-    %BuyStockItem{index: 1}
+    %BuyStockItem{index: 1},
+    %EndRun{},
+    %ContinueRun{}
   ]
 
   for command <- @all_commands do
@@ -62,7 +66,7 @@ defmodule Rpg.Unit.SerializationTest do
         item = %ItemInstance{
           uid: 90,
           item_id: "sword",
-          rarity: "epic",
+          rarity: "mythic",
           tier: 2,
           affixes: [%AffixRoll{stat: "dodge", value: 3}]
         }

@@ -11,9 +11,6 @@
 
 namespace rpg::application {
 
-// The sum of an item's stats (the bot's naive "better item" heuristic).
-std::int64_t item_score(const domain::ItemInstance& item, const domain::GameData& data);
-
 // A deterministic heuristic player used by the simulator and the end-to-end parity tests. Its decisions are part of
 // the golden "bot full run" files: it mirrors the reference GreedyBot decision by decision.
 class GreedyBot {

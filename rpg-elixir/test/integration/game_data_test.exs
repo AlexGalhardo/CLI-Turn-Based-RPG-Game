@@ -1,7 +1,8 @@
 defmodule Rpg.Integration.GameDataTest do
   use ExUnit.Case, async: false
 
-  alias Rpg.Domain.Definitions.{Balance, GameData, MonsterDef, UnknownIdError}
+  alias Rpg.Domain.Definitions.{AutoBattleDef, Balance, GameData, MonsterDef, UnknownIdError}
+  alias Rpg.Domain.Enums
   alias Rpg.Infrastructure.DataLoader
   alias Rpg.Infrastructure.DataLoader.DataError
   alias Rpg.Infrastructure.Paths
@@ -54,11 +55,32 @@ defmodule Rpg.Integration.GameDataTest do
     assert length(ids) == length(Enum.uniq(ids))
   end
 
+  test "balance M8 tables" do
+    data = Helpers.data()
+    balance = data.balance
+    rarity_ids = Enum.map(balance.rarities, & &1.id)
+    assert rarity_ids == ["common", "rare", "legendary", "mythic"]
+    assert Enum.map(balance.rarities, & &1.stat_pct) == [100, 150, 200, 300]
+    assert Enum.map(balance.spell_levels, & &1.effect_pct) == [100, 150, 200]
+    assert Map.keys(balance.rarity_weights) == ["merchant"]
+
+    for enemy_class <- balance.enemy_classes do
+      assert enemy_class.rarity_weights |> Map.keys() |> Enum.all?(&(&1 in rarity_ids))
+    end
+
+    assert Balance.enemy_class(balance, "elite").stat_pct > Balance.enemy_class(balance, "normal").stat_pct
+    assert balance.item_score_weights |> Map.keys() |> Enum.sort() == Enum.sort(Enums.stats())
+    assert GameData.boss_of_tier(data, GameData.tier_count(data) - 1).id == "ferumbras"
+    assert balance.final_round == balance.rounds_per_tier * GameData.tier_count(data)
+  end
+
   test "lookup errors" do
     data = Helpers.data()
     assert_raise UnknownIdError, fn -> GameData.spell(data, "avada_kedavra") end
     assert_raise UnknownIdError, fn -> Balance.difficulty(data.balance, "nightmare") end
-    assert_raise UnknownIdError, fn -> Balance.rarity(data.balance, "mythic") end
+    assert_raise UnknownIdError, fn -> Balance.rarity(data.balance, "epic") end
+    assert_raise UnknownIdError, fn -> Balance.enemy_class(data.balance, "champion") end
+    assert_raise UnknownIdError, fn -> AutoBattleDef.mode(data.balance.auto_battle, "berserk") end
     assert_raise UnknownIdError, ~r/laser/, fn -> MonsterDef.attack(GameData.creature(data, "rat"), "laser") end
   end
 

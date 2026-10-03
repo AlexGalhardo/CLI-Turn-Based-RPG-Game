@@ -42,11 +42,13 @@ rpg-elixir/
 │   ├── domain/                      # rng, enums, json_types, definitions, formulas, entities, character
 │   ├── application/                 # engine (GameEngine), battle, merchant, loot, spawner, progression,
 │   │                                # statistics, run_state, save_game, profile, game_session, ports, bot
-│   │                                # (GreedyBot), simulator, commands, events
-│   ├── infrastructure/              # assets (embedded shared/), data_loader, i18n, art, paths, repositories
+│   │                                # (GreedyBot), auto_battle, auto_equip, simulator, commands, events
+│   ├── infrastructure/              # assets (embedded shared/), data_loader, i18n, art, paths, repositories,
+│   │                                # migrations (schema 1 → 2)
 │   └── presentation/                # cli, event_text, render, controller, simulator_report
 │       └── tui/app.ex               # pure renderer (App) + the terminal loop (Terminal)
-└── test/{unit,integration,golden,e2e}/   # + test/support/helpers.ex (fixtures, FakeClock)
+└── test/{unit,integration,golden,e2e}/   # + test/support/helpers.ex (fixtures, calm/with_enemy_class, FakeClock,
+                                         #   ControllerHelpers)
 ```
 
 File names mirror Python (`battle.py` ↔ `battle.ex`); module names follow the file
@@ -84,6 +86,12 @@ ports keep too: `GameEngine` (engine.ex), `GreedyBot` (bot.ex), `RunStatistics` 
   the Go port gets from Bubble Tea. `Tui.Terminal` is the only impure part: a reader process sends keys as messages, a
   500 ms `:timer` drives the animation, and a lone `ESC` is told apart from arrow-key sequences with a 30 ms
   `receive ... after`. Without a TTY (piped input) it falls back to line input. E2E tests drive `App` with keys and
-  assert on `render_plain/1`, including a whole run to game over.
+  assert on `render_plain/1`, including a whole run to game over and a whole run played by the auto-battle.
+- **Auto-battle pacing.** The controller plays one turn per `auto_battle_step/1` (it returns `{controller, running?}`).
+  Without animation (`--no-anim`, tests) `App.handle_key/2` runs the fight instantly; otherwise `Tui.Terminal` arms a
+  `Process.send_after(self(), :auto_battle, interval)` (600 ms at 1x, 300 ms at 2x) when a key batch starts one, and
+  re-arms it after every `App.auto_battle_tick/1` while the fight goes on. Keys are ignored meanwhile, as in Python.
+- **Small terminals.** The menu panel has no scrollbar, so a body that does not fit (the equipment screen at 100 x 30)
+  is cut with `…` and the options always stay visible.
 - Problems caused by the player become `error` events; exceptions are reserved for inconsistent data or invalid run
   configs, as in the other ports.

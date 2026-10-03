@@ -1,7 +1,7 @@
 //! Framework-independent UI state machine: which screen is shown, its options and what each key does.
 //!
-//! The ratatui app only renders this controller. The Python (Textual), TypeScript (Ink) and Go (Bubble Tea) ports
-//! implement the same controller, which is what keeps the interfaces practically identical (docs/tui.md).
+//! The ratatui app only renders this controller. The other five ports implement the same controller, which is what
+//! keeps the six interfaces practically identical (docs/tui.md).
 //!
 //! The reference builds menus as `(option, closure)` pairs. Here a menu entry carries an [`Action`] value instead:
 //! closures that capture `&mut self` would fight the borrow checker, while plain data is easy to test and match.
@@ -13,6 +13,7 @@ use std::hash::{BuildHasher, Hasher};
 use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use crate::application::auto_battle::{AUTO_BATTLE_MODES, AutoBattleMode, AutoBattlePolicy};
 use crate::application::commands::Command;
 use crate::application::events::Event;
 use crate::application::game_session::{GameSession, Repositories, StepResult};
@@ -22,38 +23,50 @@ use crate::application::ports::Clock;
 use crate::application::profile::{Profile, ProfileService};
 use crate::application::run_state::RunConfig;
 use crate::assets::SharedFs;
-use crate::domain::character::{build_sheet, item_value};
+use crate::domain::character::{build_sheet, equipment_score, item_score, item_stats, item_value, required_level};
 use crate::domain::definitions::GameData;
 use crate::domain::entities::{ActiveStatus, ItemInstance};
-use crate::domain::enums::{ELEMENTS, Element, Phase, SLOTS, SpellKind};
+use crate::domain::enums::{ELEMENTS, EQUIPMENT_SLOT_ORDER, Element, EnemyClass, Phase, SLOTS, Slot, SpellKind};
 use crate::domain::formulas::{mana_for_magic_level, pct, round_info, spell_level_for_uses, xp_for_level};
 use crate::infrastructure::i18n::{DEFAULT_LOCALE, Params, SUPPORTED_LOCALES, Translator};
-use crate::infrastructure::repositories::{Settings, SettingsRepository};
+use crate::infrastructure::repositories::{BATTLE_SPEEDS, Settings, SettingsRepository};
 use crate::presentation::event_text::EventFormatter;
-use crate::presentation::render::list_key;
+use crate::presentation::render::{
+	STYLE_DIM, STYLE_GAIN, STYLE_LOSS, STYLE_WARNING, delta_style, format_delta, list_key,
+};
 
 pub const MAX_LOG_LINES: usize = 50;
 pub const MAX_NAME_LENGTH: usize = 16;
 pub const MAX_QUANTITY_DIGITS: usize = 2;
 pub const PAGE_SIZE: usize = 10;
+/// Auto-battle pace (docs/tui.md): one turn every 600 ms at 1x, 300 ms at 2x; instant with --no-anim.
+pub const AUTO_BATTLE_BASE_MS: u64 = 600;
+/// Safety net: a fight that somehow never ends hands control back to the player.
+pub const MAX_AUTO_BATTLE_TURNS: usize = 10_000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum View {
 	Language,
 	Title,
+	Settings,
 	Difficulty,
 	Name,
 	Vocation,
+	AutoEquip,
 	Merchant,
 	BuyPotions,
 	Quantity,
 	Sell,
 	Equipment,
+	Compare,
+	EquippedSlot,
 	Stock,
 	Character,
 	Battle,
 	Spells,
 	Potions,
+	AutoBattle,
+	Victory,
 	GameOver,
 	HallOfFame,
 	Bestiary,
@@ -62,7 +75,12 @@ pub enum View {
 
 impl View {
 	pub fn is_battle(self) -> bool {
-		matches!(self, View::Battle | View::Spells | View::Potions)
+		matches!(self, View::Battle | View::Spells | View::Potions | View::AutoBattle)
+	}
+
+	/// The equipment screens: body lines carry their own colours.
+	pub fn is_styled(self) -> bool {
+		matches!(self, View::Equipment | View::Compare | View::EquippedSlot)
 	}
 
 	pub fn is_text_input(self) -> bool {
@@ -80,11 +98,31 @@ pub struct MenuOption {
 	pub key: String,
 	pub label: String,
 	pub color: Option<String>,
+	/// Shown after the label in its own colour (the score delta of the equipment screen).
+	pub detail: String,
+	pub detail_color: Option<String>,
 }
 
 impl MenuOption {
 	fn new(key: &str, label: String) -> MenuOption {
-		MenuOption { key: key.to_owned(), label, color: None }
+		MenuOption::colored(key, label, None)
+	}
+
+	fn colored(key: &str, label: String, color: Option<String>) -> MenuOption {
+		MenuOption { key: key.to_owned(), label, color, detail: String::new(), detail_color: None }
+	}
+}
+
+/// A body line with an optional colour (a semantic style from render.rs or a rarity id).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BodyLine {
+	pub text: String,
+	pub color: Option<String>,
+}
+
+impl BodyLine {
+	fn new(text: String, color: Option<&str>) -> BodyLine {
+		BodyLine { text, color: color.map(str::to_owned) }
 	}
 }
 
@@ -99,9 +137,17 @@ enum Action {
 	NewRun,
 	ChooseDifficulty(String),
 	ChooseVocation(String),
+	StartRun(bool),
 	Continue,
 	AskQuantity(String),
 	SaveAndQuit,
+	ToggleAutoEquip,
+	CycleBattleSpeed,
+	OpenCompare(i64),
+	OpenSlot(Slot),
+	EquipCompared,
+	UnequipSlot,
+	StartAutoBattle(AutoBattleMode),
 }
 
 type Menu = Vec<(MenuOption, Action)>;
@@ -124,6 +170,7 @@ pub struct MonsterView {
 	pub hp: i64,
 	pub max_hp: i64,
 	pub is_boss: bool,
+	pub enemy_class: EnemyClass,
 	pub element: Element,
 	pub details: String,
 }
@@ -160,13 +207,19 @@ pub struct Controller {
 	pub locale: String,
 	/// The last persistence error, shown by the renderer instead of crashing.
 	pub error: Option<String>,
+	pub settings: Settings,
 	services: Services,
 	translator: Rc<Translator>,
 	formatter: EventFormatter,
 	language_return: View,
 	difficulty: String,
 	name: String,
+	vocation: String,
 	potion_id: String,
+	compare_uid: i64,
+	slot: Slot,
+	auto_battle: Option<AutoBattleMode>,
+	auto_turns: usize,
 	seed: Option<u64>,
 	seed_source: Box<dyn Fn() -> u64>,
 }
@@ -179,7 +232,7 @@ impl Controller {
 		seed_source: Option<Box<dyn Fn() -> u64>>,
 	) -> Result<Controller, String> {
 		let settings = services.settings.load().map_err(|error| format!("load settings: {error}"))?;
-		let chosen = locale_override.map(str::to_owned).or(settings.locale);
+		let chosen = locale_override.map(str::to_owned).or_else(|| settings.locale.clone());
 		let locale = chosen.clone().unwrap_or_else(|| DEFAULT_LOCALE.to_owned());
 		let translator = Rc::new(Translator::new(&services.shared, &locale)?);
 		let formatter = EventFormatter::new(Rc::clone(&services.data), Rc::clone(&translator));
@@ -194,13 +247,19 @@ impl Controller {
 			page: 0,
 			locale,
 			error: None,
+			settings,
 			services,
 			translator,
 			formatter,
 			language_return: View::Title,
 			difficulty: "normal".to_owned(),
 			name: String::new(),
+			vocation: String::new(),
 			potion_id: String::new(),
+			compare_uid: 0,
+			slot: Slot::Weapon,
+			auto_battle: None,
+			auto_turns: 0,
 			seed,
 			seed_source: seed_source.unwrap_or_else(|| Box::new(random_seed)),
 		})
@@ -239,9 +298,11 @@ impl Controller {
 		match self.view {
 			View::Language => self.tr("language.title"),
 			View::Title => self.tr("app.title"),
+			View::Settings => self.tr("settings.title"),
 			View::Difficulty => self.tr("new_run.difficulty"),
 			View::Name => self.tr("new_run.name"),
 			View::Vocation => self.tr("new_run.vocation"),
+			View::AutoEquip => self.tr("new_run.auto_equip"),
 			View::Merchant => {
 				let round = self.session.as_ref().map_or(0, |session| session.state().round);
 				if round == 0 {
@@ -253,12 +314,19 @@ impl Controller {
 			View::Quantity => self.t("merchant.quantity", &[("name", &self.data().potion(&self.potion_id).name)]),
 			View::Sell => self.tr("merchant.sell_items"),
 			View::Equipment => self.tr("merchant.equipment"),
+			View::Compare => self.compare_title(),
+			View::EquippedSlot => self.tr(&format!("slot.{}", self.slot)),
 			View::Stock => self.tr("merchant.stock"),
 			View::Character => self.tr("merchant.character"),
 			View::Battle => self.tr("battle.title"),
 			View::Spells => self.tr("battle.spells"),
 			View::Potions => self.tr("battle.potions"),
-			View::GameOver => self.tr("gameover.title"),
+			View::AutoBattle => self.tr("auto_battle.title"),
+			View::Victory => self.tr("victory.title"),
+			View::GameOver => {
+				let won = self.session.as_ref().is_some_and(|session| session.state().won);
+				self.tr(if won { "gameover.title_won" } else { "gameover.title" })
+			}
 			View::HallOfFame => self.tr("menu.hall_of_fame"),
 			View::Bestiary => self.tr("menu.bestiary"),
 			View::Achievements => self.tr("menu.achievements"),
@@ -271,7 +339,11 @@ impl Controller {
 
 	/// Informative lines shown above the options (paged for long lists).
 	pub fn body_lines(&mut self) -> Vec<String> {
-		let lines = self.body();
+		let lines = if self.view.is_styled() {
+			self.styled_body().into_iter().map(|line| line.text).collect()
+		} else {
+			self.body()
+		};
 		if !self.view.is_paged() || lines.len() <= PAGE_SIZE {
 			return lines;
 		}
@@ -282,6 +354,14 @@ impl Controller {
 		page.push(String::new());
 		page.push(self.t("menu.page", &[("page", &(self.page + 1)), ("pages", &pages)]));
 		page
+	}
+
+	/// Colour of each line of `body_lines()` (semantic styles from render.rs or rarity ids).
+	pub fn body_colors(&mut self) -> Vec<Option<String>> {
+		if self.view.is_styled() {
+			return self.styled_body().into_iter().map(|line| line.color).collect();
+		}
+		vec![None; self.body_lines().len()]
 	}
 
 	pub fn input_prompt(&self) -> Option<String> {
@@ -347,6 +427,7 @@ impl Controller {
 			hp: monster.hp,
 			max_hp: monster.max_hp,
 			is_boss: monster.is_boss,
+			enemy_class: monster.enemy_class,
 			element: main_element,
 			details,
 		})
@@ -381,6 +462,9 @@ impl Controller {
 
 	/// Key names: single characters, plus `enter`, `escape` and `backspace` (same names in every implementation).
 	pub fn press(&mut self, key: &str) {
+		if self.auto_battle_active() {
+			return;
+		}
 		self.message.clear();
 		if self.view.is_text_input() {
 			self.text_input(key);
@@ -394,6 +478,47 @@ impl Controller {
 		if let Some((_, action)) = self.menu().into_iter().find(|(option, _)| option.key == key) {
 			self.run(action);
 		}
+	}
+
+	// ── auto-battle (docs/game-design.md §13, docs/tui.md) ──────────────────────
+
+	pub fn auto_battle_active(&self) -> bool {
+		self.auto_battle.is_some()
+	}
+
+	pub fn auto_battle_interval_ms(&self) -> u64 {
+		AUTO_BATTLE_BASE_MS / self.settings.battle_speed.max(1) as u64
+	}
+
+	/// Plays one auto-battle turn. Returns true while the fight goes on (the renderer's timer keeps ticking).
+	pub fn auto_battle_step(&mut self) -> bool {
+		let in_battle = self.session.as_ref().is_some_and(|session| session.state().phase == Phase::Battle);
+		let Some(mode) = self.auto_battle.filter(|_| in_battle) else {
+			self.auto_battle = None;
+			return false;
+		};
+		self.auto_turns += 1;
+		let command = AutoBattlePolicy::new(self.data(), mode).choose(self.require_session().state());
+		self.step(&command);
+		let in_battle = self.session.as_ref().is_some_and(|session| session.state().phase == Phase::Battle);
+		if !in_battle || self.auto_turns >= MAX_AUTO_BATTLE_TURNS {
+			self.auto_battle = None;
+		}
+		self.auto_battle_active()
+	}
+
+	/// Instant mode (--no-anim): plays the whole fight at once.
+	pub fn run_auto_battle(&mut self) {
+		while self.auto_battle_step() {}
+	}
+
+	fn start_auto_battle(&mut self, mode: AutoBattleMode) {
+		self.auto_turns = 0;
+		self.auto_battle = Some(mode);
+		self.view = View::Battle;
+		let label = self.tr(&format!("auto_battle.{}", mode.as_str()));
+		let line = self.t("auto_battle.started", &[("mode", &label)]);
+		self.push_log(line);
 	}
 
 	fn text_input(&mut self, key: &str) {
@@ -474,6 +599,7 @@ impl Controller {
 				})
 				.collect(),
 			View::Title => self.title_menu(),
+			View::Settings => self.settings_menu(),
 			View::Difficulty => {
 				let items = self
 					.data()
@@ -512,10 +638,17 @@ impl Controller {
 					.collect();
 				with_back(items, View::Difficulty)
 			}
+			View::AutoEquip => with_back(self.auto_equip_menu(), View::Vocation),
 			View::Merchant => self.merchant_menu(),
 			View::BuyPotions => with_back(self.potion_shop(), View::Merchant),
 			View::Sell => with_back(self.sell_menu(), View::Merchant),
 			View::Equipment => with_back(self.equipment_menu(), View::Merchant),
+			View::Compare => {
+				vec![(MenuOption::new("1", self.tr("equipment.equip")), Action::EquipCompared), back(View::Equipment)]
+			}
+			View::EquippedSlot => {
+				vec![(MenuOption::new("1", self.tr("equipment.unequip")), Action::UnequipSlot), back(View::Equipment)]
+			}
 			View::Stock => with_back(self.stock_menu(), View::Merchant),
 			View::Character => vec![back(View::Merchant)],
 			View::Battle => vec![
@@ -523,7 +656,28 @@ impl Controller {
 				(MenuOption::new("2", self.tr("battle.spells")), Action::Go(View::Spells)),
 				(MenuOption::new("3", self.tr("battle.potions")), Action::Go(View::Potions)),
 				(MenuOption::new("4", self.tr("battle.defend")), Action::Step(Command::Defend)),
+				(MenuOption::new("5", self.tr("battle.auto")), Action::Go(View::AutoBattle)),
 				(MenuOption::new("q", self.tr("battle.save_quit")), Action::SaveAndQuit),
+			],
+			View::AutoBattle => {
+				let modes = AUTO_BATTLE_MODES
+					.iter()
+					.enumerate()
+					.map(|(index, &mode)| {
+						(
+							MenuOption::new(
+								&(index + 1).to_string(),
+								self.tr(&format!("auto_battle.{}", mode.as_str())),
+							),
+							Action::StartAutoBattle(mode),
+						)
+					})
+					.collect();
+				with_back(modes, View::Battle)
+			}
+			View::Victory => vec![
+				(MenuOption::new("1", self.tr("victory.end_run")), Action::Step(Command::EndRun)),
+				(MenuOption::new("2", self.tr("victory.continue")), Action::Step(Command::ContinueRun)),
 			],
 			View::Spells => with_back(self.spell_menu(), View::Battle),
 			View::Potions => with_back(self.battle_potions(), View::Battle),
@@ -546,10 +700,45 @@ impl Controller {
 			(MenuOption::new("3", self.tr("menu.hall_of_fame")), Action::Go(View::HallOfFame)),
 			(MenuOption::new("4", self.tr("menu.bestiary")), Action::Go(View::Bestiary)),
 			(MenuOption::new("5", self.tr("menu.achievements")), Action::Go(View::Achievements)),
-			(MenuOption::new("6", self.tr("menu.language")), Action::OpenLanguage),
+			(MenuOption::new("6", self.tr("menu.settings")), Action::Go(View::Settings)),
 			(MenuOption::new("0", self.tr("menu.quit")), Action::Quit),
 		]);
 		menu
+	}
+
+	fn on_off(&self, enabled: bool) -> String {
+		self.tr(if enabled { "settings.on" } else { "settings.off" })
+	}
+
+	fn settings_menu(&self) -> Menu {
+		let settings = &self.settings;
+		let language = self.tr(&format!("language.{}", self.locale));
+		vec![
+			(MenuOption::new("1", self.t("settings.language", &[("language", &language)])), Action::OpenLanguage),
+			(
+				MenuOption::new("2", self.t("settings.auto_equip", &[("state", &self.on_off(settings.auto_equip))])),
+				Action::ToggleAutoEquip,
+			),
+			(
+				MenuOption::new("3", self.t("settings.battle_speed", &[("speed", &settings.battle_speed)])),
+				Action::CycleBattleSpeed,
+			),
+			(MenuOption::new("0", self.tr("menu.back")), Action::Go(View::Title)),
+		]
+	}
+
+	fn auto_equip_menu(&self) -> Menu {
+		let default = self.tr("new_run.default");
+		[("1", true), ("2", false)]
+			.into_iter()
+			.map(|(key, enabled)| {
+				let mut label = self.tr(if enabled { "new_run.auto_equip_on" } else { "new_run.auto_equip_off" });
+				if enabled == self.settings.auto_equip {
+					label = format!("{label} {default}");
+				}
+				(MenuOption::new(key, label), Action::StartRun(enabled))
+			})
+			.collect()
 	}
 
 	fn merchant_menu(&self) -> Menu {
@@ -564,7 +753,7 @@ impl Controller {
 		]
 	}
 
-	fn item_label(&self, key: String, template: &str, item: &ItemInstance, gold: Option<i64>) -> MenuOption {
+	fn item_label(&self, key: &str, template: &str, item: &ItemInstance, gold: Option<i64>) -> MenuOption {
 		let definition = self.data().item(&item.item_id);
 		let rarity = self.tr(&format!("rarity.{}", item.rarity));
 		let slot = self.tr(&format!("slot.{}", definition.slot));
@@ -573,7 +762,7 @@ impl Controller {
 		if let Some(gold) = &gold {
 			params.push(("gold", gold));
 		}
-		MenuOption { key, label: self.t(template, &params), color: Some(item.rarity.clone()) }
+		MenuOption::colored(key, self.t(template, &params), Some(item.rarity.clone()))
 	}
 
 	fn require_session(&self) -> &GameSession {
@@ -607,34 +796,82 @@ impl Controller {
 			.iter()
 			.enumerate()
 			.map(|(index, item)| {
-				let option =
-					self.item_label(list_key(index), "merchant.sell_option", item, Some(item_value(item, self.data())));
+				let option = self.item_label(
+					&list_key(index),
+					"merchant.sell_option",
+					item,
+					Some(item_value(item, self.data())),
+				);
 				(option, Action::Step(Command::SellItem { uid: item.uid }))
 			})
 			.collect()
 	}
 
-	fn equipment_menu(&self) -> Menu {
+	fn usable_bag(&self) -> Vec<&ItemInstance> {
 		let player = &self.require_session().state().player;
 		let vocation = self.data().vocation(&player.vocation_id);
-		let mut entries: Vec<(&ItemInstance, &str, Command)> = player
-			.bag
-			.iter()
-			.filter(|item| can_use(self.data().item(&item.item_id), vocation))
-			.map(|item| (item, "merchant.equip_option", Command::Equip { uid: item.uid }))
-			.collect();
-		for slot in SLOTS {
+		player.bag.iter().filter(|item| can_use(self.data().item(&item.item_id), vocation)).collect()
+	}
+
+	/// Score of `item` minus the score of what is equipped in its slot (0 for an empty slot).
+	fn score_delta(&self, item: &ItemInstance) -> i64 {
+		let equipment = &self.require_session().state().player.equipment;
+		let equipped = equipment.get(&self.data().item(&item.item_id).slot);
+		item_score(item, self.data()) - equipped.map_or(0, |equipped| item_score(equipped, self.data()))
+	}
+
+	/// Usable bag items first (keys 1..n, as in docs/tui.md), then the equipped slots.
+	fn equipment_menu(&self) -> Menu {
+		let player = &self.require_session().state().player;
+		let mut entries: Vec<(MenuOption, Action)> = Vec::new();
+		for item in self.usable_bag() {
+			let definition = self.data().item(&item.item_id);
+			let level = required_level(item, self.data());
+			let rarity = self.tr(&format!("rarity.{}", item.rarity));
+			let slot = self.tr(&format!("slot.{}", definition.slot));
+			let mut label = self.t(
+				"equipment.bag_option",
+				&[
+					("name", &definition.name),
+					("rarity", &rarity),
+					("slot", &slot),
+					("level", &level),
+					("score", &item_score(item, self.data())),
+				],
+			);
+			let too_high = level > player.level;
+			if too_high {
+				label = format!("{label} · {}", self.t("equipment.requires_level", &[("level", &level)]));
+			}
+			let delta = self.score_delta(item);
+			let color = if too_high { STYLE_DIM.to_owned() } else { item.rarity.clone() };
+			let option = MenuOption {
+				detail: format_delta(delta),
+				detail_color: delta_style(delta).map(str::to_owned),
+				..MenuOption::colored("", label, Some(color))
+			};
+			entries.push((option, Action::OpenCompare(item.uid)));
+		}
+		for slot in EQUIPMENT_SLOT_ORDER {
 			if let Some(equipped) = player.equipment.get(&slot) {
-				entries.push((equipped, "merchant.unequip_option", Command::Unequip { slot }));
+				let slot_label = self.tr(&format!("slot.{slot}"));
+				let rarity = self.tr(&format!("rarity.{}", equipped.rarity));
+				let label = self.t(
+					"equipment.slot_option",
+					&[("slot", &slot_label), ("name", &self.data().item(&equipped.item_id).name), ("rarity", &rarity)],
+				);
+				entries.push((MenuOption::colored("", label, Some(equipped.rarity.clone())), Action::OpenSlot(slot)));
 			}
 		}
 		entries
 			.into_iter()
 			.enumerate()
-			.map(|(index, (item, template, command))| {
-				(self.item_label(list_key(index), template, item, None), Action::Step(command))
-			})
+			.map(|(index, (option, action))| (MenuOption { key: list_key(index), ..option }, action))
 			.collect()
+	}
+
+	fn compared_item(&self) -> Option<&ItemInstance> {
+		self.require_session().state().player.bag.iter().find(|item| item.uid == self.compare_uid)
 	}
 
 	fn stock_menu(&self) -> Menu {
@@ -644,7 +881,7 @@ impl Controller {
 			.enumerate()
 			.map(|(index, item)| {
 				let option = self.item_label(
-					list_key(index),
+					&list_key(index),
 					"merchant.stock_option",
 					item,
 					Some(stock_price(item, self.data())),
@@ -677,7 +914,7 @@ impl Controller {
 					],
 				);
 				let color = if spell.kind == SpellKind::Heal { "green".to_owned() } else { spell.element.to_string() };
-				let option = MenuOption { key: list_key(index), label, color: Some(color) };
+				let option = MenuOption::colored(&list_key(index), label, Some(color));
 				(option, Action::Step(Command::cast(spell_id)))
 			})
 			.collect()
@@ -709,7 +946,7 @@ impl Controller {
 			}
 			Action::ChooseLanguage(locale) => self.choose_language(locale),
 			Action::OpenLanguage => {
-				self.language_return = View::Title;
+				self.language_return = View::Settings;
 				self.view = View::Language;
 			}
 			Action::Quit => self.exit_requested = true,
@@ -722,7 +959,11 @@ impl Controller {
 				self.input_buffer.clear();
 				self.view = View::Name;
 			}
-			Action::ChooseVocation(vocation_id) => self.choose_vocation(&vocation_id),
+			Action::ChooseVocation(vocation_id) => {
+				self.vocation = vocation_id;
+				self.view = View::AutoEquip;
+			}
+			Action::StartRun(auto_equip) => self.start_run(auto_equip),
 			Action::Continue => self.continue_run(),
 			Action::AskQuantity(potion_id) => {
 				self.potion_id = potion_id;
@@ -730,7 +971,40 @@ impl Controller {
 				self.view = View::Quantity;
 			}
 			Action::SaveAndQuit => self.save_and_quit(),
+			Action::ToggleAutoEquip => {
+				let settings = Settings { auto_equip: !self.settings.auto_equip, ..self.settings.clone() };
+				self.save_settings(settings);
+			}
+			Action::CycleBattleSpeed => {
+				let index = BATTLE_SPEEDS.iter().position(|&speed| speed == self.settings.battle_speed).unwrap_or(0);
+				let speed = BATTLE_SPEEDS[(index + 1) % BATTLE_SPEEDS.len()];
+				self.save_settings(Settings { battle_speed: speed, ..self.settings.clone() });
+			}
+			Action::OpenCompare(uid) => {
+				self.compare_uid = uid;
+				self.view = View::Compare;
+			}
+			Action::OpenSlot(slot) => {
+				self.slot = slot;
+				self.view = View::EquippedSlot;
+			}
+			Action::EquipCompared => {
+				self.step(&Command::Equip { uid: self.compare_uid });
+				self.view = View::Equipment;
+			}
+			Action::UnequipSlot => {
+				self.step(&Command::Unequip { slot: self.slot });
+				self.view = View::Equipment;
+			}
+			Action::StartAutoBattle(mode) => self.start_auto_battle(mode),
 		}
+	}
+
+	fn save_settings(&mut self, settings: Settings) {
+		if let Err(error) = self.services.settings.save(&settings) {
+			self.error = Some(error.to_string());
+		}
+		self.settings = settings;
 	}
 
 	fn choose_language(&mut self, locale: &str) {
@@ -738,16 +1012,14 @@ impl Controller {
 			self.error = Some(error);
 			return;
 		}
-		if let Err(error) = self.services.settings.save(&Settings { locale: Some(locale.to_owned()) }) {
-			self.error = Some(error.to_string());
-		}
+		self.save_settings(Settings { locale: Some(locale.to_owned()), ..self.settings.clone() });
 		self.view = self.language_return;
 	}
 
-	fn choose_vocation(&mut self, vocation_id: &str) {
+	fn start_run(&mut self, auto_equip: bool) {
 		let seed = self.seed.unwrap_or_else(|| (self.seed_source)());
 		let services = self.services.clone();
-		let config = RunConfig::new(&self.name, vocation_id, &self.difficulty);
+		let config = RunConfig::new(&self.name, &self.vocation, &self.difficulty).with_auto_equip(auto_equip);
 		match GameSession::start(services.data, config, seed, services.repositories, services.clock, &services.version)
 		{
 			Ok((session, events)) => {
@@ -771,7 +1043,8 @@ impl Controller {
 				self.session = Some(session);
 				self.log.clear();
 				self.push_log(welcome);
-				self.view = View::Merchant;
+				let victory = self.require_session().state().phase == Phase::Victory;
+				self.view = if victory { View::Victory } else { View::Merchant };
 			}
 			Ok(None) => {}
 			Err(error) => self.error = Some(error.to_string()),
@@ -801,7 +1074,8 @@ impl Controller {
 		match self.require_session().state().phase {
 			Phase::Battle => self.view = View::Battle,
 			Phase::GameOver => self.view = View::GameOver,
-			Phase::Merchant if self.view.is_battle() => self.view = View::Merchant,
+			Phase::Victory => self.view = View::Victory,
+			Phase::Merchant if self.view.is_battle() || self.view == View::Victory => self.view = View::Merchant,
 			Phase::Merchant => {}
 		}
 	}
@@ -862,6 +1136,7 @@ impl Controller {
 		match self.view {
 			View::Character => self.character_sheet(),
 			View::GameOver => self.game_over_summary(),
+			View::Victory => self.victory_summary(),
 			View::HallOfFame => self.hall_of_fame(),
 			View::Bestiary => self.bestiary(),
 			View::Achievements => self.achievements(),
@@ -947,33 +1222,199 @@ impl Controller {
 		lines
 	}
 
+	fn run_stats_line(&self) -> String {
+		let state = self.require_session().state();
+		self.t(
+			"gameover.stats",
+			&[
+				("level", &state.player.level),
+				("damage", &state.stats.damage_dealt),
+				("kills", &state.stats.total_kills()),
+				("elites", &state.stats.elites_killed),
+				("bosses", &state.stats.bosses_killed),
+			],
+		)
+	}
+
 	fn game_over_summary(&self) -> Vec<String> {
 		let state = self.require_session().state();
-		let monster = match state.death_cause.as_deref() {
-			Some(cause) if !cause.is_empty() => self.data().creature(cause).name.clone(),
-			_ => "?".to_owned(),
+		let vocation = self.tr(&format!("vocation.{}", state.player.vocation_id));
+		let params: [(&str, &dyn Display); 3] =
+			[("name", &state.player.name), ("vocation", &vocation), ("round", &state.round)];
+		let summary = match state.death_cause.as_deref() {
+			Some(cause) if !cause.is_empty() => {
+				let monster = &self.data().creature(cause).name;
+				self.t("gameover.summary", &[&params[..], &[("monster", monster as &dyn Display)]].concat())
+			}
+			_ if state.won => self.t("gameover.won_summary", &params),
+			_ => self.t("gameover.summary", &[&params[..], &[("monster", &"?" as &dyn Display)]].concat()),
 		};
+		vec![summary, self.run_stats_line()]
+	}
+
+	fn victory_summary(&self) -> Vec<String> {
+		let state = self.require_session().state();
+		let data = self.data();
+		let boss = data.boss_of_tier(round_info(state.round, &data.balance, data.tier_count()).tier);
 		let vocation = self.tr(&format!("vocation.{}", state.player.vocation_id));
 		vec![
 			self.t(
-				"gameover.summary",
+				"victory.summary",
 				&[
 					("name", &state.player.name),
 					("vocation", &vocation),
+					("monster", &boss.name),
 					("round", &state.round),
-					("monster", &monster),
 				],
 			),
-			self.t(
-				"gameover.stats",
-				&[
-					("level", &state.player.level),
-					("damage", &state.stats.damage_dealt),
-					("kills", &state.stats.total_kills()),
-					("bosses", &state.stats.bosses_killed),
-				],
-			),
+			self.run_stats_line(),
+			String::new(),
+			self.tr("victory.choice"),
 		]
+	}
+
+	// ── equipment screens (docs/tui.md "Equipment screen") ────────────────────
+
+	fn styled_body(&self) -> Vec<BodyLine> {
+		match self.view {
+			View::Equipment => self.equipment_body(),
+			View::Compare => self.compare_body(),
+			_ => self.slot_body(),
+		}
+	}
+
+	fn equipment_body(&self) -> Vec<BodyLine> {
+		let player = &self.require_session().state().player;
+		let header = self.t("equipment.equipped_header", &[("score", &equipment_score(player, self.data()))]);
+		let mut lines = vec![BodyLine::new(header, None)];
+		for slot in EQUIPMENT_SLOT_ORDER {
+			let slot_name = self.tr(&format!("slot.{slot}"));
+			let Some(item) = player.equipment.get(&slot) else {
+				lines.push(BodyLine::new(self.t("equipment.slot_empty", &[("slot", &slot_name)]), Some(STYLE_WARNING)));
+				continue;
+			};
+			let rarity = self.tr(&format!("rarity.{}", item.rarity));
+			let text = self.t(
+				"equipment.slot_line",
+				&[
+					("slot", &slot_name),
+					("name", &self.data().item(&item.item_id).name),
+					("rarity", &rarity),
+					("level", &required_level(item, self.data())),
+					("score", &item_score(item, self.data())),
+				],
+			);
+			lines.push(BodyLine::new(text, Some(&item.rarity)));
+		}
+		lines.push(BodyLine::new(String::new(), None));
+		lines.push(BodyLine::new(self.tr("equipment.bag_header"), None));
+		if self.usable_bag().is_empty() {
+			lines.push(BodyLine::new(self.tr("equipment.bag_empty"), None));
+		}
+		lines
+	}
+
+	fn compare_title(&self) -> String {
+		let Some(item) = self.compared_item() else {
+			return self.tr("merchant.equipment");
+		};
+		let player = &self.require_session().state().player;
+		let slot = self.data().item(&item.item_id).slot;
+		let current = match player.equipment.get(&slot) {
+			None => self.tr("equipment.empty"),
+			Some(current) => self.data().item(&current.item_id).name.clone(),
+		};
+		let slot_label = self.tr(&format!("slot.{slot}"));
+		self.t(
+			"equipment.compare_title",
+			&[("slot", &slot_label), ("current", &current), ("new", &self.data().item(&item.item_id).name)],
+		)
+	}
+
+	fn affix_list(&self, item: Option<&ItemInstance>) -> String {
+		let Some(item) = item else {
+			return String::new();
+		};
+		item.affixes
+			.iter()
+			.map(|affix| {
+				let stat = self.tr(&format!("stat.{}", affix.stat));
+				self.t("equipment.affix", &[("value", &affix.value), ("stat", &stat)])
+			})
+			.collect::<Vec<_>>()
+			.join(", ")
+	}
+
+	fn compare_body(&self) -> Vec<BodyLine> {
+		let Some(item) = self.compared_item() else {
+			return Vec::new();
+		};
+		let player = &self.require_session().state().player;
+		let current = player.equipment.get(&self.data().item(&item.item_id).slot);
+		let new_stats = item_stats(item, self.data());
+		let old_stats = current.map(|current| item_stats(current, self.data())).unwrap_or_default();
+		let mut lines = Vec::new();
+		// BTreeMap keys iterate in `Stat` declaration order, like Python's `for stat in Stat`.
+		let mut stats: Vec<_> = new_stats.keys().chain(old_stats.keys()).copied().collect();
+		stats.sort();
+		stats.dedup();
+		for stat in stats {
+			let old = old_stats.get(&stat).copied().unwrap_or(0);
+			let new = new_stats.get(&stat).copied().unwrap_or(0);
+			let text = self.t(
+				"equipment.stat_delta",
+				&[
+					("stat", &self.tr(&format!("stat.{stat}"))),
+					("current", &old),
+					("new", &new),
+					("delta", &format_delta(new - old)),
+				],
+			);
+			lines.push(BodyLine::new(text, delta_style(new - old)));
+		}
+		let gained = self.affix_list(Some(item));
+		let lost = self.affix_list(current);
+		if !gained.is_empty() {
+			lines.push(BodyLine::new(self.t("equipment.affixes_gained", &[("affixes", &gained)]), Some(STYLE_GAIN)));
+		}
+		if !lost.is_empty() {
+			lines.push(BodyLine::new(self.t("equipment.affixes_lost", &[("affixes", &lost)]), Some(STYLE_LOSS)));
+		}
+		let old_score = current.map_or(0, |current| item_score(current, self.data()));
+		let new_score = item_score(item, self.data());
+		let score = self.t(
+			"equipment.score_delta",
+			&[("current", &old_score), ("new", &new_score), ("delta", &format_delta(new_score - old_score))],
+		);
+		lines.push(BodyLine::new(score, delta_style(new_score - old_score)));
+		let level = required_level(item, self.data());
+		if level > player.level {
+			let text = self.t("equipment.level_needed", &[("level", &level), ("current", &player.level)]);
+			lines.push(BodyLine::new(text, Some(STYLE_LOSS)));
+		}
+		lines
+	}
+
+	fn slot_body(&self) -> Vec<BodyLine> {
+		let Some(item) = self.require_session().state().player.equipment.get(&self.slot) else {
+			return vec![BodyLine::new(self.tr("equipment.empty"), Some(STYLE_WARNING))];
+		};
+		let rarity = self.tr(&format!("rarity.{}", item.rarity));
+		let title = self.t(
+			"equipment.item_title",
+			&[
+				("name", &self.data().item(&item.item_id).name),
+				("rarity", &rarity),
+				("level", &required_level(item, self.data())),
+				("score", &item_score(item, self.data())),
+			],
+		);
+		let mut lines = vec![BodyLine::new(title, Some(&item.rarity))];
+		for (stat, value) in item_stats(item, self.data()) {
+			let label = self.tr(&format!("stat.{stat}"));
+			lines.push(BodyLine::new(self.t("character.stat_line", &[("stat", &label), ("value", &value)]), None));
+		}
+		lines
 	}
 
 	fn hall_of_fame(&self) -> Vec<String> {
@@ -988,7 +1429,7 @@ impl Controller {
 				let difficulty = self.tr(&format!("difficulty.{}", entry.difficulty));
 				let date: String = entry.ended_at.chars().take(10).collect();
 				self.t(
-					"hall.entry",
+					if entry.won { "hall.entry_won" } else { "hall.entry" },
 					&[
 						("position", &(index + 1)),
 						("name", &entry.name),

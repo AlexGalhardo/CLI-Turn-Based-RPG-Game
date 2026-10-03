@@ -88,5 +88,6 @@ TEST_CASE("scaling combines difficulty, cycle and position", "[unit][formulas]")
 TEST_CASE("bosses ignore position scaling", "[unit][formulas]") {
 	const auto& data = rpg::testing::test_data();
 	const RoundInfo info = round_info(10, data.balance, data.tier_count());
-	REQUIRE(scaling(info, data.balance, data.balance.difficulty("normal")).hp_pct_product == 100 * 100 * 100);
+	const DifficultyDef& normal = data.balance.difficulty("normal");
+	REQUIRE(scaling(info, data.balance, normal).hp_pct_product == normal.hp_pct * 100 * 100);
 }

@@ -30,6 +30,9 @@ const (
 
 type tickMsg struct{}
 
+// autoBattleTickMsg plays one auto-battle turn (paced by the battle speed setting).
+type autoBattleTickMsg struct{}
+
 // Model is the Bubble Tea model: it only renders the controller and forwards keys.
 type Model struct {
 	Controller *presentation.Controller
@@ -39,6 +42,7 @@ type Model struct {
 	cues       []string
 	width      int
 	height     int
+	autoTimer  bool
 }
 
 // NewModel creates the model with a default 100 × 30 size until the terminal reports its size.
@@ -89,6 +93,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		return m, tickCmd()
+	case autoBattleTickMsg:
+		running := m.Controller.AutoBattleStep()
+		m.takeCues()
+
+		if !running {
+			m.autoTimer = false
+
+			return m, nil
+		}
+
+		return m, m.autoBattleTick()
 	case tea.KeyPressMsg:
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
@@ -100,15 +115,44 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
-		m.cues = nil
-		if m.animate {
-			m.cues = append([]string{}, m.Controller.AnimationCues...)
+		if m.Controller.AutoBattleActive() && !m.autoTimer {
+			return m.startAutoBattle()
 		}
 
-		m.Controller.AnimationCues = nil
+		m.takeCues()
 	}
 
 	return m, nil
+}
+
+func (m *Model) takeCues() {
+	m.cues = nil
+	if m.animate {
+		m.cues = append([]string{}, m.Controller.AnimationCues...)
+	}
+
+	m.Controller.AnimationCues = nil
+}
+
+func (m Model) autoBattleTick() tea.Cmd {
+	interval := time.Duration(m.Controller.AutoBattleIntervalMs()) * time.Millisecond
+
+	return tea.Tick(interval, func(time.Time) tea.Msg { return autoBattleTickMsg{} })
+}
+
+// startAutoBattle paces the fight by the battle speed setting; it is instant without animation (--no-anim, tests).
+func (m Model) startAutoBattle() (tea.Model, tea.Cmd) {
+	if !m.animate {
+		m.Controller.RunAutoBattle()
+		m.takeCues()
+
+		return m, nil
+	}
+
+	m.takeCues()
+	m.autoTimer = true
+
+	return m, m.autoBattleTick()
 }
 
 // View renders the whole screen.
@@ -192,6 +236,8 @@ func (m Model) top() string {
 		name := lipgloss.NewStyle().Bold(true).Render(strings.ToUpper(monster.Name))
 		if monster.IsBoss {
 			name = style("#d75fff").Bold(true).Render(controller.T("hud.boss", nil)+" ") + name
+		} else if monster.EnemyClass == "elite" {
+			name = style("#ffd75f").Bold(true).Render(controller.T("hud.elite", nil)+" ") + name
 		}
 
 		info = []string{
@@ -236,6 +282,10 @@ func optionColor(color string) string {
 		return value
 	}
 
+	if value, ok := presentation.StyleColors[color]; ok {
+		return value
+	}
+
 	if color == "heal" {
 		return "#5fd75f"
 	}
@@ -249,11 +299,26 @@ func optionColor(color string) string {
 	return ""
 }
 
+func colored(text, color string) string {
+	if value := optionColor(color); value != "" && text != "" {
+		return style(value).Render(text)
+	}
+
+	return text
+}
+
 func (m Model) menuPanel() string {
 	controller := m.Controller
 	lines := []string{lipgloss.NewStyle().Bold(true).Underline(true).Render(controller.Title())}
 
-	lines = append(lines, controller.BodyLines()...)
+	colors := controller.BodyColors()
+	for index, line := range controller.BodyLines() {
+		if color := optionColor(colors[index]); color != "" {
+			line = style(color).Render(line)
+		}
+
+		lines = append(lines, line)
+	}
 
 	options := controller.Options()
 	if len(options) > 0 {
@@ -269,14 +334,19 @@ func (m Model) menuPanel() string {
 		var row strings.Builder
 
 		for _, option := range options[start:min(len(options), start+columns)] {
-			label := option.Label
-			if columns > 1 {
-				label = runewidth.FillRight(runewidth.Truncate(label, columnWidth-1, ""), columnWidth)
+			detail := ""
+			if option.Detail != "" {
+				detail = "  " + option.Detail
 			}
 
-			rendered := label
-			if color := optionColor(option.Color); color != "" {
-				rendered = style(color).Render(label)
+			label := option.Label
+			if columns > 1 {
+				label = runewidth.Truncate(label, max(0, columnWidth-1-runewidth.StringWidth(detail)), "")
+			}
+
+			rendered := colored(label, option.Color) + colored(detail, option.DetailColor)
+			if columns > 1 {
+				rendered += strings.Repeat(" ", max(0, columnWidth-runewidth.StringWidth(label)-runewidth.StringWidth(detail)))
 			}
 
 			row.WriteString(style("#5fd7ff").Bold(true).Render("["+strings.ToUpper(option.Key)+"] ") + rendered)

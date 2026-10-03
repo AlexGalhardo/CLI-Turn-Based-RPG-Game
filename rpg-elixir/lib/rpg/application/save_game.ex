@@ -4,7 +4,7 @@ defmodule Rpg.Application.SaveGame do
   alias Rpg.Application.{RunState, SessionInfo}
   alias Rpg.Domain.JsonTypes
 
-  @schema_version 1
+  @schema_version 2
   @implementation "elixir"
 
   defmodule NewerSchemaError do
@@ -139,7 +139,8 @@ defmodule Rpg.Application.RunRecord do
     round: {"round", :int},
     level: {"level", :int},
     magic_level: {"magicLevel", :int},
-    death_cause: {"deathCause", :str}
+    death_cause: {"deathCause", :str},
+    won: {"won", :bool}
   ]
 
   @enforce_keys Keyword.keys(@fields)
@@ -162,9 +163,13 @@ defmodule Rpg.Application.RunRecord do
     fields =
       Enum.map(@fields, fn {field, {key, type}} ->
         value = JsonTypes.field(raw, key)
-        {field, if(type == :int, do: JsonTypes.int(value), else: JsonTypes.str(value))}
+        {field, field_value(type, value)}
       end)
 
     struct!(__MODULE__, fields ++ [stats: RunStatistics.from_map(JsonTypes.field(raw, "stats"))])
   end
+
+  defp field_value(:int, value), do: JsonTypes.int(value)
+  defp field_value(:bool, value), do: JsonTypes.bool(value)
+  defp field_value(:str, value), do: JsonTypes.str(value)
 end

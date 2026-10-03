@@ -5,7 +5,7 @@ import type { Element } from "../../domain/enums";
 import { type ArtLibrary, frameFor } from "../../infrastructure/art";
 import { VERSION } from "../../version";
 import { type Controller, type MenuOption, PAGED_VIEWS } from "../controller";
-import { bar, ELEMENT_COLORS, hpColor, MIN_COLUMNS, MIN_ROWS, RARITY_COLORS } from "../render";
+import { bar, ELEMENT_COLORS, hpColor, MIN_COLUMNS, MIN_ROWS, RARITY_COLORS, STYLE_COLORS } from "../render";
 
 const ANIMATION_MS = 500;
 const LOG_LINES = 5;
@@ -24,7 +24,7 @@ export interface AppProps {
 
 function optionColor(color: string | null): string | undefined {
 	if (color === null) return undefined;
-	return RARITY_COLORS[color] ?? ELEMENT_COLORS[color as Element] ?? color;
+	return RARITY_COLORS[color] ?? STYLE_COLORS[color] ?? ELEMENT_COLORS[color as Element] ?? color;
 }
 
 /** Maps Ink key events to the controller's key names (same names as the Python/Textual version). */
@@ -72,13 +72,20 @@ function MenuOptions({ options }: { readonly options: readonly MenuOption[] }): 
 			{rows.map((row) => (
 				<Box key={row.map((o) => o.key).join()}>
 					{row.map((entry) => {
+						const detail = entry.detail ? `  ${entry.detail}` : "";
 						const label =
-							columns === 1 ? entry.label : entry.label.slice(0, COLUMN_WIDTH - 1).padEnd(COLUMN_WIDTH);
+							columns === 1 ? entry.label : entry.label.slice(0, COLUMN_WIDTH - 1 - detail.length);
+						const padding = columns === 1 ? "" : " ".repeat(COLUMN_WIDTH - label.length - detail.length);
 						const color = optionColor(entry.color);
+						const detailColor = optionColor(entry.detailColor);
 						return (
 							<Text key={entry.key}>
 								<Text bold color="cyan">{`[${entry.key.toUpperCase()}] `}</Text>
 								<Text {...(color === undefined ? {} : { color })}>{label}</Text>
+								{detail ? (
+									<Text {...(detailColor === undefined ? {} : { color: detailColor })}>{detail}</Text>
+								) : null}
+								{padding}
 							</Text>
 						);
 					})}
@@ -94,8 +101,14 @@ export function App({ controller, art, animate, columns, rows }: AppProps): Reac
 	const [, setVersion] = useState(0);
 	const [tick, setTick] = useState(0);
 	const [cues, setCues] = useState<string[]>([]);
+	const [autoBattle, setAutoBattle] = useState(false);
 	const width = columns ?? stdout.columns ?? MIN_COLUMNS;
 	const height = rows ?? stdout.rows ?? MIN_ROWS;
+
+	const takeCues = (): void => {
+		setCues(animate ? [...controller.animationCues] : []);
+		controller.animationCues = [];
+	};
 
 	useEffect(() => {
 		if (!animate) return;
@@ -106,14 +119,31 @@ export function App({ controller, art, animate, columns, rows }: AppProps): Reac
 		return () => clearInterval(timer);
 	}, [animate]);
 
+	// Auto-battle is paced by the battle speed setting (docs/tui.md); the controller ignores keys meanwhile.
+	useEffect(() => {
+		if (!autoBattle) return;
+		const timer = setInterval(() => {
+			const running = controller.autoBattleStep();
+			setCues(animate ? [...controller.animationCues] : []);
+			controller.animationCues = [];
+			setVersion((value) => value + 1);
+			if (!running) setAutoBattle(false);
+		}, controller.autoBattleIntervalMs());
+		return () => clearInterval(timer);
+	}, [autoBattle, animate, controller]);
+
 	useInput((input, key) => {
 		controller.press(keyName(input, key));
 		if (controller.exitRequested) {
 			exit();
 			return;
 		}
-		setCues(animate ? [...controller.animationCues] : []);
-		controller.animationCues = [];
+		if (controller.autoBattleActive && !autoBattle) {
+			// Without animation (--no-anim, tests) the whole fight is played at once.
+			if (animate) setAutoBattle(true);
+			else controller.runAutoBattle();
+		}
+		takeCues();
 		setVersion((value) => value + 1);
 	});
 
@@ -134,6 +164,7 @@ export function App({ controller, art, animate, columns, rows }: AppProps): Reac
 			: frameFor(art.forCreature(controller.services.data.creature(monster.creatureId)), animation, tick);
 	const artColor = monster === null ? "green" : animation === "hurt" ? "red" : ELEMENT_COLORS[monster.element];
 	const body = controller.bodyLines();
+	const bodyColors = controller.bodyColors();
 	const prompt = controller.inputPrompt();
 
 	return (
@@ -159,6 +190,8 @@ export function App({ controller, art, animate, columns, rows }: AppProps): Reac
 								<Text>
 									{monster.isBoss ? (
 										<Text bold color="magenta">{`${controller.t("hud.boss")} `}</Text>
+									) : monster.enemyClass === "elite" ? (
+										<Text bold color="yellow">{`${controller.t("hud.elite")} `}</Text>
 									) : null}
 									<Text bold>{monster.name.toUpperCase()}</Text>
 								</Text>
@@ -207,10 +240,15 @@ export function App({ controller, art, animate, columns, rows }: AppProps): Reac
 				<Text bold underline>
 					{controller.title()}
 				</Text>
-				{body.map((line, index) => (
-					// biome-ignore lint/suspicious/noArrayIndexKey: body lines are static text re-rendered as a whole.
-					<Text key={index}>{line === "" ? " " : line}</Text>
-				))}
+				{body.map((line, index) => {
+					const color = optionColor(bodyColors[index] ?? null);
+					return (
+						// biome-ignore lint/suspicious/noArrayIndexKey: body lines are static text re-rendered as a whole.
+						<Text key={index} {...(color === undefined ? {} : { color })}>
+							{line === "" ? " " : line}
+						</Text>
+					);
+				})}
 				{controller.options().length > 0 ? <Text> </Text> : null}
 				<MenuOptions options={controller.options()} />
 				{prompt === null ? null : <Text bold>{`\n${prompt}`}</Text>}

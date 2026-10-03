@@ -9,11 +9,13 @@ import { GameSession, type Repositories, type SessionContext } from "../../src/a
 import { ProfileService } from "../../src/application/profile";
 import { RunConfig, RunState } from "../../src/application/run-state";
 import { makeRunId, NewerSchemaError, parseTimestamp } from "../../src/application/save-game";
-import { simulate } from "../../src/application/simulator";
+import { simulate, winRatePct } from "../../src/application/simulator";
+import { STATS } from "../../src/domain/enums";
 import { DataError, loadGameData } from "../../src/infrastructure/data-loader";
 import { EMBEDDED } from "../../src/infrastructure/embedded-shared";
 import { resolveDataDir } from "../../src/infrastructure/paths";
 import {
+	DEFAULT_SETTINGS,
 	FileHistoryRepository,
 	FileProfileRepository,
 	FileSaveRepository,
@@ -55,15 +57,37 @@ function context(dir: string, clock = new FakeClock(), gameVersion = "1"): Sessi
 describe("full runs", () => {
 	for (const vocation of ["warrior", "archer", "mage"]) {
 		for (const difficulty of ["easy", "normal", "hard"]) {
-			test(`${vocation}/${difficulty} bot plays until death`, () => {
+			test(`${vocation}/${difficulty} bot plays until the run ends`, () => {
 				const [engine] = GameEngine.newRun(DATA, new RunConfig("Bot", vocation, difficulty), 1234);
 				const log = playToDeath(engine, new GreedyBot(DATA));
-				expect(engine.state.phase).toBe("game_over");
-				expect(log[log.length - 1]?.at(-1)?.type).toBe("player_died");
-				expect(engine.state.stats.kills.total()).toBe(engine.state.round - 1);
+				const state = engine.state;
+				expect(state.phase).toBe("game_over");
+				expect(state.round).toBeGreaterThanOrEqual(1);
+				expect(state.stats.damageDealt).toBeGreaterThan(0);
+				if (state.won) {
+					expect(state.round).toBe(DATA.balance.finalRound);
+					expect(state.deathCause).toBeNull();
+					expect(log.at(-2)?.at(-1)).toEqual({ type: "run_won", round: state.round });
+					expect(log.at(-1)).toEqual([{ type: "run_ended", won: true }]);
+					expect(state.stats.kills.total()).toBe(state.round);
+				} else {
+					expect(state.deathCause).toBeTruthy();
+					expect(log.at(-1)?.at(-1)?.type).toBe("player_died");
+					expect(state.stats.kills.total()).toBe(state.round - 1);
+				}
 			});
 		}
 	}
+
+	test("some bot runs are won", () => {
+		let won = 0;
+		for (let seed = 2002; seed < 2006; seed++) {
+			const [engine] = GameEngine.newRun(DATA, new RunConfig("Bot", "archer", "easy"), seed);
+			playToDeath(engine, new GreedyBot(DATA));
+			if (engine.state.won) won += 1;
+		}
+		expect(won).toBeGreaterThan(0);
+	});
 
 	test("restore mid-run continues identically", () => {
 		const bot = new GreedyBot(DATA);
@@ -90,8 +114,17 @@ describe("full runs", () => {
 	test("simulator summary", () => {
 		const summary = simulate(DATA, "warrior", "normal", 3, 10);
 		expect(summary.runs).toBe(3);
+		expect(summary.wins).toBeGreaterThanOrEqual(0);
+		expect(summary.wins).toBeLessThanOrEqual(3);
+		expect(winRatePct(summary)).toBe(Math.floor((summary.wins * 100) / 3));
 		expect(summary.minRound).toBeLessThanOrEqual(summary.medianRound);
 		expect(() => simulate(DATA, "warrior", "normal", 0)).toThrow("positive");
+	});
+
+	test("simulator counts won runs", () => {
+		const summary = simulate(DATA, "archer", "easy", 2, 2002);
+		expect(summary.wins).toBeGreaterThanOrEqual(1);
+		expect(summary.maxRound).toBe(DATA.balance.finalRound);
 	});
 });
 
@@ -119,6 +152,22 @@ describe("game data", () => {
 		const { affixes: __, achievements: ___, ...noOptional } = EMBEDDED.data;
 		expect(loadGameData({ ...EMBEDDED, data: noOptional }).affixes).toEqual([]);
 	});
+
+	test("balance M8 tables", () => {
+		const balance = DATA.balance;
+		expect(balance.rarities.map((r) => r.id)).toEqual(["common", "rare", "legendary", "mythic"]);
+		expect(balance.rarities.map((r) => r.statPct)).toEqual([100, 150, 200, 300]);
+		expect(balance.spellLevels.map((level) => level.effectPct)).toEqual([100, 150, 200]);
+		expect(Object.keys(balance.rarityWeights)).toEqual(["merchant"]);
+		const rarityIds = new Set(balance.rarities.map((r) => r.id));
+		for (const enemyClass of balance.enemyClasses) {
+			for (const rarity of Object.keys(enemyClass.rarityWeights)) expect(rarityIds.has(rarity)).toBe(true);
+		}
+		expect(balance.enemyClass("elite").statPct).toBeGreaterThan(balance.enemyClass("normal").statPct);
+		expect(new Set(balance.itemScoreWeights.keys())).toEqual(new Set(STATS));
+		expect(DATA.bossOfTier(DATA.tierCount - 1).id).toBe("ferumbras");
+		expect(balance.finalRound).toBe(balance.roundsPerTier * DATA.tierCount);
+	});
 });
 
 describe("persistence", () => {
@@ -132,7 +181,9 @@ describe("persistence", () => {
 		);
 		expect(events[0]?.type).toBe("run_started");
 		const save = JSON.parse(readFileSync(join(dir, "save.json"), "utf-8"));
-		expect(save).toMatchObject({ schemaVersion: 1, implementation: "typescript", gameVersion: "9.9.9" });
+		expect(save).toMatchObject({ schemaVersion: 2, implementation: "typescript", gameVersion: "9.9.9" });
+		expect(save.run.config.autoEquip).toBe(false);
+		expect(save.run.won).toBe(false);
 		expect(save.session.runId).toBe(session.info.runId);
 		session.step(BuyPotion("health_potion", 1));
 		expect(JSON.parse(readFileSync(join(dir, "save.json"), "utf-8")).run.player.potions.health_potion).toBe(6);
@@ -143,7 +194,12 @@ describe("persistence", () => {
 		const clock = new FakeClock();
 		const [session] = GameSession.start(DATA, new RunConfig("Alex", "warrior", "normal"), 5, context(dir, clock));
 		session.step(NextFight());
+		const monster = session.state.monster;
+		if (monster === null) throw new Error("no monster");
+		monster.hp = 1_000_000;
+		monster.maxHp = 1_000_000;
 		session.step(Attack());
+		expect(session.state.phase).toBe("battle");
 		session.saveAndQuit();
 		const resumed = GameSession.resume(DATA, context(dir, clock));
 		expect(resumed?.state.phase).toBe("merchant");
@@ -181,12 +237,26 @@ describe("persistence", () => {
 		expect(() => new FileSaveRepository(dir).load()).toThrow(NewerSchemaError);
 		writeFileSync(join(dir, "profile.json"), JSON.stringify({ schemaVersion: 99 }));
 		expect(() => new FileProfileRepository(dir).load()).toThrow(NewerSchemaError);
-		const settings = new SettingsRepository(tempDir());
-		expect(settings.load()).toEqual({ locale: null });
-		settings.save({ locale: "pt-BR" });
-		expect(settings.load()).toEqual({ locale: "pt-BR" });
-		settings.save({ locale: null });
-		expect(settings.load()).toEqual({ locale: null });
+		const settingsDir = tempDir();
+		const settingsPath = join(settingsDir, "settings.json");
+		const settings = new SettingsRepository(settingsDir);
+		expect(settings.load()).toEqual(DEFAULT_SETTINGS);
+		settings.save({ locale: "pt-BR", autoEquip: true, battleSpeed: 2 });
+		expect(settings.load()).toEqual({ locale: "pt-BR", autoEquip: true, battleSpeed: 2 });
+		expect(JSON.parse(readFileSync(settingsPath, "utf-8"))).toEqual({
+			schemaVersion: 2,
+			locale: "pt-BR",
+			autoEquip: true,
+			battleSpeed: 2,
+		});
+		settings.save(DEFAULT_SETTINGS);
+		expect(settings.load()).toEqual(DEFAULT_SETTINGS);
+		writeFileSync(settingsPath, JSON.stringify({ schemaVersion: 1, locale: "fr" }));
+		expect(settings.load()).toEqual(DEFAULT_SETTINGS);
+		writeFileSync(settingsPath, JSON.stringify({ schemaVersion: 1, locale: "en" }));
+		expect(settings.load()).toEqual({ locale: "en", autoEquip: false, battleSpeed: 1 });
+		writeFileSync(settingsPath, JSON.stringify({ schemaVersion: 2, autoEquip: true, battleSpeed: 7 }));
+		expect(settings.load()).toEqual({ locale: null, autoEquip: true, battleSpeed: 1 });
 		expect(makeRunId(new Date(Date.UTC(2026, 0, 2, 3, 4, 5)), 42)).toBe("20260102T030405Z-42");
 		expect(() => parseTimestamp("yesterday")).toThrow();
 		expect(new SystemClock().now()).toBeInstanceOf(Date);
@@ -204,11 +274,24 @@ describe("persistence", () => {
 				round: i % 5,
 				level: i,
 				endedAt: `2026-01-${String(i + 1).padStart(2, "0")}T00:00:00Z`,
+				won: false,
 			});
 		}
 		const hall = service.profile.hallOfFame;
 		expect(hall).toHaveLength(10);
 		expect(hall.slice(0, 3).map((e) => e.round)).toEqual([4, 4, 3]);
+		expect(hall[0]?.level ?? 0).toBeGreaterThan(hall[1]?.level ?? 0);
+		service.recordFinishedRun({
+			runId: "winner",
+			name: "W",
+			vocation: "mage",
+			difficulty: "easy",
+			round: 1,
+			level: 1,
+			endedAt: "2026-02-01T00:00:00Z",
+			won: true,
+		});
+		expect(service.profile.hallOfFame[0]?.runId).toBe("winner");
 		const repository = new FileProfileRepository(tempDir());
 		repository.save(service.profile);
 		expect(repository.load().toJson()).toEqual(service.profile.toJson());

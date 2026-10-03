@@ -5,7 +5,7 @@ from rpg.application.events import ErrorCode, Event, error, event
 from rpg.application.progression import Progression
 from rpg.application.run_state import RunState
 from rpg.domain.character import CharacterSheet, build_sheet
-from rpg.domain.definitions import GameData, MonsterAttack, SpellDef
+from rpg.domain.definitions import EnemyClassDef, GameData, MonsterAttack, SpellDef
 from rpg.domain.entities import ActiveStatus, MonsterInstance, Player
 from rpg.domain.enums import Element, Resource, SpellKind, StatusKind, Target
 from rpg.domain.formulas import armor_mitigation, pct, spell_level_for_uses
@@ -44,6 +44,9 @@ class Battle:
 	def _sheet(self) -> CharacterSheet:
 		return build_sheet(self._player, self._data)
 
+	def _class(self) -> EnemyClassDef:
+		return self._data.balance.enemy_class(self._monster.enemy_class)
+
 	# ── validation ────────────────────────────────────────────────────────────
 
 	def validate(self, command: BattleCommand) -> Event | None:
@@ -73,19 +76,28 @@ class Battle:
 	def play_turn(self, command: BattleCommand) -> tuple[list[Event], str]:
 		events: list[Event] = []
 		self._player_action(command, events)
-		if self._monster.hp <= 0:
-			return events, BattleOutcome.VICTORY
 		while True:
-			if self._monster_phase(events):
-				return events, BattleOutcome.VICTORY
-			if self._player.hp <= 0:
-				return events, BattleOutcome.DEFEAT
+			outcome = self._death_check()
+			if outcome is not None:
+				return events, outcome
+			self._monster_phase(events)
+			outcome = self._death_check()
+			if outcome is not None:
+				return events, outcome
 			if self._end_of_turn(events):
 				return events, BattleOutcome.DEFEAT
 			if not self._consume_stun(self._player.statuses):
 				return events, BattleOutcome.ONGOING
 			self._player.stun_cooldown = STUN_COOLDOWN_TURNS
 			events.append(event("player_stunned"))
+
+	def _death_check(self) -> str | None:
+		"""Steps 2 and 4: a parried hit can kill the attacker, so the player is checked first."""
+		if self._player.hp <= 0:
+			return BattleOutcome.DEFEAT
+		if self._monster.hp <= 0:
+			return BattleOutcome.VICTORY
+		return None
 
 	# ── step 1: player action ─────────────────────────────────────────────────
 
@@ -103,12 +115,31 @@ class Battle:
 
 	def _melee(self, events: list[Event]) -> None:
 		sheet = self._sheet()
+		if self._monster_dodges(events):
+			return
 		damage = pct(self._rng.roll(sheet.melee_min, sheet.melee_max), 100 + sheet.physical_damage)
 		damage, crit = self._roll_crit(damage, sheet)
 		damage = self._resisted(damage, sheet.weapon_element)
+		if self._monster_parries(damage, sheet.weapon_element, events):
+			return
 		self._hit_monster(damage)
 		events.append(event("player_attacked", damage=damage, crit=crit, element=sheet.weapon_element.value))
 		self._leech(damage, sheet, events)
+
+	def _monster_dodges(self, events: list[Event]) -> bool:
+		if not self._rng.chance(self._class().dodge):
+			return False
+		events.append(event("monster_dodged"))
+		return True
+
+	def _monster_parries(self, damage: int, element: Element, events: list[Event]) -> bool:
+		"""Physical hits only: the monster takes nothing and reflects part of the hit (no mitigation)."""
+		if element is not Element.PHYSICAL or not self._rng.chance(self._class().parry):
+			return False
+		reflected = max(1, pct(damage, self._data.balance.parry_reflect_pct))
+		self._player.hp = max(0, self._player.hp - reflected)
+		events.append(event("monster_parried", reflected=reflected))
+		return True
 
 	def _cast(self, spell: SpellDef, events: list[Event]) -> None:
 		player = self._player
@@ -116,6 +147,9 @@ class Battle:
 		level = spell_level_for_uses(player.spell_uses.get(spell.id, 0), self._data.balance.spell_levels)
 		cost = pct(spell.mana, level.mana_pct)
 		player.mp -= cost
+		if spell.kind is SpellKind.ATTACK and self._monster_dodges(events):
+			events.extend(self._progression.after_cast(player, spell, cost))
+			return
 		bonus = player.level * spell.per_level + player.magic_level * spell.per_magic_level
 		amount = pct(
 			pct(self._rng.roll(spell.min + bonus, spell.max + bonus), level.effect_pct), 100 + sheet.spell_power
@@ -124,6 +158,9 @@ class Battle:
 		if spell.kind is SpellKind.ATTACK:
 			damage, crit = self._roll_crit(amount, sheet)
 			damage = self._resisted(damage, spell.element)
+			if self._monster_parries(damage, spell.element, events):
+				events.extend(self._progression.after_cast(player, spell, cost))
+				return
 			self._hit_monster(damage)
 			events.append(
 				event("spell_cast", spellId=spell.id, damage=damage, crit=crit, element=spell.element.value, mana=cost)
@@ -184,16 +221,21 @@ class Battle:
 
 	# ── step 3: monster phase ─────────────────────────────────────────────────
 
-	def _monster_phase(self, events: list[Event]) -> bool:
-		"""Returns True when the monster died from its own status ticks."""
+	def _monster_phase(self, events: list[Event]) -> None:
 		monster = self._monster
 		self._tick(Target.MONSTER, monster.statuses, events)
 		if monster.hp <= 0:
-			return True
+			return
 		if self._consume_stun(monster.statuses):
 			monster.stun_cooldown = STUN_COOLDOWN_TURNS
 			events.append(event("monster_stunned"))
-			return False
+			return
+		# A healing monster does nothing else this turn; a boss does not advance its pattern.
+		if monster.hp < monster.max_hp and self._rng.chance(self._class().heal):
+			healed = min(pct(monster.max_hp, self._data.balance.monster_heal_pct), monster.max_hp - monster.hp)
+			monster.hp += healed
+			events.append(event("monster_healed", amount=healed))
+			return
 
 		if monster.is_boss:
 			every = self._data.balance.boss_telegraph_every
@@ -203,36 +245,48 @@ class Battle:
 			if charge_id is not None and position == every - 1:
 				charge = monster.attack(charge_id)
 				events.append(event("boss_telegraph", attackId=charge.id, element=charge.element.value))
-				return False
+				return
 			if charge_id is not None and position == every:
 				self._resolve_monster_attack(monster.attack(charge_id), True, events)
-				return False
+				return
 
 		index = self._rng.weighted([attack.weight for attack in monster.attacks])
 		self._resolve_monster_attack(monster.attacks[index], False, events)
-		return False
 
 	def _resolve_monster_attack(self, attack: MonsterAttack, charged: bool, events: list[Event]) -> None:
 		player = self._player
 		sheet = self._sheet()
+		balance = self._data.balance
 		if self._rng.chance(sheet.dodge):
 			events.append(event("attack_dodged", attackId=attack.id))
 			return
-		if attack.element is Element.PHYSICAL and self._rng.chance(sheet.parry):
-			events.append(event("attack_parried", attackId=attack.id))
-			return
 		damage = self._rng.roll(attack.min, attack.max)
 		if charged:
-			damage = pct(damage, self._data.balance.boss_charge_damage_pct)
+			damage = pct(damage, balance.boss_charge_damage_pct)
+		if attack.element is Element.PHYSICAL and self._rng.chance(sheet.parry):
+			reflected = max(1, pct(damage, balance.parry_reflect_pct))
+			self._hit_monster(reflected)
+			events.append(event("attack_parried", attackId=attack.id, reflected=reflected))
+			return
+		crit = self._rng.chance(self._class().crit)
+		if crit:
+			damage = pct(damage, balance.crit_multiplier_pct)
 		if attack.element is Element.PHYSICAL:
 			damage = armor_mitigation(damage, sheet.armor)
 		damage = pct(damage, 100 - sheet.protection(attack.element))
 		if player.defending:
-			damage = pct(damage, self._data.balance.defend_damage_pct)
+			damage = pct(damage, balance.defend_damage_pct)
 		damage = max(1, damage)
 		player.hp = max(0, player.hp - damage)
 		events.append(
-			event("monster_attacked", attackId=attack.id, damage=damage, element=attack.element.value, charged=charged)
+			event(
+				"monster_attacked",
+				attackId=attack.id,
+				damage=damage,
+				element=attack.element.value,
+				charged=charged,
+				crit=crit,
+			)
 		)
 		if attack.status is not None and self._rng.chance(attack.status.chance):
 			per_turn = max(1, pct(damage, attack.status.damage_pct))

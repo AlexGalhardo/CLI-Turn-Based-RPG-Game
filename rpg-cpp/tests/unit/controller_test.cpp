@@ -80,7 +80,7 @@ TEST_CASE("the title without a save has no Continue", "[unit][controller]") {
 	REQUIRE(controller.exit_requested);
 }
 
-TEST_CASE("first launch asks the language; it can be switched from the title", "[unit][controller]") {
+TEST_CASE("first launch asks the language; it can be switched from the settings", "[unit][controller]") {
 	const rpg::testing::TempDir directory;
 	auto first = make_controller(directory.path(), "");
 	REQUIRE(first.view == View::language);
@@ -88,11 +88,15 @@ TEST_CASE("first launch asks the language; it can be switched from the title", "
 
 	auto controller = make_controller(directory.path());
 	controller.press("6");
+	REQUIRE(controller.view == View::settings);
+	controller.press("1");
 	REQUIRE(controller.view == View::language);
 	REQUIRE(controller.title() == controller.t("language.title"));
 	controller.press("2");
-	REQUIRE(controller.view == View::title);
+	REQUIRE(controller.view == View::settings);
 	REQUIRE(controller.locale == "pt-BR");
+	controller.press("0");
+	REQUIRE(controller.view == View::title);
 	REQUIRE(controller.title() == "CLI Turn-Based RPG");
 	REQUIRE(std::ranges::contains(labels_of(controller), "Sair"));
 
@@ -122,6 +126,9 @@ TEST_CASE("merchant menus", "[unit][controller]") {
 	REQUIRE(any_contains(labels, "Hand Axe"));
 	REQUIRE_FALSE(any_contains(labels, "Bow"));
 	controller.press("1");
+	REQUIRE(controller.view == View::compare);
+	controller.press("1");
+	REQUIRE(controller.view == View::equipment);
 	REQUIRE((player.equipment.at("weapon").uid == 900 || player.equipment.at("weapon").uid == 1));
 	controller.press("0");
 
@@ -267,7 +274,18 @@ TEST_CASE("render helpers", "[unit][render]") {
 	REQUIRE_FALSE(presentation::list_index("ab").has_value());
 	REQUIRE(presentation::element_color("fire") == "#ff5f5f");
 	REQUIRE(presentation::rarity_color("legendary") == "#ffaf00");
-	REQUIRE(presentation::rarity_color("mythic").empty());
+	REQUIRE(presentation::rarity_color("mythic") == "#af87ff");
+	REQUIRE(presentation::rarity_color("epic").empty());
+	REQUIRE(presentation::style_color(presentation::style_gain) == "#5fd75f");
+	REQUIRE(presentation::style_color("unknown").empty());
+	REQUIRE(presentation::format_delta(5) == "+5");
+	REQUIRE(presentation::format_delta(-3) == "-3");
+	REQUIRE(presentation::format_delta(0) == "0");
+	REQUIRE(presentation::delta_style(1) == presentation::style_gain);
+	REQUIRE(presentation::delta_style(-1) == presentation::style_loss);
+	REQUIRE(presentation::delta_style(0).empty());
+	REQUIRE(presentation::utf8_prefix("ação!", 3) == "açã");
+	REQUIRE(presentation::utf8_prefix("ab", 5) == "ab");
 	REQUIRE(presentation::utf8_length("ação") == 4);
 }
 

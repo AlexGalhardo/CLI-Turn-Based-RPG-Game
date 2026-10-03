@@ -5,9 +5,9 @@ from dataclasses import dataclass, field
 from rpg.application.events import Event
 from rpg.application.run_state import RunState
 from rpg.domain.definitions import AchievementDef, GameData
-from rpg.domain.json_types import JsonObject, JsonValue, json_int, json_list, json_obj, json_str
+from rpg.domain.json_types import JsonObject, JsonValue, json_bool, json_int, json_list, json_obj, json_str
 
-PROFILE_SCHEMA_VERSION = 1
+PROFILE_SCHEMA_VERSION = 2
 HALL_OF_FAME_SIZE = 10
 BESTIARY_REVEAL_KILLS = 5
 
@@ -33,6 +33,7 @@ class HallOfFameEntry:
 	round: int
 	level: int
 	ended_at: str
+	won: bool = False
 
 	def to_dict(self) -> JsonObject:
 		return {
@@ -43,6 +44,7 @@ class HallOfFameEntry:
 			"round": self.round,
 			"level": self.level,
 			"endedAt": self.ended_at,
+			"won": self.won,
 		}
 
 	@staticmethod
@@ -56,6 +58,7 @@ class HallOfFameEntry:
 			round=json_int(data["round"]),
 			level=json_int(data["level"]),
 			ended_at=json_str(data["endedAt"]),
+			won=json_bool(data["won"]),
 		)
 
 
@@ -94,8 +97,8 @@ class Profile:
 		return Profile(bestiary=bestiary, achievements=achievements, hall_of_fame=hall)
 
 
-def _hall_of_fame_key(entry: HallOfFameEntry) -> tuple[int, int, str]:
-	return (-entry.round, -entry.level, entry.ended_at)
+def _hall_of_fame_key(entry: HallOfFameEntry) -> tuple[bool, int, int, str]:
+	return (not entry.won, -entry.round, -entry.level, entry.ended_at)
 
 
 class ProfileService:
@@ -146,6 +149,8 @@ class ProfileService:
 				return len(self.profile.bestiary)
 			case "hard_round_reached":
 				return state.round if state.config.difficulty_id == "hard" else 0
+			case "run_won":
+				return 1 if state.won else 0
 			case _:
 				return 0
 

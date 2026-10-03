@@ -3,7 +3,7 @@ defmodule Rpg.Application.Profile do
 
   alias Rpg.Domain.JsonTypes
 
-  @schema_version 1
+  @schema_version 2
 
   defmodule BestiaryEntry do
     @moduledoc false
@@ -22,7 +22,7 @@ defmodule Rpg.Application.Profile do
   defmodule HallOfFameEntry do
     @moduledoc false
     @enforce_keys [:run_id, :name, :vocation, :difficulty, :round, :level, :ended_at]
-    defstruct @enforce_keys
+    defstruct [:run_id, :name, :vocation, :difficulty, :round, :level, :ended_at, won: false]
 
     @type t :: %__MODULE__{
             run_id: String.t(),
@@ -31,7 +31,8 @@ defmodule Rpg.Application.Profile do
             difficulty: String.t(),
             round: integer(),
             level: integer(),
-            ended_at: String.t()
+            ended_at: String.t(),
+            won: boolean()
           }
 
     @spec to_map(t()) :: map()
@@ -43,7 +44,8 @@ defmodule Rpg.Application.Profile do
         "difficulty" => e.difficulty,
         "round" => e.round,
         "level" => e.level,
-        "endedAt" => e.ended_at
+        "endedAt" => e.ended_at,
+        "won" => e.won
       }
     end
 
@@ -58,7 +60,8 @@ defmodule Rpg.Application.Profile do
         difficulty: JsonTypes.str(f.("difficulty")),
         round: JsonTypes.int(f.("round")),
         level: JsonTypes.int(f.("level")),
-        ended_at: JsonTypes.str(f.("endedAt"))
+        ended_at: JsonTypes.str(f.("endedAt")),
+        won: JsonTypes.bool(f.("won"))
       }
     end
   end
@@ -187,17 +190,20 @@ defmodule Rpg.Application.ProfileService do
       "hard_round_reached" ->
         if state.config.difficulty_id == "hard", do: state.round, else: 0
 
+      "run_won" ->
+        if state.won, do: 1, else: 0
+
       _ ->
         0
     end
   end
 
-  @doc "Top 10 by round, then level, then earliest end (stable: ties keep the existing entry first)."
+  @doc "Top 10: won runs first, then by round, then level, then earliest end (stable: ties keep the existing entry first)."
   @spec record_finished_run(t(), HallOfFameEntry.t()) :: t()
   def record_finished_run(%__MODULE__{} = service, %HallOfFameEntry{} = entry) do
     ranking =
       (service.profile.hall_of_fame ++ [entry])
-      |> Enum.sort_by(&{-&1.round, -&1.level, &1.ended_at})
+      |> Enum.sort_by(&{not &1.won, -&1.round, -&1.level, &1.ended_at})
       |> Enum.take(@hall_of_fame_size)
 
     put_in(service.profile.hall_of_fame, ranking)

@@ -138,7 +138,6 @@ export interface DifficultyDef {
 	readonly damagePct: number;
 	readonly goldPct: number;
 	readonly xpPct: number;
-	readonly nonCommonWeightPct: number;
 }
 
 export interface RarityDef {
@@ -147,6 +146,42 @@ export interface RarityDef {
 	readonly valuePct: number;
 	readonly affixMin: number;
 	readonly affixMax: number;
+}
+
+/** A row of `balance.enemyClasses`: multipliers, combat chances and drop table (docs/game-design.md §3). */
+export interface EnemyClassDef {
+	readonly id: string;
+	readonly statPct: number;
+	readonly rewardPct: number;
+	readonly dodge: number;
+	readonly parry: number;
+	readonly crit: number;
+	readonly heal: number;
+	readonly dropChancePct: number;
+	readonly drops: number;
+	readonly potionDropPct: number;
+	readonly rarityWeights: Readonly<Record<string, number>>;
+}
+
+export interface AutoBattleModeDef {
+	readonly id: string;
+	readonly offense: string;
+	readonly supportEvery: number;
+}
+
+export class AutoBattleDef {
+	constructor(
+		readonly healBelowPct: number,
+		readonly manaBelowPct: number,
+		readonly emergencyHealBelowPct: number,
+		readonly modes: readonly AutoBattleModeDef[],
+	) {}
+
+	mode(modeId: string): AutoBattleModeDef {
+		const mode = this.modes.find((m) => m.id === modeId);
+		if (mode === undefined) throw new UnknownIdError(modeId);
+		return mode;
+	}
 }
 
 export interface SpellLevelDef {
@@ -164,37 +199,116 @@ export interface Caps {
 	readonly protection: number;
 }
 
-export class Balance {
-	constructor(
-		readonly roundsPerTier: number,
-		readonly cycleStatPct: number,
-		readonly cycleRewardPct: number,
-		readonly positionPct: number,
-		readonly difficulties: readonly DifficultyDef[],
-		readonly critMultiplierPct: number,
-		readonly defendDamagePct: number,
-		readonly bossTelegraphEvery: number,
-		readonly bossChargeDamagePct: number,
-		readonly caps: Caps,
-		readonly magicLevelBase: number,
-		readonly magicLevelGrowthPct: number,
-		readonly spellLevels: readonly SpellLevelDef[],
-		readonly startingGold: number,
-		readonly startingPotions: ReadonlyArray<readonly [string, number]>,
-		readonly bagCapacity: number,
-		readonly dropChancePct: number,
-		readonly bossDrops: number,
-		readonly rarities: readonly RarityDef[],
-		readonly rarityWeights: Readonly<Record<string, Readonly<Record<string, number>>>>,
-		readonly merchantStockSize: number,
-		readonly merchantMarkupPct: number,
-		readonly spellStatusDamagePct: number,
-	) {}
+export interface BalanceInit {
+	readonly roundsPerTier: number;
+	readonly cycleStatPct: number;
+	readonly cycleRewardPct: number;
+	readonly positionPct: number;
+	readonly finalRound: number;
+	readonly eliteChancePct: number;
+	readonly difficulties: readonly DifficultyDef[];
+	readonly enemyClasses: readonly EnemyClassDef[];
+	readonly critMultiplierPct: number;
+	readonly defendDamagePct: number;
+	readonly parryReflectPct: number;
+	readonly monsterHealPct: number;
+	readonly bossTelegraphEvery: number;
+	readonly bossChargeDamagePct: number;
+	readonly caps: Caps;
+	readonly magicLevelBase: number;
+	readonly magicLevelGrowthPct: number;
+	readonly spellLevels: readonly SpellLevelDef[];
+	readonly startingGold: number;
+	readonly startingPotions: ReadonlyArray<readonly [string, number]>;
+	readonly bagCapacity: number;
+	readonly itemLevelPerTier: number;
+	readonly itemScoreWeights: ReadonlyMap<Stat, number>;
+	readonly rarities: readonly RarityDef[];
+	readonly rarityWeights: Readonly<Record<string, Readonly<Record<string, number>>>>;
+	readonly merchantStockSize: number;
+	readonly merchantMarkupPct: number;
+	readonly spellStatusDamagePct: number;
+	readonly autoBattle: AutoBattleDef;
+}
+
+export class Balance implements BalanceInit {
+	readonly roundsPerTier: number;
+	readonly cycleStatPct: number;
+	readonly cycleRewardPct: number;
+	readonly positionPct: number;
+	readonly finalRound: number;
+	readonly eliteChancePct: number;
+	readonly difficulties: readonly DifficultyDef[];
+	readonly enemyClasses: readonly EnemyClassDef[];
+	readonly critMultiplierPct: number;
+	readonly defendDamagePct: number;
+	readonly parryReflectPct: number;
+	readonly monsterHealPct: number;
+	readonly bossTelegraphEvery: number;
+	readonly bossChargeDamagePct: number;
+	readonly caps: Caps;
+	readonly magicLevelBase: number;
+	readonly magicLevelGrowthPct: number;
+	readonly spellLevels: readonly SpellLevelDef[];
+	readonly startingGold: number;
+	readonly startingPotions: ReadonlyArray<readonly [string, number]>;
+	readonly bagCapacity: number;
+	readonly itemLevelPerTier: number;
+	readonly itemScoreWeights: ReadonlyMap<Stat, number>;
+	readonly rarities: readonly RarityDef[];
+	readonly rarityWeights: Readonly<Record<string, Readonly<Record<string, number>>>>;
+	readonly merchantStockSize: number;
+	readonly merchantMarkupPct: number;
+	readonly spellStatusDamagePct: number;
+	readonly autoBattle: AutoBattleDef;
+
+	constructor(init: BalanceInit) {
+		this.roundsPerTier = init.roundsPerTier;
+		this.cycleStatPct = init.cycleStatPct;
+		this.cycleRewardPct = init.cycleRewardPct;
+		this.positionPct = init.positionPct;
+		this.finalRound = init.finalRound;
+		this.eliteChancePct = init.eliteChancePct;
+		this.difficulties = init.difficulties;
+		this.enemyClasses = init.enemyClasses;
+		this.critMultiplierPct = init.critMultiplierPct;
+		this.defendDamagePct = init.defendDamagePct;
+		this.parryReflectPct = init.parryReflectPct;
+		this.monsterHealPct = init.monsterHealPct;
+		this.bossTelegraphEvery = init.bossTelegraphEvery;
+		this.bossChargeDamagePct = init.bossChargeDamagePct;
+		this.caps = init.caps;
+		this.magicLevelBase = init.magicLevelBase;
+		this.magicLevelGrowthPct = init.magicLevelGrowthPct;
+		this.spellLevels = init.spellLevels;
+		this.startingGold = init.startingGold;
+		this.startingPotions = init.startingPotions;
+		this.bagCapacity = init.bagCapacity;
+		this.itemLevelPerTier = init.itemLevelPerTier;
+		this.itemScoreWeights = init.itemScoreWeights;
+		this.rarities = init.rarities;
+		this.rarityWeights = init.rarityWeights;
+		this.merchantStockSize = init.merchantStockSize;
+		this.merchantMarkupPct = init.merchantMarkupPct;
+		this.spellStatusDamagePct = init.spellStatusDamagePct;
+		this.autoBattle = init.autoBattle;
+	}
+
+	/** Returns a copy with some fields replaced (used by tests, like Python's dataclasses.replace). */
+	with(overrides: Partial<BalanceInit>): Balance {
+		return new Balance({ ...this, ...overrides });
+	}
 
 	difficulty(difficultyId: string): DifficultyDef {
 		const difficulty = this.difficulties.find((d) => d.id === difficultyId);
 		if (difficulty === undefined) throw new UnknownIdError(difficultyId);
 		return difficulty;
+	}
+
+	enemyClass(classId: string): EnemyClassDef {
+		const enemyClass = this.enemyClasses.find((c) => c.id === classId);
+		if (enemyClass === undefined) throw new UnknownIdError(classId);
+		return enemyClass;
 	}
 
 	rarity(rarityId: string): RarityDef {

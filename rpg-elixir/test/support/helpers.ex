@@ -30,7 +30,8 @@ defmodule Rpg.Test.Helpers do
     config = %RunConfig{
       name: "Tester",
       vocation_id: Keyword.get(opts, :vocation, "warrior"),
-      difficulty_id: Keyword.get(opts, :difficulty, "normal")
+      difficulty_id: Keyword.get(opts, :difficulty, "normal"),
+      auto_equip: Keyword.get(opts, :auto_equip, false)
     }
 
     {engine, _events} = GameEngine.new_run(Keyword.get(opts, :data, data()), config, Keyword.get(opts, :seed, 42))
@@ -50,6 +51,31 @@ defmodule Rpg.Test.Helpers do
   @doc "Steps and returns only the events, plus the new engine."
   @spec step(GameEngine.t(), struct()) :: {GameEngine.t(), [map()]}
   def step(engine, command), do: GameEngine.step(engine, command)
+
+  @doc """
+  Overrides fields of one `balance.enemyClasses` row (chances of 0/100 make the RNG outcome certain).
+  Fields: `:dodge`, `:parry`, `:crit`, `:heal`, `:drop_chance_pct`, `:potion_drop_pct`.
+  """
+  @spec with_enemy_class(GameData.t(), String.t(), keyword()) :: GameData.t()
+  def with_enemy_class(%GameData{} = data, class_id, fields \\ []) do
+    balance = data.balance
+    classes = Enum.map(balance.enemy_classes, &if(&1.id == class_id, do: struct!(&1, fields), else: &1))
+    GameData.replace(data, balance: %{balance | enemy_classes: classes})
+  end
+
+  @doc "No monster dodge, parry, crit or heal, and no elites: the pre-M8 fight, for tests of other mechanics."
+  @spec calm(GameData.t()) :: GameData.t()
+  def calm(%GameData{} = data) do
+    data =
+      Enum.reduce(data.balance.enemy_classes, data, fn enemy_class, data ->
+        with_enemy_class(data, enemy_class.id, dodge: 0, parry: 0, crit: 0, heal: 0)
+      end)
+
+    with_balance(data, elite_chance_pct: 0)
+  end
+
+  @spec with_balance(GameData.t(), keyword()) :: GameData.t()
+  def with_balance(%GameData{} = data, fields), do: GameData.replace(data, balance: struct!(data.balance, fields))
 
   @doc "Adds deterministic test items (one per slot with every stat) without touching the shared files."
   @spec with_test_items(GameData.t()) :: GameData.t()
@@ -93,5 +119,27 @@ defmodule Rpg.Test.FakeClock do
       next = DateTime.add(current, 10, :second)
       {next, next}
     end)
+  end
+end
+
+defmodule Rpg.Test.ControllerHelpers do
+  @moduledoc "UI controller fixtures shared by the controller suites (the Python tests import them from test_controller)."
+
+  alias Rpg.Presentation.Controller
+  alias Rpg.Test.Helpers
+
+  def make_controller(dir, lang \\ "en", data \\ Helpers.data()) do
+    services = Rpg.Main.build_services(data, dir)
+    Controller.new(services, seed: 7, locale_override: lang)
+  end
+
+  def press(controller, keys) when is_list(keys), do: Enum.reduce(keys, controller, &Controller.press(&2, &1))
+  def press(controller, key), do: Controller.press(controller, key)
+
+  def start_run(controller, name \\ "Zed", vocation_key \\ "1", auto_equip_key \\ "2") do
+    controller
+    |> press(["2", "2"])
+    |> press(String.graphemes(name))
+    |> press(["enter", vocation_key, auto_equip_key])
   end
 end

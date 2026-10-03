@@ -1,5 +1,5 @@
 defmodule Rpg.Domain.Character do
-  @moduledoc "Derived character stats: vocation base + equipment (docs/game-design.md §4)."
+  @moduledoc "Derived character stats: vocation base + equipment (docs/game-design.md §4 and §8)."
 
   alias Rpg.Domain.Definitions.{Balance, GameData}
   alias Rpg.Domain.Entities.{ItemInstance, Player}
@@ -69,6 +69,22 @@ defmodule Rpg.Domain.Character do
   @spec item_value(ItemInstance.t(), GameData.t()) :: integer()
   def item_value(%ItemInstance{} = item, %GameData{} = data) do
     Formulas.pct(GameData.item(data, item.item_id).value, Balance.rarity(data.balance, item.rarity).value_pct)
+  end
+
+  @doc "Sum of the item's final stats weighted by `balance.itemScoreWeights` (like Diablo's item power)."
+  @spec item_score(ItemInstance.t(), GameData.t()) :: integer()
+  def item_score(%ItemInstance{} = item, %GameData{} = data) do
+    weights = data.balance.item_score_weights
+    item |> item_stats(data) |> Enum.reduce(0, fn {stat, value}, acc -> acc + value * Map.get(weights, stat, 0) end)
+  end
+
+  @doc "Uses the instance tier: the round tier the item was generated for (docs/game-design.md §8)."
+  @spec required_level(ItemInstance.t(), GameData.t()) :: integer()
+  def required_level(%ItemInstance{tier: tier}, %GameData{} = data), do: 1 + tier * data.balance.item_level_per_tier
+
+  @spec equipment_score(Player.t(), GameData.t()) :: integer()
+  def equipment_score(%Player{} = player, %GameData{} = data) do
+    player.equipment |> Map.values() |> Enum.reduce(0, &(item_score(&1, data) + &2))
   end
 
   @spec build_sheet(Player.t(), GameData.t()) :: CharacterSheet.t()

@@ -230,7 +230,8 @@ TEST_CASE("an immune monster takes no damage", "[unit][battle]") {
 }
 
 TEST_CASE("items add crit, dodge and leech", "[unit][battle]") {
-	const domain::GameData data = rpg::testing::with_test_items(rpg::testing::test_data());
+	// Calm monsters: a monster dodge or parry would skip the leech of the last attack.
+	const domain::GameData data = rpg::testing::calm(rpg::testing::with_test_items(rpg::testing::test_data()));
 	auto engine = new_engine(data);
 	auto& player = engine.state.player;
 	player.equipment.insert_or_assign("ring", domain::ItemInstance{99, "test_ring", "common", 0, {}});

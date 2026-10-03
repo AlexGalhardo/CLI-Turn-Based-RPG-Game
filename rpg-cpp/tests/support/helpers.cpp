@@ -37,10 +37,36 @@ domain::GameData with_test_items(domain::GameData data) {
 	return data;
 }
 
-application::GameEngine new_engine(
-    const domain::GameData& data, std::string_view vocation, std::string_view difficulty, std::uint64_t seed) {
+domain::GameData with_enemy_class(
+    domain::GameData data, std::string_view class_id, const std::function<void(domain::EnemyClassDef&)>& change) {
+	for (domain::EnemyClassDef& row : data.balance.enemy_classes) {
+		if (row.id == class_id) {
+			change(row);
+		}
+	}
+	return data;
+}
+
+domain::GameData calm(domain::GameData data) {
+	for (domain::EnemyClassDef& row : data.balance.enemy_classes) {
+		row.dodge = 0;
+		row.parry = 0;
+		row.crit = 0;
+		row.heal = 0;
+	}
+	data.balance.elite_chance_pct = 0;
+	return data;
+}
+
+domain::GameData all_elites(domain::GameData data) {
+	data.balance.elite_chance_pct = 100;
+	return data;
+}
+
+application::GameEngine new_engine(const domain::GameData& data, std::string_view vocation, std::string_view difficulty,
+    std::uint64_t seed, bool auto_equip) {
 	auto created = application::GameEngine::new_run(
-	    data, application::RunConfig{"Tester", std::string(vocation), std::string(difficulty)}, seed);
+	    data, application::RunConfig{"Tester", std::string(vocation), std::string(difficulty), auto_equip}, seed);
 	REQUIRE(created.has_value());
 	return std::move(created->first);
 }

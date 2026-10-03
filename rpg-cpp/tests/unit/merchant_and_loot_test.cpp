@@ -3,6 +3,7 @@
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include "application/engine.hpp"
 #include "application/loot.hpp"
@@ -13,6 +14,7 @@
 using namespace rpg;
 using application::error_event;
 using application::Event;
+using Catch::Matchers::ContainsSubstring;
 using rpg::testing::new_engine;
 
 namespace {
@@ -30,10 +32,10 @@ domain::GameData loot_data() {
 	return data;
 }
 
-application::ItemRequest request(
-    const domain::GameData& data, std::int64_t tier, std::string table, std::string_view vocation, std::int64_t uid) {
+application::ItemRequest request(const domain::GameData& data, std::int64_t tier, std::string_view enemy_class,
+    std::string_view vocation, std::int64_t uid) {
 	return application::ItemRequest{
-	    &data.vocation(vocation), tier, std::move(table), &data.balance.difficulty("normal"), uid};
+	    &data.vocation(vocation), tier, &data.balance.enemy_class(enemy_class).rarity_weights, uid};
 }
 
 } // namespace
@@ -158,7 +160,7 @@ TEST_CASE("item generation is deterministic with unique affix stats", "[unit][lo
 	for (std::int64_t uid = 0; uid < 200; ++uid) {
 		const auto item = application::generate_item(data, rng, request(data, 1, "boss", "warrior", uid));
 		REQUIRE(item.has_value());
-		REQUIRE(item->rarity != "common");
+		REQUIRE((item->rarity == "legendary" || item->rarity == "mythic"));
 		std::set<std::string> stats;
 		for (const auto& affix : item->affixes) {
 			stats.insert(affix.stat);
@@ -173,19 +175,50 @@ TEST_CASE("item generation without candidates consumes nothing", "[unit][loot]")
 	empty.items.clear();
 	empty.index();
 	domain::Rng rng(3);
-	const auto result = application::generate_item(empty, rng, request(empty, 9, "monster", "mage", 1));
+	const auto result = application::generate_item(empty, rng, request(empty, 9, "normal", "mage", 1));
 	REQUIRE_FALSE(result.has_value());
 	REQUIRE(rng.state() == 3);
 }
 
-TEST_CASE("hard difficulty boosts non-common weights", "[unit][loot]") {
+TEST_CASE("the rarity roll skips zero weights and single options", "[unit][loot]") {
 	const auto& data = rpg::testing::test_data();
-	const auto normal = application::rarity_weights(data, "monster", data.balance.difficulty("normal"));
-	const auto hard = application::rarity_weights(data, "monster", data.balance.difficulty("hard"));
-	REQUIRE(hard.front() == normal.front());
-	for (std::size_t i = 1; i < hard.size(); ++i) {
-		REQUIRE(hard[i] >= normal[i]);
+	domain::Rng rng(1);
+	REQUIRE(application::roll_rarity(data, rng, {{"rare", 5}}).id == "rare");
+	REQUIRE(application::roll_rarity(data, rng, {{"common", 0}, {"mythic", 3}}).id == "mythic");
+	REQUIRE(rng.state() == 1);
+	std::set<std::string> rolled;
+	for (int i = 0; i < 40; ++i) {
+		rolled.insert(application::roll_rarity(data, rng, {{"common", 1}, {"legendary", 1}}).id);
 	}
+	REQUIRE(rolled == std::set<std::string>{"common", "legendary"});
+	REQUIRE(rng.state() != 1);
+	REQUIRE_THROWS_WITH(application::roll_rarity(data, rng, {{"common", 0}}), ContainsSubstring("positive"));
+}
+
+TEST_CASE("equip rejects items above the player level", "[unit][merchant]") {
+	const domain::GameData data = rpg::testing::with_test_items(rpg::testing::test_data());
+	auto engine = new_engine(data);
+	auto& player = engine.state.player;
+	const domain::ItemInstance axe{60, "test_axe", "common", 5, {}};
+	player.bag.push_back(axe);
+	const auto rng_state = engine.rng_state();
+	REQUIRE(engine.step(application::Equip{60}) == single(error_event("level_too_low")));
+	REQUIRE(std::ranges::contains(player.bag, axe));
+	REQUIRE(engine.rng_state() == rng_state);
+	player.level = domain::required_level(axe, data);
+	REQUIRE(engine.step(application::Equip{60}).back() ==
+	        Event{"item_equipped",
+	            {{"uid", std::int64_t{60}}, {"itemId", std::string("test_axe")}, {"slot", std::string("weapon")}}});
+}
+
+TEST_CASE("selling an equipped uid is rejected", "[unit][merchant]") {
+	auto engine = new_engine(rpg::testing::test_data());
+	auto& player = engine.state.player;
+	const domain::ItemInstance weapon = player.equipment.at("weapon");
+	const auto gold = player.gold;
+	REQUIRE(engine.step(application::SellItem{weapon.uid}) == single(error_event("invalid_item")));
+	REQUIRE(player.equipment.at("weapon") == weapon);
+	REQUIRE(player.gold == gold);
 }
 
 TEST_CASE("shields follow the vocation's shield types", "[unit][loot]") {

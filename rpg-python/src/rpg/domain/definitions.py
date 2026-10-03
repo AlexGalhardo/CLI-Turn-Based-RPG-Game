@@ -150,7 +150,6 @@ class DifficultyDef:
 	damage_pct: int
 	gold_pct: int
 	xp_pct: int
-	non_common_weight_pct: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -160,6 +159,44 @@ class RarityDef:
 	value_pct: int
 	affix_min: int
 	affix_max: int
+
+
+@dataclass(frozen=True, slots=True)
+class EnemyClassDef:
+	"""A row of `balance.enemyClasses`: multipliers, combat chances and drop table (docs/game-design.md §3)."""
+
+	id: str
+	stat_pct: int
+	reward_pct: int
+	dodge: int
+	parry: int
+	crit: int
+	heal: int
+	drop_chance_pct: int
+	drops: int
+	potion_drop_pct: int
+	rarity_weights: Mapping[str, int]
+
+
+@dataclass(frozen=True, slots=True)
+class AutoBattleModeDef:
+	id: str
+	offense: str
+	support_every: int
+
+
+@dataclass(frozen=True, slots=True)
+class AutoBattleDef:
+	heal_below_pct: int
+	mana_below_pct: int
+	emergency_heal_below_pct: int
+	modes: tuple[AutoBattleModeDef, ...]
+
+	def mode(self, mode_id: str) -> AutoBattleModeDef:
+		for mode in self.modes:
+			if mode.id == mode_id:
+				return mode
+		raise UnknownIdError(mode_id)
 
 
 @dataclass(frozen=True, slots=True)
@@ -185,9 +222,14 @@ class Balance:
 	cycle_stat_pct: int
 	cycle_reward_pct: int
 	position_pct: int
+	final_round: int
+	elite_chance_pct: int
 	difficulties: tuple[DifficultyDef, ...]
+	enemy_classes: tuple[EnemyClassDef, ...]
 	crit_multiplier_pct: int
 	defend_damage_pct: int
+	parry_reflect_pct: int
+	monster_heal_pct: int
 	boss_telegraph_every: int
 	boss_charge_damage_pct: int
 	caps: Caps
@@ -197,19 +239,26 @@ class Balance:
 	starting_gold: int
 	starting_potions: tuple[tuple[str, int], ...]
 	bag_capacity: int
-	drop_chance_pct: int
-	boss_drops: int
+	item_level_per_tier: int
+	item_score_weights: Mapping[Stat, int]
 	rarities: tuple[RarityDef, ...]
 	rarity_weights: Mapping[str, Mapping[str, int]]
 	merchant_stock_size: int
 	merchant_markup_pct: int
 	spell_status_damage_pct: int
+	auto_battle: AutoBattleDef
 
 	def difficulty(self, difficulty_id: str) -> DifficultyDef:
 		for difficulty in self.difficulties:
 			if difficulty.id == difficulty_id:
 				return difficulty
 		raise UnknownIdError(difficulty_id)
+
+	def enemy_class(self, class_id: str) -> EnemyClassDef:
+		for enemy_class in self.enemy_classes:
+			if enemy_class.id == class_id:
+				return enemy_class
+		raise UnknownIdError(class_id)
 
 	def rarity(self, rarity_id: str) -> RarityDef:
 		for rarity in self.rarities:

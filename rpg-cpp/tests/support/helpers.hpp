@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -22,9 +23,20 @@ const domain::GameData& test_data();
 // A copy of the data plus deterministic test items (one per slot with every stat), like the reference conftest.
 domain::GameData with_test_items(domain::GameData data);
 
+// A copy of the data with one `balance.enemyClasses` row changed by `change`, like the reference conftest
+// `with_enemy_class` (chances of 0/100 make the RNG outcome certain).
+domain::GameData with_enemy_class(
+    domain::GameData data, std::string_view class_id, const std::function<void(domain::EnemyClassDef&)>& change);
+
+// No monster dodge, parry, crit or heal, and no elites: the pre-M8 fight, for tests of other mechanics.
+domain::GameData calm(domain::GameData data);
+
+// A copy of the data where every non-boss monster spawns as an elite.
+domain::GameData all_elites(domain::GameData data);
+
 // A run in the merchant phase. The data must outlive the engine.
 application::GameEngine new_engine(const domain::GameData& data, std::string_view vocation = "warrior",
-    std::string_view difficulty = "normal", std::uint64_t seed = 42);
+    std::string_view difficulty = "normal", std::uint64_t seed = 42, bool auto_equip = false);
 
 // Leaves the merchant and returns the spawned monster.
 domain::MonsterInstance& fight(application::GameEngine& engine);

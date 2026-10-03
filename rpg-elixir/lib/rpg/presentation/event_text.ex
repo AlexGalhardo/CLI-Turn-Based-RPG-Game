@@ -53,6 +53,7 @@ defmodule Rpg.Presentation.EventText do
         event["crit"] === true -> "_crit"
         event["charged"] === true -> "_charged"
         type == "round_started" and event["isBoss"] === true -> "_boss"
+        type == "round_started" and event["enemyClass"] == "elite" -> "_elite"
         Map.has_key?(event, "target") -> "_#{event["target"]}"
         true -> ""
       end

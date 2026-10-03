@@ -22,6 +22,33 @@ func ItemValue(item ItemInstance, data *GameData) int {
 	return Pct(data.Item(item.ItemID).Value, data.Balance.MustRarity(item.Rarity).ValuePct)
 }
 
+// ItemScore is the sum of the item's final stats weighted by balance.itemScoreWeights (like Diablo's item power).
+func ItemScore(item ItemInstance, data *GameData) int {
+	weights := data.Balance.ItemScoreWeights
+	score := 0
+
+	for stat, value := range ItemStats(item, data) {
+		score += value * weights[stat]
+	}
+
+	return score
+}
+
+// RequiredLevel uses the instance tier: the round tier the item was generated for (docs/game-design.md §8).
+func RequiredLevel(item ItemInstance, data *GameData) int {
+	return 1 + item.Tier*data.Balance.ItemLevelPerTier
+}
+
+// EquipmentScore is the sum of the equipped items' scores.
+func EquipmentScore(player *Player, data *GameData) int {
+	score := 0
+	for _, item := range player.Equipment {
+		score += ItemScore(item, data)
+	}
+
+	return score
+}
+
 // CharacterSheet holds the derived stats of the player (docs/game-design.md §4).
 type CharacterSheet struct {
 	MaxHP          int

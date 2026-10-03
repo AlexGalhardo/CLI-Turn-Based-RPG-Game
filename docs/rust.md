@@ -37,8 +37,9 @@ rpg-rust/
 │   ├── lib.rs · version.rs · assets.rs (SharedFs: the embedded files)
 │   ├── domain/                     # rng, enums, definitions, formulas, entities, character
 │   ├── application/                # engine, battle, merchant, loot, spawner, progression, statistics, run_state,
-│   │                               # save_game, profile, game_session, ports, bot, simulator, commands, events
-│   ├── infrastructure/             # data_loader, i18n, art, repositories (+ clock), paths
+│   │                               # save_game, profile, game_session, ports, bot, simulator, commands, events,
+│   │                               # auto_equip (item score + auto-equip), auto_battle (policy)
+│   ├── infrastructure/             # data_loader, i18n, art, repositories (+ clock), paths, migrations (schema 1 → 2)
 │   └── presentation/               # cli, event_text, render, controller, simulator_report
 │       └── tui/app.rs              # ratatui renderer + event loop
 └── tests/                          # golden, integration_*, e2e_tui (+ common/ fixtures, like conftest.py)
@@ -77,5 +78,12 @@ shared data is an integration test in `tests/` (each file is its own crate that 
   call `resolve_data_dir_from(cli, env, home)` (the pure part) or spawn the binary with `Command::env`. Every test uses
   its own temp directory (`tests/common::TempDir`).
 - **TUI.** ratatui is immediate-mode: `App::render` rebuilds the widgets from the controller on every frame. E2E tests
-  render to `ratatui::backend::TestBackend` and press keys through `App::on_key`, including a whole run to death.
+  render to `ratatui::backend::TestBackend` and press keys through `App::on_key`, including a whole run to death and
+  a whole run played by the auto-battle.
+- **Auto-battle pacing.** The controller only exposes `auto_battle_step()` / `run_auto_battle()`; the event loop owns
+  the timer: it shortens its `event::poll` timeout to the next auto-battle turn (600 ms at 1x, 300 ms at 2x) and calls
+  `App::on_auto_battle_tick`. Without animation (`--no-anim`, tests) `App::press` plays the whole fight at once.
+- **Migrations.** `infrastructure::migrations` upgrades the raw `serde_json::Value` of a version 1 document before the
+  typed `Deserialize`, so the structs only know the current schema (`check_schema` runs first, so newer files are
+  still refused).
 - **Simulator seed.** `--simulate N --seed 0` uses base seed 1, exactly like Python's `options.seed or 1`.

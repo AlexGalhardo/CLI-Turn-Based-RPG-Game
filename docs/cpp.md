@@ -55,14 +55,17 @@ rpg-cpp/
 │   ├── assets/shared_files.hpp       # the embedded shared/ tree (the generated .cpp lives in build/)
 │   ├── domain/                       # rng, enums, definitions, formulas, entities, character
 │   ├── application/                  # engine, battle, merchant, loot, spawner, progression, statistics, run_state,
-│   │                                 # save_game, profile, ports, game_session, bot, simulator, commands, events
-│   ├── infrastructure/               # data_loader, i18n, art, repositories (+ SystemClock), paths
+│   │                                 # save_game, profile, ports, game_session, bot, simulator, commands, events,
+│   │                                 # auto_equip (item score + auto-equip), auto_battle (policy)
+│   ├── infrastructure/               # data_loader, i18n, art, repositories (+ SystemClock), paths,
+│   │                                 # migrations (schema 1 → 2)
 │   └── presentation/                 # cli, event_text, render, controller (+ controller_body), simulator_report
 │       └── tui/app.{hpp,cpp}         # FTXUI renderer of the controller
 └── tests/                            # one Catch2 executable (rpg_tests), registered in ctest
     ├── unit/ integration/ golden/ e2e/
     ├── support/                      # helpers (temp dirs, fake clock, fixtures) and the environment listener
-    └── fixtures/                     # a save + profile written by the Python reference, and its continuation
+    └── fixtures/                     # schema 2 and schema 1 saves + profiles written by the Python reference, the
+                                      # migrated v1 documents and the Python continuation of each save
 ```
 
 Every layer is one static library, `rpg_core`, linked by the binary and by the tests. Each `.hpp` declares a module's
@@ -102,6 +105,15 @@ public interface and the matching `.cpp` holds the definitions.
 - **JSON key order.** Saves are built with `nlohmann::ordered_json` in the reference's key order and dumped with tab
   indentation, so a C++ save looks like a Python one.
 - **E2E tests** drive the real FTXUI component with `Event`s and render it into a 100 × 30 `ftxui::Screen`, then read
-  the cells as text — including a whole bot run played through the menus until the Game Over screen.
+  the cells as text — including a whole bot run played through the menus until the Game Over screen and a whole run
+  played by the auto-battle.
+- **Auto-battle pacing.** The controller plays one turn per `auto_battle_step()`; the renderer asks for a timer through
+  `App::on_auto_battle_timer(interval_ms)` (600 ms at 1x, 300 ms at 2x, `0` stops it). In the real program the
+  animation thread posts `auto_battle_event()` at that pace; with `--no-anim` the fight is played at once
+  (`run_auto_battle()`). Tests call the event themselves, so no test waits on a clock.
+- **Migrations.** `infrastructure/migrations` upgrades the raw JSON (version 1 → 2) before the application layer
+  parses it, exactly like the reference. To refresh the Python fixtures after a save-format change, run the
+  reference with the same seeds (archer, hard, seed 2024, auto-equip on, saved at the round 12 merchant) and keep the
+  v1 files: they guard the migration.
 - **Tests** never touch the real saves: a Catch2 event listener points `RPG_DATA_DIR` at a temporary directory and
   sets `RPG_NO_ANIM=1`; every persistence test uses its own `TempDir`.

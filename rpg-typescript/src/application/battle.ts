@@ -1,6 +1,6 @@
 /** Battle resolution, following docs/game-design.md §6. Every RNG call here is part of the contract. */
 import { buildSheet, type CharacterSheet, protection } from "../domain/character";
-import type { GameData, MonsterAttack, SpellDef } from "../domain/definitions";
+import type { EnemyClassDef, GameData, MonsterAttack, SpellDef } from "../domain/definitions";
 import type { ActiveStatus, MonsterInstance, Player } from "../domain/entities";
 import type { Element, Target } from "../domain/enums";
 import { armorMitigation, pct, spellLevelForUses } from "../domain/formulas";
@@ -40,6 +40,10 @@ export class Battle {
 		return buildSheet(this.player, this.data);
 	}
 
+	private enemyClass(): EnemyClassDef {
+		return this.data.balance.enemyClass(this.monster.enemyClass);
+	}
+
 	// ── validation ────────────────────────────────────────────────────────────
 
 	/** Returns an error event for an invalid command. Validation never consumes randomness. */
@@ -67,15 +71,24 @@ export class Battle {
 	playTurn(command: BattleCommand): [Event[], BattleOutcome] {
 		const events: Event[] = [];
 		this.playerAction(command, events);
-		if (this.monster.hp <= 0) return [events, "victory"];
 		for (;;) {
-			if (this.monsterPhase(events)) return [events, "victory"];
-			if (this.player.hp <= 0) return [events, "defeat"];
+			let outcome = this.deathCheck();
+			if (outcome !== null) return [events, outcome];
+			this.monsterPhase(events);
+			outcome = this.deathCheck();
+			if (outcome !== null) return [events, outcome];
 			if (this.endOfTurn(events)) return [events, "defeat"];
 			if (!Battle.consumeStun(this.player.statuses)) return [events, "ongoing"];
 			this.player.stunCooldown = STUN_COOLDOWN_TURNS;
 			events.push(event("player_stunned"));
 		}
+	}
+
+	/** Steps 2 and 4: a parried hit can kill the attacker, so the player is checked first. */
+	private deathCheck(): BattleOutcome | null {
+		if (this.player.hp <= 0) return "defeat";
+		if (this.monster.hp <= 0) return "victory";
+		return null;
 	}
 
 	// ── step 1: player action ─────────────────────────────────────────────────
@@ -100,12 +113,29 @@ export class Battle {
 
 	private melee(events: Event[]): void {
 		const sheet = this.sheet();
+		if (this.monsterDodges(events)) return;
 		const base = pct(this.rng.roll(sheet.meleeMin, sheet.meleeMax), 100 + sheet.physicalDamage);
 		const [rolled, crit] = this.rollCrit(base, sheet);
 		const damage = this.resisted(rolled, sheet.weaponElement);
+		if (this.monsterParries(damage, sheet.weaponElement, events)) return;
 		this.hitMonster(damage);
 		events.push(event("player_attacked", { damage, crit, element: sheet.weaponElement }));
 		this.leech(damage, sheet, events);
+	}
+
+	private monsterDodges(events: Event[]): boolean {
+		if (!this.rng.chance(this.enemyClass().dodge)) return false;
+		events.push(event("monster_dodged"));
+		return true;
+	}
+
+	/** Physical hits only: the monster takes nothing and reflects part of the hit (no mitigation). */
+	private monsterParries(damage: number, element: Element, events: Event[]): boolean {
+		if (element !== "physical" || !this.rng.chance(this.enemyClass().parry)) return false;
+		const reflected = Math.max(1, pct(damage, this.data.balance.parryReflectPct));
+		this.player.hp = Math.max(0, this.player.hp - reflected);
+		events.push(event("monster_parried", { reflected }));
+		return true;
 	}
 
 	private cast(spell: SpellDef, events: Event[]): void {
@@ -114,6 +144,10 @@ export class Battle {
 		const level = spellLevelForUses(player.spellUses.get(spell.id) ?? 0, this.data.balance.spellLevels);
 		const cost = pct(spell.mana, level.manaPct);
 		player.mp -= cost;
+		if (spell.kind === "attack" && this.monsterDodges(events)) {
+			events.push(...this.#progression.afterCast(player, spell, cost));
+			return;
+		}
 		const bonus = player.level * spell.perLevel + player.magicLevel * spell.perMagicLevel;
 		const amount = pct(
 			pct(this.rng.roll(spell.min + bonus, spell.max + bonus), level.effectPct),
@@ -123,6 +157,10 @@ export class Battle {
 		if (spell.kind === "attack") {
 			let [damage, crit] = this.rollCrit(amount, sheet);
 			damage = this.resisted(damage, spell.element);
+			if (this.monsterParries(damage, spell.element, events)) {
+				events.push(...this.#progression.afterCast(player, spell, cost));
+				return;
+			}
 			this.hitMonster(damage);
 			events.push(event("spell_cast", { spellId: spell.id, damage, crit, element: spell.element, mana: cost }));
 			this.leech(damage, sheet, events);
@@ -191,15 +229,21 @@ export class Battle {
 
 	// ── step 3: monster phase ─────────────────────────────────────────────────
 
-	/** Returns true when the monster died from its own status ticks. */
-	private monsterPhase(events: Event[]): boolean {
+	private monsterPhase(events: Event[]): void {
 		const monster = this.monster;
 		this.tick("monster", monster.statuses, events);
-		if (monster.hp <= 0) return true;
+		if (monster.hp <= 0) return;
 		if (Battle.consumeStun(monster.statuses)) {
 			monster.stunCooldown = STUN_COOLDOWN_TURNS;
 			events.push(event("monster_stunned"));
-			return false;
+			return;
+		}
+		// A healing monster does nothing else this turn; a boss does not advance its pattern.
+		if (monster.hp < monster.maxHp && this.rng.chance(this.enemyClass().heal)) {
+			const healed = Math.min(pct(monster.maxHp, this.data.balance.monsterHealPct), monster.maxHp - monster.hp);
+			monster.hp += healed;
+			events.push(event("monster_healed", { amount: healed }));
+			return;
 		}
 
 		if (monster.isBoss) {
@@ -210,11 +254,11 @@ export class Battle {
 			if (chargeId !== null && position === every - 1) {
 				const charge = monster.attack(chargeId);
 				events.push(event("boss_telegraph", { attackId: charge.id, element: charge.element }));
-				return false;
+				return;
 			}
 			if (chargeId !== null && position === every) {
 				this.resolveMonsterAttack(monster.attack(chargeId), true, events);
-				return false;
+				return;
 			}
 		}
 
@@ -222,28 +266,32 @@ export class Battle {
 		const attack = monster.attacks[index];
 		if (attack === undefined) throw new Error("attack index out of range");
 		this.resolveMonsterAttack(attack, false, events);
-		return false;
 	}
 
 	private resolveMonsterAttack(attack: MonsterAttack, charged: boolean, events: Event[]): void {
 		const player = this.player;
 		const sheet = this.sheet();
+		const balance = this.data.balance;
 		if (this.rng.chance(sheet.dodge)) {
 			events.push(event("attack_dodged", { attackId: attack.id }));
 			return;
 		}
+		let damage = this.rng.roll(attack.min, attack.max);
+		if (charged) damage = pct(damage, balance.bossChargeDamagePct);
 		if (attack.element === "physical" && this.rng.chance(sheet.parry)) {
-			events.push(event("attack_parried", { attackId: attack.id }));
+			const reflected = Math.max(1, pct(damage, balance.parryReflectPct));
+			this.hitMonster(reflected);
+			events.push(event("attack_parried", { attackId: attack.id, reflected }));
 			return;
 		}
-		let damage = this.rng.roll(attack.min, attack.max);
-		if (charged) damage = pct(damage, this.data.balance.bossChargeDamagePct);
+		const crit = this.rng.chance(this.enemyClass().crit);
+		if (crit) damage = pct(damage, balance.critMultiplierPct);
 		if (attack.element === "physical") damage = armorMitigation(damage, sheet.armor);
 		damage = pct(damage, 100 - protection(sheet, attack.element));
-		if (player.defending) damage = pct(damage, this.data.balance.defendDamagePct);
+		if (player.defending) damage = pct(damage, balance.defendDamagePct);
 		damage = Math.max(1, damage);
 		player.hp = Math.max(0, player.hp - damage);
-		events.push(event("monster_attacked", { attackId: attack.id, damage, element: attack.element, charged }));
+		events.push(event("monster_attacked", { attackId: attack.id, damage, element: attack.element, charged, crit }));
 		if (attack.status !== null && this.rng.chance(attack.status.chance)) {
 			const perTurn = Math.max(1, pct(damage, attack.status.damagePct));
 			this.applyStatus("player", attack.status.status, perTurn, events);

@@ -4,7 +4,20 @@ defmodule Rpg.Presentation.SimulatorReport do
   alias Rpg.Application.Simulator.SimulationSummary
   alias Rpg.Domain.Definitions.GameData
 
-  @header ["vocation", "difficulty", "runs", "min", "p10", "median", "p90", "max", "avg lvl", "top killers"]
+  @header [
+    "vocation",
+    "difficulty",
+    "runs",
+    "wins",
+    "win %",
+    "min",
+    "p10",
+    "median",
+    "p90",
+    "max",
+    "avg lvl",
+    "top killers"
+  ]
 
   @spec render_report([SimulationSummary.t()], GameData.t()) :: String.t()
   def render_report(summaries, %GameData{} = data) do
@@ -29,13 +42,11 @@ defmodule Rpg.Presentation.SimulatorReport do
   defp row(%SimulationSummary{} = s, data) do
     killers = Enum.map_join(s.top_killers, ", ", fn {id, n} -> "#{GameData.creature(data, id).name} (#{n})" end)
 
-    [
-      s.vocation,
-      s.difficulty
-      | Enum.map(
-          [s.runs, s.min_round, s.p10_round, s.median_round, s.p90_round, s.max_round, s.mean_level],
-          &Integer.to_string/1
-        )
-    ] ++ [killers]
+    numbers = &Enum.map(&1, fn n -> Integer.to_string(n) end)
+
+    [s.vocation, s.difficulty] ++
+      numbers.([s.runs, s.wins]) ++
+      ["#{SimulationSummary.win_rate_pct(s)}%"] ++
+      numbers.([s.min_round, s.p10_round, s.median_round, s.p90_round, s.max_round, s.mean_level]) ++ [killers]
   end
 end

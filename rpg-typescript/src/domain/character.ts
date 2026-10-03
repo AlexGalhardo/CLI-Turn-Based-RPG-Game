@@ -1,4 +1,4 @@
-/** Derived character stats: vocation base + equipment (docs/game-design.md §4). */
+/** Derived character stats: vocation base + equipment (docs/game-design.md §4 and §8). */
 import type { GameData } from "./definitions";
 import type { ItemInstance, Player } from "./entities";
 import { type Element, PROTECTION_BY_ELEMENT, type Stat } from "./enums";
@@ -19,6 +19,27 @@ export function itemStats(item: ItemInstance, data: GameData): Map<Stat, number>
 
 export function itemValue(item: ItemInstance, data: GameData): number {
 	return pct(data.item(item.itemId).value, data.balance.rarity(item.rarity).valuePct);
+}
+
+/** Sum of the item's final stats weighted by `balance.itemScoreWeights` (like Diablo's item power). */
+export function itemScore(item: ItemInstance, data: GameData): number {
+	const weights = data.balance.itemScoreWeights;
+	let score = 0;
+	for (const [stat, value] of itemStats(item, data)) {
+		score += value * (weights.get(stat) ?? 0);
+	}
+	return score;
+}
+
+/** Uses the instance tier: the round tier the item was generated for (docs/game-design.md §8). */
+export function requiredLevel(item: ItemInstance, data: GameData): number {
+	return 1 + item.tier * data.balance.itemLevelPerTier;
+}
+
+export function equipmentScore(player: Player, data: GameData): number {
+	let score = 0;
+	for (const item of player.equipment.values()) score += itemScore(item, data);
+	return score;
 }
 
 export interface CharacterSheet {

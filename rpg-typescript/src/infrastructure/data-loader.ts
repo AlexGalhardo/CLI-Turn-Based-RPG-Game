@@ -2,7 +2,9 @@
 import {
 	type AchievementDef,
 	type AffixDef,
+	AutoBattleDef,
 	Balance,
+	type EnemyClassDef,
 	GameData,
 	type ItemDef,
 	type MonsterAttack,
@@ -13,7 +15,7 @@ import {
 	type VocationDef,
 } from "../domain/definitions";
 import { attackFromJson } from "../domain/entities";
-import { ELEMENTS, type Element, parseEnum, SLOTS, STATS, type Stat } from "../domain/enums";
+import { ELEMENTS, type Element, ENEMY_CLASSES, parseEnum, SLOTS, STATS, type Stat } from "../domain/enums";
 import {
 	field,
 	type JsonObject,
@@ -105,55 +107,96 @@ function vocation(raw: JsonObject): VocationDef {
 	};
 }
 
+function weights(raw: JsonValue): Record<string, number> {
+	return Object.fromEntries(Object.entries(jsonObj(raw)).map(([rarity, weight]) => [rarity, jsonInt(weight)]));
+}
+
+function enemyClass(classId: string, raw: JsonObject): EnemyClassDef {
+	return {
+		id: classId,
+		statPct: jsonInt(field(raw, "statPct")),
+		rewardPct: jsonInt(field(raw, "rewardPct")),
+		dodge: jsonInt(field(raw, "dodge")),
+		parry: jsonInt(field(raw, "parry")),
+		crit: jsonInt(field(raw, "crit")),
+		heal: jsonInt(field(raw, "heal")),
+		dropChancePct: jsonInt(field(raw, "dropChancePct")),
+		drops: jsonInt(field(raw, "drops")),
+		potionDropPct: jsonInt(field(raw, "potionDropPct")),
+		rarityWeights: weights(field(raw, "rarityWeights")),
+	};
+}
+
+function autoBattle(raw: JsonObject): AutoBattleDef {
+	const modes = jsonObj(field(raw, "modes"));
+	return new AutoBattleDef(
+		jsonInt(field(raw, "healBelowPct")),
+		jsonInt(field(raw, "manaBelowPct")),
+		jsonInt(field(raw, "emergencyHealBelowPct")),
+		Object.entries(modes).map(([modeId, mode]) => ({
+			id: modeId,
+			offense: jsonStr(field(jsonObj(mode), "offense")),
+			supportEvery: jsonInt(field(jsonObj(mode), "supportEvery")),
+		})),
+	);
+}
+
 function balance(raw: JsonObject): Balance {
 	const caps = jsonObj(field(raw, "caps"));
 	const magic = jsonObj(field(raw, "magicLevel"));
+	const classes = jsonObj(field(raw, "enemyClasses"));
 	const rarityWeights: Record<string, Record<string, number>> = {};
-	for (const [table, weights] of Object.entries(jsonObj(field(raw, "rarityWeights")))) {
-		rarityWeights[table] = Object.fromEntries(
-			Object.entries(jsonObj(weights)).map(([rarity, weight]) => [rarity, jsonInt(weight)]),
-		);
+	for (const [table, tableWeights] of Object.entries(jsonObj(field(raw, "rarityWeights")))) {
+		rarityWeights[table] = weights(tableWeights);
 	}
-	return new Balance(
-		jsonInt(field(raw, "roundsPerTier")),
-		jsonInt(field(raw, "cycleStatPct")),
-		jsonInt(field(raw, "cycleRewardPct")),
-		jsonInt(field(raw, "positionPct")),
-		objects(raw, "difficulties").map((d) => ({
+	return new Balance({
+		roundsPerTier: jsonInt(field(raw, "roundsPerTier")),
+		cycleStatPct: jsonInt(field(raw, "cycleStatPct")),
+		cycleRewardPct: jsonInt(field(raw, "cycleRewardPct")),
+		positionPct: jsonInt(field(raw, "positionPct")),
+		finalRound: jsonInt(field(raw, "finalRound")),
+		eliteChancePct: jsonInt(field(raw, "eliteChancePct")),
+		difficulties: objects(raw, "difficulties").map((d) => ({
 			id: jsonStr(field(d, "id")),
 			hpPct: jsonInt(field(d, "hpPct")),
 			damagePct: jsonInt(field(d, "damagePct")),
 			goldPct: jsonInt(field(d, "goldPct")),
 			xpPct: jsonInt(field(d, "xpPct")),
-			nonCommonWeightPct: jsonInt(field(d, "nonCommonWeightPct")),
 		})),
-		jsonInt(field(raw, "critMultiplierPct")),
-		jsonInt(field(raw, "defendDamagePct")),
-		jsonInt(field(raw, "bossTelegraphEvery")),
-		jsonInt(field(raw, "bossChargeDamagePct")),
-		{
+		enemyClasses: ENEMY_CLASSES.map((id) => enemyClass(id, jsonObj(field(classes, id)))),
+		critMultiplierPct: jsonInt(field(raw, "critMultiplierPct")),
+		defendDamagePct: jsonInt(field(raw, "defendDamagePct")),
+		parryReflectPct: jsonInt(field(raw, "parryReflectPct")),
+		monsterHealPct: jsonInt(field(raw, "monsterHealPct")),
+		bossTelegraphEvery: jsonInt(field(raw, "bossTelegraphEvery")),
+		bossChargeDamagePct: jsonInt(field(raw, "bossChargeDamagePct")),
+		caps: {
 			critChance: jsonInt(field(caps, "critChance")),
 			dodge: jsonInt(field(caps, "dodge")),
 			parry: jsonInt(field(caps, "parry")),
 			leech: jsonInt(field(caps, "leech")),
 			protection: jsonInt(field(caps, "protection")),
 		},
-		jsonInt(field(magic, "base")),
-		jsonInt(field(magic, "growthPct")),
-		objects(raw, "spellLevels").map((s) => ({
+		magicLevelBase: jsonInt(field(magic, "base")),
+		magicLevelGrowthPct: jsonInt(field(magic, "growthPct")),
+		spellLevels: objects(raw, "spellLevels").map((s) => ({
 			level: jsonInt(field(s, "level")),
 			uses: jsonInt(field(s, "uses")),
 			effectPct: jsonInt(field(s, "effectPct")),
 			manaPct: jsonInt(field(s, "manaPct")),
 		})),
-		jsonInt(field(raw, "startingGold")),
-		objects(raw, "startingPotions").map(
+		startingGold: jsonInt(field(raw, "startingGold")),
+		startingPotions: objects(raw, "startingPotions").map(
 			(p) => [jsonStr(field(p, "potionId")), jsonInt(field(p, "quantity"))] as const,
 		),
-		jsonInt(field(raw, "bagCapacity")),
-		jsonInt(field(raw, "dropChancePct")),
-		jsonInt(field(raw, "bossDrops")),
-		objects(raw, "rarities").map((r) => ({
+		bagCapacity: jsonInt(field(raw, "bagCapacity")),
+		itemLevelPerTier: jsonInt(field(raw, "itemLevelPerTier")),
+		itemScoreWeights: new Map(
+			Object.entries(jsonObj(field(raw, "itemScoreWeights"))).map(
+				([stat, weight]) => [parseEnum(STATS, stat, "stat"), jsonInt(weight)] as const,
+			),
+		),
+		rarities: objects(raw, "rarities").map((r) => ({
 			id: jsonStr(field(r, "id")),
 			statPct: jsonInt(field(r, "statPct")),
 			valuePct: jsonInt(field(r, "valuePct")),
@@ -161,10 +204,11 @@ function balance(raw: JsonObject): Balance {
 			affixMax: jsonInt(field(r, "affixMax")),
 		})),
 		rarityWeights,
-		jsonInt(field(raw, "merchantStockSize")),
-		jsonInt(field(raw, "merchantMarkupPct")),
-		jsonInt(field(raw, "spellStatusDamagePct")),
-	);
+		merchantStockSize: jsonInt(field(raw, "merchantStockSize")),
+		merchantMarkupPct: jsonInt(field(raw, "merchantMarkupPct")),
+		spellStatusDamagePct: jsonInt(field(raw, "spellStatusDamagePct")),
+		autoBattle: autoBattle(jsonObj(field(raw, "autoBattle"))),
+	});
 }
 
 function item(raw: JsonObject): ItemDef {

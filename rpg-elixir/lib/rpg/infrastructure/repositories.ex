@@ -7,7 +7,13 @@ defmodule Rpg.Infrastructure.Repositories do
 
   alias Rpg.Application.{Profile, RunRecord, SaveGame}
   alias Rpg.Domain.JsonTypes
-  alias Rpg.Infrastructure.I18n
+  alias Rpg.Infrastructure.{I18n, Migrations}
+
+  @battle_speeds [1, 2]
+
+  @doc "Auto-battle speeds (turns per 600 ms): the first one is the default."
+  @spec battle_speeds() :: [pos_integer()]
+  def battle_speeds, do: @battle_speeds
 
   @doc "Write to a temp file then rename, so a crash never leaves a half-written save."
   @spec write_json_atomic(Path.t(), map()) :: :ok
@@ -59,8 +65,8 @@ defmodule Rpg.Infrastructure.Repositories do
 
   defmodule Settings do
     @moduledoc false
-    defstruct locale: nil
-    @type t :: %__MODULE__{locale: String.t() | nil}
+    defstruct locale: nil, auto_equip: false, battle_speed: 1
+    @type t :: %__MODULE__{locale: String.t() | nil, auto_equip: boolean(), battle_speed: pos_integer()}
   end
 
   defmodule SettingsRepository do
@@ -79,16 +85,30 @@ defmodule Rpg.Infrastructure.Repositories do
       if File.exists?(path) do
         data = JsonTypes.obj(Repositories.read_json(path))
         SaveGame.check_schema(data, "settings.json")
+        data = Migrations.migrate_settings(data)
         locale = if Map.has_key?(data, "locale"), do: JsonTypes.str(data["locale"])
-        %Settings{locale: if(locale in I18n.supported_locales(), do: locale)}
+        speed = JsonTypes.int(JsonTypes.field(data, "battleSpeed"))
+        speeds = Repositories.battle_speeds()
+
+        %Settings{
+          locale: if(locale in I18n.supported_locales(), do: locale),
+          auto_equip: JsonTypes.bool(JsonTypes.field(data, "autoEquip")),
+          battle_speed: if(speed in speeds, do: speed, else: hd(speeds))
+        }
       else
         %Settings{}
       end
     end
 
     @spec save(%__MODULE__{}, Settings.t()) :: :ok
-    def save(%__MODULE__{path: path}, %Settings{locale: locale}) do
-      document = if locale, do: %{"schemaVersion" => 1, "locale" => locale}, else: %{"schemaVersion" => 1}
+    def save(%__MODULE__{path: path}, %Settings{} = settings) do
+      document = %{
+        "schemaVersion" => SaveGame.schema_version(),
+        "autoEquip" => settings.auto_equip,
+        "battleSpeed" => settings.battle_speed
+      }
+
+      document = if settings.locale, do: Map.put(document, "locale", settings.locale), else: document
       Repositories.write_json_atomic(path, document)
     end
   end
@@ -106,7 +126,11 @@ defmodule Rpg.Infrastructure.Repositories do
 
     @impl true
     def load(%__MODULE__{path: path}) do
-      if File.exists?(path), do: SaveGame.from_map(Repositories.read_json(path))
+      if File.exists?(path) do
+        document = JsonTypes.obj(Repositories.read_json(path))
+        SaveGame.check_schema(document, "save.json")
+        SaveGame.from_map(Migrations.migrate_save(document))
+      end
     end
 
     @impl true
@@ -142,7 +166,11 @@ defmodule Rpg.Infrastructure.Repositories do
       |> Path.join("*.json")
       |> Path.wildcard()
       |> Enum.sort()
-      |> Enum.map(&RunRecord.from_map(Repositories.read_json(&1)))
+      |> Enum.map(fn file ->
+        document = JsonTypes.obj(Repositories.read_json(file))
+        SaveGame.check_schema(document, "history record")
+        RunRecord.from_map(Migrations.migrate_history(document))
+      end)
     end
   end
 
@@ -162,7 +190,7 @@ defmodule Rpg.Infrastructure.Repositories do
       if File.exists?(path) do
         data = JsonTypes.obj(Repositories.read_json(path))
         SaveGame.check_schema(data, "profile.json")
-        Profile.from_map(data)
+        Profile.from_map(Migrations.migrate_profile(data))
       else
         %Profile{}
       end

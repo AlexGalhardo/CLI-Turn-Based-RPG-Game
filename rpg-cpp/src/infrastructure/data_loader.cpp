@@ -74,15 +74,58 @@ std::vector<domain::MonsterDef> creatures(const Json& raw, bool is_boss) {
 	return result;
 }
 
+domain::RarityWeights weights_of(const Json& raw) {
+	domain::RarityWeights result;
+	for (const auto& [rarity, weight] : raw.items()) {
+		result.emplace(rarity, weight.get<std::int64_t>());
+	}
+	return result;
+}
+
+domain::EnemyClassDef enemy_class(std::string_view class_id, const Json& raw) {
+	return domain::EnemyClassDef{
+	    .id = std::string(class_id),
+	    .stat_pct = integer(raw, "statPct"),
+	    .reward_pct = integer(raw, "rewardPct"),
+	    .dodge = integer(raw, "dodge"),
+	    .parry = integer(raw, "parry"),
+	    .crit = integer(raw, "crit"),
+	    .heal = integer(raw, "heal"),
+	    .drop_chance_pct = integer(raw, "dropChancePct"),
+	    .drops = integer(raw, "drops"),
+	    .potion_drop_pct = integer(raw, "potionDropPct"),
+	    .rarity_weights = weights_of(raw.at("rarityWeights")),
+	};
+}
+
+domain::AutoBattleDef auto_battle(const Json& raw) {
+	domain::AutoBattleDef result{
+	    .heal_below_pct = integer(raw, "healBelowPct"),
+	    .mana_below_pct = integer(raw, "manaBelowPct"),
+	    .emergency_heal_below_pct = integer(raw, "emergencyHealBelowPct"),
+	    .modes = {},
+	};
+	for (const auto& [mode_id, mode] : raw.at("modes").items()) {
+		result.modes.push_back(
+		    domain::AutoBattleModeDef{mode_id, text(mode, "offense"), integer(mode, "supportEvery")});
+	}
+	return result;
+}
+
 domain::Balance balance(const Json& raw) {
 	domain::Balance result{
 	    .rounds_per_tier = integer(raw, "roundsPerTier"),
 	    .cycle_stat_pct = integer(raw, "cycleStatPct"),
 	    .cycle_reward_pct = integer(raw, "cycleRewardPct"),
 	    .position_pct = integer(raw, "positionPct"),
+	    .final_round = integer(raw, "finalRound"),
+	    .elite_chance_pct = integer(raw, "eliteChancePct"),
 	    .difficulties = {},
+	    .enemy_classes = {},
 	    .crit_multiplier_pct = integer(raw, "critMultiplierPct"),
 	    .defend_damage_pct = integer(raw, "defendDamagePct"),
+	    .parry_reflect_pct = integer(raw, "parryReflectPct"),
+	    .monster_heal_pct = integer(raw, "monsterHealPct"),
 	    .boss_telegraph_every = integer(raw, "bossTelegraphEvery"),
 	    .boss_charge_damage_pct = integer(raw, "bossChargeDamagePct"),
 	    .caps =
@@ -99,18 +142,25 @@ domain::Balance balance(const Json& raw) {
 	    .starting_gold = integer(raw, "startingGold"),
 	    .starting_potions = {},
 	    .bag_capacity = integer(raw, "bagCapacity"),
-	    .drop_chance_pct = integer(raw, "dropChancePct"),
-	    .boss_drops = integer(raw, "bossDrops"),
+	    .item_level_per_tier = integer(raw, "itemLevelPerTier"),
+	    .item_score_weights = {},
 	    .rarities = {},
 	    .rarity_weights = {},
 	    .merchant_stock_size = integer(raw, "merchantStockSize"),
 	    .merchant_markup_pct = integer(raw, "merchantMarkupPct"),
 	    .spell_status_damage_pct = integer(raw, "spellStatusDamagePct"),
+	    .auto_battle = auto_battle(raw.at("autoBattle")),
 	};
 	for (const Json& difficulty : raw.at("difficulties")) {
 		result.difficulties.push_back(domain::DifficultyDef{text(difficulty, "id"), integer(difficulty, "hpPct"),
-		    integer(difficulty, "damagePct"), integer(difficulty, "goldPct"), integer(difficulty, "xpPct"),
-		    integer(difficulty, "nonCommonWeightPct")});
+		    integer(difficulty, "damagePct"), integer(difficulty, "goldPct"), integer(difficulty, "xpPct")});
+	}
+	// In the order of the EnemyClass enum, like the reference.
+	for (const std::string_view class_id : domain::kEnemyClasses) {
+		result.enemy_classes.push_back(enemy_class(class_id, raw.at("enemyClasses").at(std::string(class_id))));
+	}
+	for (const auto& [stat, weight] : raw.at("itemScoreWeights").items()) {
+		result.item_score_weights.emplace(stat, weight.get<std::int64_t>());
 	}
 	for (const Json& level : raw.at("spellLevels")) {
 		result.spell_levels.push_back(domain::SpellLevelDef{
@@ -124,10 +174,7 @@ domain::Balance balance(const Json& raw) {
 		    integer(rarity, "valuePct"), integer(rarity, "affixMin"), integer(rarity, "affixMax")});
 	}
 	for (const auto& [table, weights] : raw.at("rarityWeights").items()) {
-		auto& converted = result.rarity_weights[table];
-		for (const auto& [rarity, weight] : weights.items()) {
-			converted.emplace(rarity, weight.get<std::int64_t>());
-		}
+		result.rarity_weights.emplace(table, weights_of(weights));
 	}
 	return result;
 }

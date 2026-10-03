@@ -17,6 +17,7 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 | 0.6.0 | M5 — Go at parity | done |
 | 1.0.0 | M6 — Release 1.0 (three binaries/implementations) | done |
 | 1.1.0–1.3.x | M7 — Rust, Elixir and C++ at parity, per-commit releases | done |
+| 1.4.0 | M8 — ARPG update (elites, rarities, auto-equip, auto-battle, win at round 100) | done |
 
 ---
 
@@ -162,6 +163,21 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 - [x] `scripts/release.ts` (`release:prepare`, `release:check`) and CI check that version files match the CHANGELOG
 - [x] History re-tagged retroactively from `v0.0.1`, one CHANGELOG section per commit
 - [x] README, docs, skills and setup scripts cover the six implementations
+
+## M8 — ARPG update (1.4.0)
+
+Spec: `docs/game-design.md` (sections 1, 3, 6, 8, 9, 12, 13), `docs/tui.md` (settings, auto-battle, victory,
+equipment), `docs/persistence.md` (schema 2), new events in `docs/cross-language-parity.md`.
+
+- [x] Rules: win at round 100 (Ferumbras) with end/continue, elite enemies (20%, ×3), enemy classes with dodge, parry,
+      crit and heal chances, parry reflects 20% both ways
+- [x] Items: common/rare/legendary/mythic (100/150/200/300%, 0/1/2/2 affixes), class drop tables, elite potion drops,
+      required level, item score, auto-equip with auto-sell
+- [x] Spells: level 2/3 at 20/50 uses with 150%/200% effect
+- [x] UI: settings screen, auto-equip choice on new run, auto-battle (3 modes, 1x/2x), victory screen, ARPG
+      equipment screen with comparison, sell lists only unequipped items
+- [x] Python reference + golden files; ports to TypeScript, Go, Rust, Elixir and C++ at parity
+- [x] Balance gate script (`bun run balance:check`) with targets EASY ~75%, NORMAL ~50%, HARD ~25% win rate
 
 ## Skills (`.claude/skills/`) — created when a flow repeats
 

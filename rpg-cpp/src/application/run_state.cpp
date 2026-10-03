@@ -192,6 +192,7 @@ ordered_json monster_to_json(const domain::MonsterInstance& monster) {
 	return ordered_json{
 	    {"creatureId", monster.creature_id},
 	    {"isBoss", monster.is_boss},
+	    {"enemyClass", monster.enemy_class},
 	    {"hp", monster.hp},
 	    {"maxHp", monster.max_hp},
 	    {"xp", monster.xp},
@@ -208,6 +209,7 @@ domain::MonsterInstance monster_from_json(const json& document) {
 	domain::MonsterInstance monster{
 	    .creature_id = document.at("creatureId").get<std::string>(),
 	    .is_boss = document.at("isBoss").get<bool>(),
+	    .enemy_class = document.at("enemyClass").get<std::string>(),
 	    .hp = document.at("hp").get<std::int64_t>(),
 	    .max_hp = document.at("maxHp").get<std::int64_t>(),
 	    .xp = document.at("xp").get<std::int64_t>(),
@@ -227,7 +229,12 @@ domain::MonsterInstance monster_from_json(const json& document) {
 } // namespace
 
 ordered_json to_json(const RunConfig& config) {
-	return ordered_json{{"name", config.name}, {"vocation", config.vocation_id}, {"difficulty", config.difficulty_id}};
+	return ordered_json{
+	    {"name", config.name},
+	    {"vocation", config.vocation_id},
+	    {"difficulty", config.difficulty_id},
+	    {"autoEquip", config.auto_equip},
+	};
 }
 
 ordered_json to_json(const RunStatistics& stats) {
@@ -249,10 +256,13 @@ ordered_json to_json(const RunStatistics& stats) {
 	    {"goldSpent", stats.gold_spent},
 	    {"goldEarned", stats.gold_earned},
 	    {"itemsSold", stats.items_sold},
+	    {"itemsAutoEquipped", stats.items_auto_equipped},
 	    {"bossesKilled", stats.bosses_killed},
+	    {"elitesKilled", stats.elites_killed},
 	    {"spellsCast", counts_to_json(stats.spells_cast)},
 	    {"potionsUsed", counts_to_json(stats.potions_used)},
 	    {"potionsBought", counts_to_json(stats.potions_bought)},
+	    {"potionsDropped", counts_to_json(stats.potions_dropped)},
 	    {"itemsDropped", counts_to_json(stats.items_dropped)},
 	    {"kills", counts_to_json(stats.kills)},
 	    {"statusesApplied", counts_to_json(stats.statuses_applied)},
@@ -272,6 +282,7 @@ ordered_json to_json(const RunState& state) {
 	    {"merchantStock", items_to_json(state.merchant_stock)},
 	    {"nextItemUid", state.next_item_uid},
 	    {"deathCause", state.death_cause.has_value() ? ordered_json(*state.death_cause) : ordered_json(nullptr)},
+	    {"won", state.won},
 	    {"stats", to_json(state.stats)},
 	};
 }
@@ -291,10 +302,13 @@ RunStatistics run_statistics_from_json(const json& document) {
 	    .gold_spent = document.value("goldSpent", std::int64_t{0}),
 	    .gold_earned = document.value("goldEarned", std::int64_t{0}),
 	    .items_sold = document.value("itemsSold", std::int64_t{0}),
+	    .items_auto_equipped = document.value("itemsAutoEquipped", std::int64_t{0}),
 	    .bosses_killed = document.value("bossesKilled", std::int64_t{0}),
+	    .elites_killed = document.value("elitesKilled", std::int64_t{0}),
 	    .spells_cast = counts_from_json(document, "spellsCast"),
 	    .potions_used = counts_from_json(document, "potionsUsed"),
 	    .potions_bought = counts_from_json(document, "potionsBought"),
+	    .potions_dropped = counts_from_json(document, "potionsDropped"),
 	    .items_dropped = counts_from_json(document, "itemsDropped"),
 	    .kills = counts_from_json(document, "kills"),
 	    .statuses_applied = counts_from_json(document, "statusesApplied"),
@@ -321,6 +335,7 @@ RunState run_state_from_json(const json& document) {
 	            config.at("name").get<std::string>(),
 	            config.at("vocation").get<std::string>(),
 	            config.at("difficulty").get<std::string>(),
+	            config.value("autoEquip", false),
 	        },
 	    .player = player_from_json(document.at("player")),
 	    .phase = domain::phase_from_string(document.at("phase").get<std::string>()),
@@ -330,6 +345,7 @@ RunState run_state_from_json(const json& document) {
 	    .merchant_stock = items_from_json(document, "merchantStock"),
 	    .next_item_uid = document.at("nextItemUid").get<std::int64_t>(),
 	    .death_cause = std::nullopt,
+	    .won = document.value("won", false),
 	    .stats = run_statistics_from_json(document.at("stats")),
 	};
 	if (const auto found = document.find("monster"); found != document.end() && !found->is_null()) {

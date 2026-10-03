@@ -23,8 +23,15 @@ constexpr std::array<std::pair<std::string_view, std::string_view>, 7> element_c
 constexpr std::array<std::pair<std::string_view, std::string_view>, 4> rarity_colors{{
     {"common", "#ffffff"},
     {"rare", "#1e90ff"},
-    {"epic", "#af87ff"},
     {"legendary", "#ffaf00"},
+    {"mythic", "#af87ff"},
+}};
+
+constexpr std::array<std::pair<std::string_view, std::string_view>, 4> style_colors{{
+    {style_warning, "#ffd75f"},
+    {style_gain, "#5fd75f"},
+    {style_loss, "#ff5f5f"},
+    {style_dim, "#8a8a8a"},
 }};
 
 template <std::size_t Size>
@@ -47,6 +54,20 @@ std::string repeat(std::string_view cell, std::int64_t count) {
 std::string_view element_color(std::string_view element) { return lookup(element_colors, element); }
 
 std::string_view rarity_color(std::string_view rarity) { return lookup(rarity_colors, rarity); }
+
+std::string_view style_color(std::string_view style) { return lookup(style_colors, style); }
+
+std::string format_delta(std::int64_t delta) { return delta > 0 ? "+" + std::to_string(delta) : std::to_string(delta); }
+
+std::string_view delta_style(std::int64_t delta) {
+	if (delta > 0) {
+		return style_gain;
+	}
+	if (delta < 0) {
+		return style_loss;
+	}
+	return {};
+}
 
 std::string bar(std::int64_t current, std::int64_t maximum, std::int64_t width) {
 	if (maximum <= 0) {
@@ -83,6 +104,19 @@ std::size_t utf8_length(std::string_view text) {
 	// Counts every byte that is not a continuation byte (10xxxxxx).
 	return static_cast<std::size_t>(
 	    std::ranges::count_if(text, [](char byte) { return (static_cast<unsigned char>(byte) & 0xC0U) != 0x80U; }));
+}
+
+std::string utf8_prefix(std::string_view text, std::size_t count) {
+	std::size_t seen = 0;
+	for (std::size_t i = 0; i < text.size(); ++i) {
+		if ((static_cast<unsigned char>(text[i]) & 0xC0U) != 0x80U) {
+			if (seen == count) {
+				return std::string(text.substr(0, i));
+			}
+			seen += 1;
+		}
+	}
+	return std::string(text);
 }
 
 void utf8_pop_back(std::string& text) {

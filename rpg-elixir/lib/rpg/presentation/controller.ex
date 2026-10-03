@@ -2,8 +2,8 @@ defmodule Rpg.Presentation.Controller do
   @moduledoc """
   Framework-independent UI state machine: which screen is shown, its options and what each key does.
 
-  The terminal renderer only draws this controller. The Python (Textual), TypeScript (Ink) and Go (Bubble Tea) ports
-  implement the same controller, which is what keeps the interfaces practically identical (docs/tui.md).
+  The terminal renderer only draws this controller. The other five ports implement the same controller, which is what
+  keeps the six interfaces practically identical (docs/tui.md).
 
   The controller is an immutable struct: `press/2` returns a new controller, and the query functions (`title/1`,
   `options/1`, `body_lines/1`, ...) never change it. Menu entries pair a `MenuOption` with an action, a function
@@ -15,7 +15,9 @@ defmodule Rpg.Presentation.Controller do
     BuyPotion,
     BuyStockItem,
     Cast,
+    ContinueRun,
     Defend,
+    EndRun,
     Equip,
     NextFight,
     SellItem,
@@ -24,13 +26,14 @@ defmodule Rpg.Presentation.Controller do
   }
 
   alias Rpg.Application.GameSession.{Repositories, StepResult}
-  alias Rpg.Application.{GameSession, Loot, Merchant, ProfileService, RunConfig}
+  alias Rpg.Application.{AutoBattle, GameSession, Loot, Merchant, ProfileService, RunConfig}
   alias Rpg.Application.Ports.{ProfileRepository, SaveRepository}
   alias Rpg.Domain.Character.CharacterSheet
   alias Rpg.Domain.Definitions.{GameData, MonsterDef}
   alias Rpg.Domain.Entities.{ItemInstance, Player}
   alias Rpg.Domain.{Character, Enums, Formulas}
   alias Rpg.Infrastructure.I18n
+  alias Rpg.Infrastructure.Repositories
   alias Rpg.Infrastructure.Repositories.{Settings, SettingsRepository}
   alias Rpg.Presentation.{EventText, Render}
 
@@ -38,27 +41,38 @@ defmodule Rpg.Presentation.Controller do
   @max_name_length 16
   @max_quantity_digits 2
   @page_size 10
+  # Auto-battle pace (docs/tui.md): one turn every 600 ms at 1x, 300 ms at 2x; instant with --no-anim.
+  @auto_battle_base_ms 600
+  # Safety net: a fight that somehow never ends hands control back to the player.
+  @max_auto_battle_turns 10_000
 
-  @battle_views [:battle, :spells, :potions]
+  @battle_views [:battle, :spells, :potions, :auto_battle]
   @text_input_views [:name, :quantity]
   @paged_views [:hall_of_fame, :bestiary, :achievements, :character]
+  @styled_views [:equipment, :compare, :equipped_slot]
 
   @type view ::
           :language
           | :title
+          | :settings
           | :difficulty
           | :name
           | :vocation
+          | :auto_equip
           | :merchant
           | :buy_potions
           | :quantity
           | :sell
           | :equipment
+          | :compare
+          | :equipped_slot
           | :stock
           | :character
           | :battle
           | :spells
           | :potions
+          | :auto_battle
+          | :victory
           | :game_over
           | :hall_of_fame
           | :bestiary
@@ -67,8 +81,22 @@ defmodule Rpg.Presentation.Controller do
   defmodule MenuOption do
     @moduledoc false
     @enforce_keys [:key, :label]
-    defstruct [:key, :label, color: nil]
-    @type t :: %__MODULE__{key: String.t(), label: String.t(), color: String.t() | nil}
+    defstruct [:key, :label, color: nil, detail: "", detail_color: nil]
+
+    @type t :: %__MODULE__{
+            key: String.t(),
+            label: String.t(),
+            color: String.t() | nil,
+            detail: String.t(),
+            detail_color: String.t() | nil
+          }
+  end
+
+  defmodule BodyLine do
+    @moduledoc false
+    @enforce_keys [:text]
+    defstruct [:text, color: nil]
+    @type t :: %__MODULE__{text: String.t(), color: String.t() | nil}
   end
 
   defmodule Services do
@@ -88,7 +116,7 @@ defmodule Rpg.Presentation.Controller do
 
   defmodule MonsterView do
     @moduledoc false
-    @enforce_keys [:name, :creature_id, :hp, :max_hp, :is_boss, :element, :details]
+    @enforce_keys [:name, :creature_id, :hp, :max_hp, :is_boss, :enemy_class, :element, :details]
     defstruct @enforce_keys
 
     @type t :: %__MODULE__{
@@ -97,6 +125,7 @@ defmodule Rpg.Presentation.Controller do
             hp: integer(),
             max_hp: integer(),
             is_boss: boolean(),
+            enemy_class: String.t(),
             element: String.t(),
             details: String.t()
           }
@@ -119,9 +148,10 @@ defmodule Rpg.Presentation.Controller do
           }
   end
 
-  @enforce_keys [:services, :seed, :seed_source, :locale, :translator, :formatter, :view]
+  @enforce_keys [:services, :seed, :seed_source, :locale, :translator, :formatter, :view, :settings]
   defstruct [
     :services,
+    :settings,
     :seed,
     :seed_source,
     :locale,
@@ -138,7 +168,13 @@ defmodule Rpg.Presentation.Controller do
     page: 0,
     difficulty: "normal",
     name: "",
-    potion_id: ""
+    vocation: "",
+    potion_id: "",
+    compare_uid: 0,
+    slot: "weapon",
+    auto_battle: nil,
+    auto_mode: "melee",
+    auto_turns: 0
   ]
 
   @type t :: %__MODULE__{}
@@ -167,6 +203,7 @@ defmodule Rpg.Presentation.Controller do
       locale: nil,
       translator: nil,
       formatter: nil,
+      settings: settings,
       view: if(chosen, do: :title, else: :language)
     }
 
@@ -193,25 +230,34 @@ defmodule Rpg.Presentation.Controller do
     case view do
       :language -> t(c, "language.title")
       :title -> t(c, "app.title")
+      :settings -> t(c, "settings.title")
       :difficulty -> t(c, "new_run.difficulty")
       :name -> t(c, "new_run.name")
       :vocation -> t(c, "new_run.vocation")
+      :auto_equip -> t(c, "new_run.auto_equip")
       :merchant -> merchant_title(c)
       :buy_potions -> t(c, "merchant.buy_potions")
       :quantity -> t(c, "merchant.quantity", name: GameData.potion(data(c), c.potion_id).name)
       :sell -> t(c, "merchant.sell_items")
       :equipment -> t(c, "merchant.equipment")
+      :compare -> compare_title(c)
+      :equipped_slot -> t(c, "slot.#{c.slot}")
       :stock -> t(c, "merchant.stock")
       :character -> t(c, "merchant.character")
       :battle -> t(c, "battle.title")
       :spells -> t(c, "battle.spells")
       :potions -> t(c, "battle.potions")
-      :game_over -> t(c, "gameover.title")
+      :auto_battle -> t(c, "auto_battle.title")
+      :victory -> t(c, "victory.title")
+      :game_over -> if(won?(c), do: t(c, "gameover.title_won"), else: t(c, "gameover.title"))
       :hall_of_fame -> t(c, "menu.hall_of_fame")
       :bestiary -> t(c, "menu.bestiary")
       :achievements -> t(c, "menu.achievements")
     end
   end
+
+  defp won?(%__MODULE__{session: nil}), do: false
+  defp won?(%__MODULE__{session: session}), do: GameSession.state(session).won
 
   defp merchant_title(c) do
     case if(c.session, do: GameSession.state(c.session).round, else: 0) do
@@ -226,7 +272,7 @@ defmodule Rpg.Presentation.Controller do
   @doc "Informative lines shown above the options (paged for long lists)."
   @spec body_lines(t()) :: [String.t()]
   def body_lines(%__MODULE__{} = c) do
-    lines = body(c)
+    lines = if c.view in @styled_views, do: Enum.map(styled_body(c), & &1.text), else: body(c)
 
     if c.view not in @paged_views or length(lines) <= @page_size do
       lines
@@ -235,6 +281,14 @@ defmodule Rpg.Presentation.Controller do
       page = min(c.page, pages - 1)
       Enum.slice(lines, page * @page_size, @page_size) ++ ["", t(c, "menu.page", page: page + 1, pages: pages)]
     end
+  end
+
+  @doc "Colour of each line of `body_lines/1` (semantic styles from `Render` or rarity ids)."
+  @spec body_colors(t()) :: [String.t() | nil]
+  def body_colors(%__MODULE__{} = c) do
+    if c.view in @styled_views,
+      do: Enum.map(styled_body(c), & &1.color),
+      else: List.duplicate(nil, length(body_lines(c)))
   end
 
   defp page_count(lines), do: max(1, div(length(lines) + @page_size - 1, @page_size))
@@ -281,6 +335,7 @@ defmodule Rpg.Presentation.Controller do
           hp: monster.hp,
           max_hp: monster.max_hp,
           is_boss: monster.is_boss,
+          enemy_class: monster.enemy_class,
           element: main_element,
           details: details
         }
@@ -320,6 +375,8 @@ defmodule Rpg.Presentation.Controller do
 
   @doc "Handles one key: a character (`\"1\"`, `\"a\"`) or a name (`\"enter\"`, `\"escape\"`, `\"backspace\"`)."
   @spec press(t(), String.t()) :: t()
+  def press(%__MODULE__{auto_battle: policy} = c, _key) when policy != nil, do: c
+
   def press(%__MODULE__{} = c, key) do
     c = %{c | message: ""}
 
@@ -339,6 +396,50 @@ defmodule Rpg.Presentation.Controller do
           {_option, action} -> action.(c)
         end
     end
+  end
+
+  # ── auto-battle (docs/game-design.md §13, docs/tui.md) ─────────────────────
+
+  @spec auto_battle_active?(t()) :: boolean()
+  def auto_battle_active?(%__MODULE__{auto_battle: policy}), do: policy != nil
+
+  @spec auto_battle_interval_ms(t()) :: pos_integer()
+  def auto_battle_interval_ms(%__MODULE__{settings: settings}), do: div(@auto_battle_base_ms, settings.battle_speed)
+
+  @doc "Plays one auto-battle turn. Returns the controller and whether the fight goes on (the timer keeps ticking)."
+  @spec auto_battle_step(t()) :: {t(), boolean()}
+  def auto_battle_step(%__MODULE__{auto_battle: policy, session: session} = c) do
+    if policy == nil or session == nil or GameSession.state(session).phase != :battle do
+      {%{c | auto_battle: nil}, false}
+    else
+      c = %{c | auto_turns: c.auto_turns + 1}
+      c = step(c, AutoBattle.choose(policy, GameSession.state(c.session)))
+
+      c =
+        if GameSession.state(c.session).phase != :battle or c.auto_turns >= @max_auto_battle_turns,
+          do: %{c | auto_battle: nil},
+          else: c
+
+      {c, auto_battle_active?(c)}
+    end
+  end
+
+  @doc "Instant mode (--no-anim): plays the whole fight at once."
+  @spec run_auto_battle(t()) :: t()
+  def run_auto_battle(%__MODULE__{} = c) do
+    case auto_battle_step(c) do
+      {c, true} -> run_auto_battle(c)
+      {c, false} -> c
+    end
+  end
+
+  defp start_auto_battle(c, mode) do
+    line = t(c, "auto_battle.started", mode: t(c, "auto_battle.#{mode}"))
+
+    push_log(
+      %{c | auto_mode: mode, auto_turns: 0, auto_battle: AutoBattle.policy(data(c), mode), view: :battle},
+      line
+    )
   end
 
   defp text_input(c, "escape"),
@@ -399,6 +500,9 @@ defmodule Rpg.Presentation.Controller do
       :title ->
         title_menu(c)
 
+      :settings ->
+        settings_menu(c)
+
       :difficulty ->
         items =
           data(c).balance.difficulties
@@ -421,6 +525,9 @@ defmodule Rpg.Presentation.Controller do
 
         items ++ [back(c, :difficulty)]
 
+      :auto_equip ->
+        auto_equip_menu(c)
+
       :merchant ->
         merchant_menu(c)
 
@@ -432,6 +539,12 @@ defmodule Rpg.Presentation.Controller do
 
       :equipment ->
         equipment_menu(c) ++ [back(c, :merchant)]
+
+      :compare ->
+        [{option("1", t(c, "equipment.equip")), &equip_compared/1}, back(c, :equipment)]
+
+      :equipped_slot ->
+        [{option("1", t(c, "equipment.unequip")), &unequip_slot/1}, back(c, :equipment)]
 
       :stock ->
         stock_menu(c) ++ [back(c, :merchant)]
@@ -445,7 +558,22 @@ defmodule Rpg.Presentation.Controller do
           {option("2", t(c, "battle.spells")), go(:spells)},
           {option("3", t(c, "battle.potions")), go(:potions)},
           {option("4", t(c, "battle.defend")), &step(&1, %Defend{})},
+          {option("5", t(c, "battle.auto")), go(:auto_battle)},
           {option("q", t(c, "battle.save_quit")), &save_and_quit/1}
+        ]
+
+      :auto_battle ->
+        modes =
+          AutoBattle.modes()
+          |> Enum.with_index(1)
+          |> Enum.map(fn {mode, i} -> {option("#{i}", t(c, "auto_battle.#{mode}")), &start_auto_battle(&1, mode)} end)
+
+        modes ++ [back(c, :battle)]
+
+      :victory ->
+        [
+          {option("1", t(c, "victory.end_run")), &step(&1, %EndRun{})},
+          {option("2", t(c, "victory.continue")), &step(&1, %ContinueRun{})}
         ]
 
       :spells ->
@@ -486,9 +614,47 @@ defmodule Rpg.Presentation.Controller do
         {option("3", t(c, "menu.hall_of_fame")), go(:hall_of_fame)},
         {option("4", t(c, "menu.bestiary")), go(:bestiary)},
         {option("5", t(c, "menu.achievements")), go(:achievements)},
-        {option("6", t(c, "menu.language")), &open_language/1},
+        {option("6", t(c, "menu.settings")), go(:settings)},
         {option("0", t(c, "menu.quit")), &%{&1 | exit_requested: true}}
       ]
+  end
+
+  defp on_off(c, enabled), do: t(c, if(enabled, do: "settings.on", else: "settings.off"))
+
+  defp settings_menu(c) do
+    settings = c.settings
+
+    [
+      {option("1", t(c, "settings.language", language: t(c, "language.#{c.locale}"))), &open_language/1},
+      {option("2", t(c, "settings.auto_equip", state: on_off(c, settings.auto_equip))),
+       &save_settings(&1, %{&1.settings | auto_equip: not &1.settings.auto_equip})},
+      {option("3", t(c, "settings.battle_speed", speed: settings.battle_speed)), &cycle_battle_speed/1},
+      back(c, :title)
+    ]
+  end
+
+  defp save_settings(c, %Settings{} = settings) do
+    SettingsRepository.save(c.services.settings, settings)
+    %{c | settings: settings}
+  end
+
+  defp cycle_battle_speed(c) do
+    speeds = Repositories.battle_speeds()
+    index = Enum.find_index(speeds, &(&1 == c.settings.battle_speed)) || 0
+    save_settings(c, %{c.settings | battle_speed: Enum.at(speeds, rem(index + 1, length(speeds)))})
+  end
+
+  defp auto_equip_menu(c) do
+    default = t(c, "new_run.default")
+
+    menu =
+      Enum.map([{"1", true}, {"2", false}], fn {key, enabled} ->
+        label = t(c, if(enabled, do: "new_run.auto_equip_on", else: "new_run.auto_equip_off"))
+        label = if enabled == c.settings.auto_equip, do: "#{label} #{default}", else: label
+        {option(key, label), &start_run(&1, enabled)}
+      end)
+
+    menu ++ [back(c, :vocation)]
   end
 
   defp merchant_menu(c) do
@@ -542,26 +708,78 @@ defmodule Rpg.Presentation.Controller do
     end)
   end
 
-  defp equipment_menu(c) do
+  defp usable_bag(c) do
     player = run_state(c).player
     vocation = GameData.vocation(data(c), player.vocation_id)
-
-    equip =
-      for item <- player.bag, Loot.can_use(GameData.item(data(c), item.item_id), vocation) do
-        {"merchant.equip_option", item, %Equip{uid: item.uid}}
-      end
-
-    unequip =
-      for slot <- Enums.slots(), Map.has_key?(player.equipment, slot) do
-        {"merchant.unequip_option", player.equipment[slot], %Unequip{slot: slot}}
-      end
-
-    (equip ++ unequip)
-    |> Enum.with_index()
-    |> Enum.map(fn {{template, item, cmd}, index} ->
-      {item_label(c, Render.list_key(index), template, item, []), command(cmd)}
-    end)
+    Enum.filter(player.bag, &Loot.can_use(GameData.item(data(c), &1.item_id), vocation))
   end
+
+  # Score of `item` minus the score of what is equipped in its slot (0 for an empty slot).
+  defp score_delta(c, item) do
+    equipped = Map.get(run_state(c).player.equipment, GameData.item(data(c), item.item_id).slot)
+    current = if equipped == nil, do: 0, else: Character.item_score(equipped, data(c))
+    Character.item_score(item, data(c)) - current
+  end
+
+  # Usable bag items first (keys 1..n, as in docs/tui.md), then the equipped slots.
+  defp equipment_menu(c) do
+    player = run_state(c).player
+    bag = Enum.map(usable_bag(c), &bag_entry(c, player, &1))
+
+    slots =
+      for slot <- Enums.equipment_slot_order(), Map.has_key?(player.equipment, slot) do
+        equipped = player.equipment[slot]
+
+        label =
+          t(c, "equipment.slot_option",
+            slot: t(c, "slot.#{slot}"),
+            name: GameData.item(data(c), equipped.item_id).name,
+            rarity: t(c, "rarity.#{equipped.rarity}")
+          )
+
+        {option("", label, equipped.rarity), &open_slot(&1, slot)}
+      end
+
+    (bag ++ slots)
+    |> Enum.with_index()
+    |> Enum.map(fn {{option, action}, index} -> {%{option | key: Render.list_key(index)}, action} end)
+  end
+
+  defp bag_entry(c, player, item) do
+    definition = GameData.item(data(c), item.item_id)
+    level = Character.required_level(item, data(c))
+
+    label =
+      t(c, "equipment.bag_option",
+        name: definition.name,
+        rarity: t(c, "rarity.#{item.rarity}"),
+        slot: t(c, "slot.#{definition.slot}"),
+        level: level,
+        score: Character.item_score(item, data(c))
+      )
+
+    too_high = level > player.level
+    label = if too_high, do: "#{label} · #{t(c, "equipment.requires_level", level: level)}", else: label
+    delta = score_delta(c, item)
+
+    option = %MenuOption{
+      key: "",
+      label: label,
+      color: if(too_high, do: Render.style_dim(), else: item.rarity),
+      detail: Render.format_delta(delta),
+      detail_color: Render.delta_style(delta)
+    }
+
+    {option, &open_compare(&1, item.uid)}
+  end
+
+  defp open_compare(c, uid), do: %{c | compare_uid: uid, view: :compare}
+  defp open_slot(c, slot), do: %{c | slot: slot, view: :equipped_slot}
+
+  defp compared_item(c), do: Enum.find(run_state(c).player.bag, &(&1.uid == c.compare_uid))
+
+  defp equip_compared(c), do: %{step(c, %Equip{uid: c.compare_uid}) | view: :equipment}
+  defp unequip_slot(c), do: %{step(c, %Unequip{slot: c.slot}) | view: :equipment}
 
   defp stock_menu(c) do
     run_state(c).merchant_stock
@@ -613,20 +831,22 @@ defmodule Rpg.Presentation.Controller do
   # ── actions ─────────────────────────────────────────────────────────────────
 
   defp choose_language(c, locale) do
-    SettingsRepository.save(c.services.settings, %Settings{locale: locale})
+    c = save_settings(c, %{c.settings | locale: locale})
     %{set_locale(c, locale) | view: c.language_return}
   end
 
-  defp open_language(c), do: %{c | language_return: :title, view: :language}
+  defp open_language(c), do: %{c | language_return: :settings, view: :language}
 
   defp new_run(c), do: %{c | session: nil, view: :difficulty}
 
   defp choose_difficulty(c, difficulty_id), do: %{c | difficulty: difficulty_id, input_buffer: "", view: :name}
 
-  defp choose_vocation(c, vocation_id) do
+  defp choose_vocation(c, vocation_id), do: %{c | vocation: vocation_id, view: :auto_equip}
+
+  defp start_run(c, auto_equip) do
     seed = if c.seed != nil, do: c.seed, else: c.seed_source.()
     services = c.services
-    config = %RunConfig{name: c.name, vocation_id: vocation_id, difficulty_id: c.difficulty}
+    config = %RunConfig{name: c.name, vocation_id: c.vocation, difficulty_id: c.difficulty, auto_equip: auto_equip}
 
     {session, events} =
       GameSession.start(services.data, config, seed,
@@ -649,7 +869,8 @@ defmodule Rpg.Presentation.Controller do
       session ->
         player = GameSession.state(session).player
         line = t(c, "menu.welcome_back", name: player.name, round: GameSession.state(session).round)
-        %{c | session: session, log: [line], view: :merchant}
+        view = if GameSession.state(session).phase == :victory, do: :victory, else: :merchant
+        %{c | session: session, log: [line], view: view}
     end
   end
 
@@ -674,7 +895,8 @@ defmodule Rpg.Presentation.Controller do
     case GameSession.state(session).phase do
       :battle -> %{c | view: :battle}
       :game_over -> %{c | view: :game_over}
-      _ -> if c.view in @battle_views, do: %{c | view: :merchant}, else: c
+      :victory -> %{c | view: :victory}
+      _ -> if c.view in @battle_views or c.view == :victory, do: %{c | view: :merchant}, else: c
     end
   end
 
@@ -725,6 +947,9 @@ defmodule Rpg.Presentation.Controller do
 
       :game_over ->
         game_over_summary(c)
+
+      :victory ->
+        victory_summary(c)
 
       :hall_of_fame ->
         hall_of_fame(c)
@@ -825,24 +1050,179 @@ defmodule Rpg.Presentation.Controller do
     ]
   end
 
+  defp run_stats_line(c) do
+    state = run_state(c)
+
+    t(c, "gameover.stats",
+      level: state.player.level,
+      damage: state.stats.damage_dealt,
+      kills: state.stats.kills |> Map.values() |> Enum.sum(),
+      elites: state.stats.elites_killed,
+      bosses: state.stats.bosses_killed
+    )
+  end
+
   defp game_over_summary(c) do
     state = run_state(c)
-    monster = if state.death_cause in [nil, ""], do: "?", else: GameData.creature(data(c), state.death_cause).name
+    params = [name: state.player.name, vocation: t(c, "vocation.#{state.player.vocation_id}"), round: state.round]
+
+    summary =
+      cond do
+        state.death_cause not in [nil, ""] ->
+          t(c, "gameover.summary", [monster: GameData.creature(data(c), state.death_cause).name] ++ params)
+
+        state.won ->
+          t(c, "gameover.won_summary", params)
+
+        true ->
+          t(c, "gameover.summary", [monster: "?"] ++ params)
+      end
+
+    [summary, run_stats_line(c)]
+  end
+
+  defp victory_summary(c) do
+    state = run_state(c)
+    data = data(c)
+    boss = GameData.boss_of_tier(data, Formulas.round_info(state.round, data.balance, GameData.tier_count(data)).tier)
 
     [
-      t(c, "gameover.summary",
+      t(c, "victory.summary",
         name: state.player.name,
         vocation: t(c, "vocation.#{state.player.vocation_id}"),
-        round: state.round,
-        monster: monster
+        monster: boss.name,
+        round: state.round
       ),
-      t(c, "gameover.stats",
-        level: state.player.level,
-        damage: state.stats.damage_dealt,
-        kills: state.stats.kills |> Map.values() |> Enum.sum(),
-        bosses: state.stats.bosses_killed
-      )
+      run_stats_line(c),
+      "",
+      t(c, "victory.choice")
     ]
+  end
+
+  # ── equipment screens (docs/tui.md "Equipment screen") ─────────────────────
+
+  defp styled_body(%__MODULE__{view: :equipment} = c), do: equipment_body(c)
+  defp styled_body(%__MODULE__{view: :compare} = c), do: compare_body(c)
+  defp styled_body(c), do: slot_body(c)
+
+  defp equipment_body(c) do
+    player = run_state(c).player
+    header = %BodyLine{text: t(c, "equipment.equipped_header", score: Character.equipment_score(player, data(c)))}
+    slots = Enum.map(Enums.equipment_slot_order(), &slot_line(c, player, &1))
+    empty = if usable_bag(c) == [], do: [%BodyLine{text: t(c, "equipment.bag_empty")}], else: []
+    [header | slots] ++ [%BodyLine{text: ""}, %BodyLine{text: t(c, "equipment.bag_header")}] ++ empty
+  end
+
+  defp slot_line(c, player, slot) do
+    slot_name = t(c, "slot.#{slot}")
+
+    case Map.get(player.equipment, slot) do
+      nil ->
+        %BodyLine{text: t(c, "equipment.slot_empty", slot: slot_name), color: Render.style_warning()}
+
+      item ->
+        text =
+          t(c, "equipment.slot_line",
+            slot: slot_name,
+            name: GameData.item(data(c), item.item_id).name,
+            rarity: t(c, "rarity.#{item.rarity}"),
+            level: Character.required_level(item, data(c)),
+            score: Character.item_score(item, data(c))
+          )
+
+        %BodyLine{text: text, color: item.rarity}
+    end
+  end
+
+  defp compare_title(c) do
+    case compared_item(c) do
+      nil ->
+        t(c, "merchant.equipment")
+
+      item ->
+        slot = GameData.item(data(c), item.item_id).slot
+        current = Map.get(run_state(c).player.equipment, slot)
+
+        current_name =
+          if current == nil, do: t(c, "equipment.empty"), else: GameData.item(data(c), current.item_id).name
+
+        t(c, "equipment.compare_title",
+          slot: t(c, "slot.#{slot}"),
+          current: current_name,
+          new: GameData.item(data(c), item.item_id).name
+        )
+    end
+  end
+
+  defp affix_list(_c, nil), do: ""
+
+  defp affix_list(c, %ItemInstance{affixes: affixes}) do
+    Enum.map_join(affixes, ", ", &t(c, "equipment.affix", value: &1.value, stat: t(c, "stat.#{&1.stat}")))
+  end
+
+  defp compare_body(c) do
+    case compared_item(c) do
+      nil -> []
+      item -> compare_lines(c, item)
+    end
+  end
+
+  defp compare_lines(c, item) do
+    data = data(c)
+    player = run_state(c).player
+    current = Map.get(player.equipment, GameData.item(data, item.item_id).slot)
+    new_stats = Character.item_stats(item, data)
+    old_stats = if current == nil, do: %{}, else: Character.item_stats(current, data)
+
+    stats =
+      for stat <- Enums.stats(), Map.has_key?(new_stats, stat) or Map.has_key?(old_stats, stat) do
+        old = Map.get(old_stats, stat, 0)
+        new = Map.get(new_stats, stat, 0)
+        delta = Render.format_delta(new - old)
+        text = t(c, "equipment.stat_delta", stat: t(c, "stat.#{stat}"), current: old, new: new, delta: delta)
+        %BodyLine{text: text, color: Render.delta_style(new - old)}
+      end
+
+    gained = affix_list(c, item)
+    lost = affix_list(c, current)
+    gained_line = %BodyLine{text: t(c, "equipment.affixes_gained", affixes: gained), color: Render.style_gain()}
+    lost_line = %BodyLine{text: t(c, "equipment.affixes_lost", affixes: lost), color: Render.style_loss()}
+    affixes = if(gained != "", do: [gained_line], else: []) ++ if(lost != "", do: [lost_line], else: [])
+
+    old_score = if current == nil, do: 0, else: Character.item_score(current, data)
+    new_score = Character.item_score(item, data)
+    delta = Render.format_delta(new_score - old_score)
+    score = t(c, "equipment.score_delta", current: old_score, new: new_score, delta: delta)
+    level = Character.required_level(item, data)
+    needed_text = t(c, "equipment.level_needed", level: level, current: player.level)
+    needed = if level > player.level, do: [%BodyLine{text: needed_text, color: Render.style_loss()}], else: []
+
+    stats ++ affixes ++ [%BodyLine{text: score, color: Render.delta_style(new_score - old_score)}] ++ needed
+  end
+
+  defp slot_body(c) do
+    case Map.get(run_state(c).player.equipment, c.slot) do
+      nil ->
+        [%BodyLine{text: t(c, "equipment.empty"), color: Render.style_warning()}]
+
+      item ->
+        title =
+          t(c, "equipment.item_title",
+            name: GameData.item(data(c), item.item_id).name,
+            rarity: t(c, "rarity.#{item.rarity}"),
+            level: Character.required_level(item, data(c)),
+            score: Character.item_score(item, data(c))
+          )
+
+        stats = Character.item_stats(item, data(c))
+
+        lines =
+          for stat <- Enums.stats(), Map.has_key?(stats, stat) do
+            %BodyLine{text: t(c, "character.stat_line", stat: t(c, "stat.#{stat}"), value: stats[stat])}
+          end
+
+        [%BodyLine{text: title, color: item.rarity} | lines]
+    end
   end
 
   defp hall_of_fame(c) do
@@ -854,7 +1234,7 @@ defmodule Rpg.Presentation.Controller do
         hall
         |> Enum.with_index(1)
         |> Enum.map(fn {entry, position} ->
-          t(c, "hall.entry",
+          t(c, if(entry.won, do: "hall.entry_won", else: "hall.entry"),
             position: position,
             name: entry.name,
             vocation: t(c, "vocation.#{entry.vocation}"),

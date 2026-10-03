@@ -20,8 +20,20 @@ ELEMENT_COLORS: dict[str, str] = {
 RARITY_COLORS: dict[str, str] = {
 	"common": "white",
 	"rare": "dodger_blue1",
-	"epic": "medium_purple1",
 	"legendary": "orange1",
+	"mythic": "medium_purple1",
+}
+
+# Semantic colours used by the equipment screen (docs/tui.md): empty slots, score/stat gains and losses.
+STYLE_WARNING = "warning"
+STYLE_GAIN = "gain"
+STYLE_LOSS = "loss"
+STYLE_DIM = "dim"
+STYLE_COLORS: dict[str, str] = {
+	STYLE_WARNING: "yellow",
+	STYLE_GAIN: "green",
+	STYLE_LOSS: "red",
+	STYLE_DIM: "bright_black",
 }
 
 
@@ -41,6 +53,18 @@ def hp_color(current: int, maximum: int) -> str:
 	if maximum > 0 and current * 100 > maximum * 25:
 		return "yellow"
 	return "red"
+
+
+def format_delta(delta: int) -> str:
+	return f"+{delta}" if delta > 0 else str(delta)
+
+
+def delta_style(delta: int) -> str | None:
+	if delta > 0:
+		return STYLE_GAIN
+	if delta < 0:
+		return STYLE_LOSS
+	return None
 
 
 def list_key(index: int) -> str:

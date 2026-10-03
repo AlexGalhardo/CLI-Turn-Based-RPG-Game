@@ -18,30 +18,37 @@ func CanUse(item *domain.ItemDef, vocation *domain.VocationDef) bool {
 	}
 }
 
-// RarityWeights returns the rarity weights of a drop table, with the difficulty bonus on non-common rarities.
-func RarityWeights(data *domain.GameData, table string, difficulty domain.DifficultyDef) []int {
-	weights := data.Balance.RarityWeights[table]
-	result := make([]int, 0, len(data.Balance.Rarities))
+// RollRarity is a weighted roll in the order of balance.rarities; zero weights are skipped and a single option is
+// not rolled.
+func RollRarity(data *domain.GameData, rng *domain.Rng, weights map[string]int) domain.RarityDef {
+	var (
+		options    []domain.RarityDef
+		optWeights []int
+	)
 
 	for _, rarity := range data.Balance.Rarities {
-		weight := weights[rarity.ID]
-		if rarity.ID != "common" {
-			weight = domain.Pct(weight, difficulty.NonCommonWeightPct)
+		if weight := weights[rarity.ID]; weight > 0 {
+			options = append(options, rarity)
+			optWeights = append(optWeights, weight)
 		}
-
-		result = append(result, weight)
 	}
 
-	return result
+	switch len(options) {
+	case 0:
+		panic("rarity table without a positive weight")
+	case 1:
+		return options[0]
+	default:
+		return options[rng.Weighted(optWeights)]
+	}
 }
 
 // ItemRequest describes the item to generate.
 type ItemRequest struct {
-	Vocation   *domain.VocationDef
-	Tier       int
-	Table      string
-	Difficulty domain.DifficultyDef
-	UID        int
+	Vocation *domain.VocationDef
+	Tier     int
+	Weights  map[string]int
+	UID      int
 }
 
 // GenerateItem builds base item + rarity + affixes. It returns false (consuming no randomness) when no item fits.
@@ -63,7 +70,7 @@ func GenerateItem(data *domain.GameData, rng *domain.Rng, request ItemRequest) (
 
 	slices.SortFunc(candidates, func(a, b *domain.ItemDef) int { return domain.ByID(a.ID, b.ID) })
 	base := domain.Pick(rng, candidates)
-	rarity := data.Balance.Rarities[rng.Weighted(RarityWeights(data, request.Table, request.Difficulty))]
+	rarity := RollRarity(data, rng, request.Weights)
 	affixCount := rng.Roll(rarity.AffixMin, rarity.AffixMax)
 
 	rolls := []domain.AffixRoll{}

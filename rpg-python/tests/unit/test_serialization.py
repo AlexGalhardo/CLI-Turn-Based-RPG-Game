@@ -8,7 +8,9 @@ from rpg.application.commands import (
 	BuyStockItem,
 	Cast,
 	Command,
+	ContinueRun,
 	Defend,
+	EndRun,
 	Equip,
 	NextFight,
 	SellItem,
@@ -34,6 +36,8 @@ ALL_COMMANDS: list[Command] = [
 	Equip(5),
 	Unequip(Slot.RING),
 	BuyStockItem(1),
+	EndRun(),
+	ContinueRun(),
 ]
 
 
@@ -53,7 +57,7 @@ def test_run_state_round_trip_through_json(new_engine: EngineFactory) -> None:
 	for _ in range(3):
 		engine.step(Attack())
 	state = engine.state
-	state.player.bag.append(ItemInstance(90, "sword", "epic", 2, (AffixRoll(Stat.DODGE, 3),)))
+	state.player.bag.append(ItemInstance(90, "sword", "mythic", 2, (AffixRoll(Stat.DODGE, 3),)))
 	state.player.statuses.append(ActiveStatus("burn", 2, 4))
 	if state.monster is not None:
 		state.monster.statuses.append(ActiveStatus("stun", 1, 0))

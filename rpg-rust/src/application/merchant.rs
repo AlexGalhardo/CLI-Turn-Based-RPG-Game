@@ -1,10 +1,11 @@
 //! Merchant phase: potions, bag, equipment and rotating stock (docs/game-design.md §10).
 
+use crate::application::auto_equip::auto_equip;
 use crate::application::commands::Command;
 use crate::application::events::{ErrorCode, Event};
 use crate::application::loot::{can_use, generate_item};
 use crate::application::run_state::RunState;
-use crate::domain::character::{build_sheet, item_value};
+use crate::domain::character::{build_sheet, item_value, required_level};
 use crate::domain::definitions::GameData;
 use crate::domain::entities::ItemInstance;
 use crate::domain::enums::Slot;
@@ -38,12 +39,12 @@ impl<'a> Merchant<'a> {
 	pub fn enter(&mut self) -> Vec<Event> {
 		let data = self.data;
 		let state = &mut *self.state;
-		let difficulty = data.balance.difficulty(&state.config.difficulty_id);
 		let vocation = data.vocation(&state.player.vocation_id);
 		let tier = round_info(state.round + 1, &data.balance, data.tier_count()).tier;
+		let weights = &data.balance.rarity_weights["merchant"];
 		state.merchant_stock = Vec::new();
 		for _ in 0..data.balance.merchant_stock_size {
-			let item = generate_item(data, self.rng, vocation, tier, "merchant", difficulty, state.next_item_uid);
+			let item = generate_item(data, self.rng, vocation, tier, weights, state.next_item_uid);
 			if let Some(item) = item {
 				state.take_item_uid();
 				state.merchant_stock.push(item);
@@ -107,6 +108,9 @@ impl<'a> Merchant<'a> {
 		if !can_use(definition, self.data.vocation(&player.vocation_id)) {
 			return vec![Event::error(ErrorCode::CannotEquip)];
 		}
+		if required_level(&player.bag[index], self.data) > player.level {
+			return vec![Event::error(ErrorCode::LevelTooLow)];
+		}
 		let mut events = Vec::new();
 		let item = player.bag.remove(index);
 		if let Some(previous) = player.equipment.remove(&definition.slot) {
@@ -153,9 +157,12 @@ impl<'a> Merchant<'a> {
 		}
 		state.player.gold -= price;
 		let item = state.merchant_stock.remove(index);
-		let event = Event::ItemBought { uid: item.uid, item_id: item.item_id.clone(), gold: price };
+		let mut events = vec![Event::ItemBought { uid: item.uid, item_id: item.item_id.clone(), gold: price }];
 		state.player.bag.push(item);
-		vec![event]
+		if state.config.auto_equip {
+			events.extend(auto_equip(state, self.data));
+		}
+		events
 	}
 
 	fn clamp_resources(&mut self) {

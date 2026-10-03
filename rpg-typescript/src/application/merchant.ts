@@ -1,10 +1,11 @@
 /** Merchant phase: potions, bag, equipment and rotating stock (docs/game-design.md §10). */
-import { buildSheet, itemValue } from "../domain/character";
+import { buildSheet, itemValue, requiredLevel } from "../domain/character";
 import type { GameData } from "../domain/definitions";
 import type { ItemInstance } from "../domain/entities";
 import type { Slot } from "../domain/enums";
 import { pct, roundInfo } from "../domain/formulas";
 import type { Rng } from "../domain/rng";
+import { autoEquip } from "./auto-equip";
 import type { MerchantCommand } from "./commands";
 import { ErrorCode, type Event, error, event } from "./events";
 import { canUse, generateItem } from "./loot";
@@ -31,7 +32,6 @@ export class Merchant {
 	/** Generates the rotating stock for the tier of the next round. */
 	enter(): Event[] {
 		const state = this.state;
-		const difficulty = this.data.balance.difficulty(state.config.difficultyId);
 		const vocation = this.data.vocation(state.player.vocationId);
 		const tier = roundInfo(state.round + 1, this.data.balance, this.data.tierCount).tier;
 		state.merchantStock = [];
@@ -39,8 +39,7 @@ export class Merchant {
 			const item = generateItem(this.data, this.rng, {
 				vocation,
 				tier,
-				table: "merchant",
-				difficulty,
+				weights: this.data.balance.rarityWeights.merchant ?? {},
 				uid: state.nextItemUid,
 			});
 			if (item !== null) {
@@ -102,6 +101,7 @@ export class Merchant {
 		if (item === undefined) return [error(ErrorCode.INVALID_ITEM)];
 		const definition = this.data.item(item.itemId);
 		if (!canUse(definition, this.data.vocation(player.vocationId))) return [error(ErrorCode.CANNOT_EQUIP)];
+		if (requiredLevel(item, this.data) > player.level) return [error(ErrorCode.LEVEL_TOO_LOW)];
 		const events: Event[] = [];
 		this.removeFromBag(item);
 		const previous = player.equipment.get(definition.slot);
@@ -139,7 +139,9 @@ export class Merchant {
 		state.player.gold -= price;
 		state.merchantStock.splice(index, 1);
 		state.player.bag.push(item);
-		return [event("item_bought", { uid: item.uid, itemId: item.itemId, gold: price })];
+		const events = [event("item_bought", { uid: item.uid, itemId: item.itemId, gold: price })];
+		if (state.config.autoEquip) events.push(...autoEquip(state, this.data));
+		return events;
 	}
 
 	private clampResources(): void {

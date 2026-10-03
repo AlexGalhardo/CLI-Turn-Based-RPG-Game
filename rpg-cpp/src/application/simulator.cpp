@@ -30,7 +30,8 @@ std::expected<RunResult, std::string> play_one(
 	const GreedyBot bot(data);
 	for (int step = 0; step < max_steps_per_run; ++step) {
 		if (engine.state.phase == domain::Phase::game_over) {
-			return RunResult{engine.state.round, engine.state.player.level, engine.state.death_cause.value_or("")};
+			return RunResult{
+			    engine.state.round, engine.state.player.level, engine.state.death_cause.value_or(""), engine.state.won};
 		}
 		engine.step(bot.choose(engine.state));
 	}
@@ -45,13 +46,20 @@ std::expected<SimulationSummary, std::string> simulate(const domain::GameData& d
 	std::vector<std::int64_t> rounds;
 	std::map<std::string, std::int64_t> killers;
 	std::int64_t levels = 0;
+	std::int64_t wins = 0;
 	for (std::int64_t i = 0; i < runs; ++i) {
-		auto result = play_one(data, RunConfig{"Bot", vocation, difficulty}, base_seed + static_cast<std::uint64_t>(i));
+		auto result =
+		    play_one(data, RunConfig{"Bot", vocation, difficulty, false}, base_seed + static_cast<std::uint64_t>(i));
 		if (!result.has_value()) {
 			return std::unexpected(result.error());
 		}
 		rounds.push_back(result->round);
-		killers[result->death_cause] += 1;
+		if (!result->death_cause.empty()) {
+			killers[result->death_cause] += 1;
+		}
+		if (result->won) {
+			wins += 1;
+		}
 		levels += result->level;
 	}
 	std::ranges::sort(rounds);
@@ -65,6 +73,7 @@ std::expected<SimulationSummary, std::string> simulate(const domain::GameData& d
 	    .vocation = vocation,
 	    .difficulty = difficulty,
 	    .runs = runs,
+	    .wins = wins,
 	    .min_round = rounds.front(),
 	    .p10_round = percentile(rounds, 10),
 	    .median_round = percentile(rounds, 50),

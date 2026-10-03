@@ -45,6 +45,21 @@ std::int64_t Battle::monster_resistance(std::string_view element) const {
 	return data_->creature(state_->monster->creature_id).resistance(element);
 }
 
+const domain::EnemyClassDef& Battle::enemy_class() const {
+	return data_->balance.enemy_class(state_->monster->enemy_class);
+}
+
+// Steps 2 and 4: a parried hit can kill the attacker, so the player is checked first.
+std::optional<BattleOutcome> Battle::death_check() const {
+	if (player().hp <= 0) {
+		return BattleOutcome::defeat;
+	}
+	if (state_->monster->hp <= 0) {
+		return BattleOutcome::victory;
+	}
+	return std::nullopt;
+}
+
 std::int64_t Battle::spell_cost(const domain::SpellDef& spell) const {
 	const auto& level =
 	    domain::spell_level_for_uses(domain::count_of(player().spell_uses, spell.id), data_->balance.spell_levels);
@@ -74,15 +89,13 @@ std::optional<Event> Battle::validate(const Command& command) const {
 std::pair<std::vector<Event>, BattleOutcome> Battle::play_turn(const Command& command) {
 	std::vector<Event> events;
 	player_action(command, events);
-	if (monster().hp <= 0) {
-		return {std::move(events), BattleOutcome::victory};
-	}
 	while (true) {
-		if (monster_phase(events)) {
-			return {std::move(events), BattleOutcome::victory};
+		if (const auto outcome = death_check(); outcome.has_value()) {
+			return {std::move(events), *outcome};
 		}
-		if (player().hp <= 0) {
-			return {std::move(events), BattleOutcome::defeat};
+		monster_phase(events);
+		if (const auto outcome = death_check(); outcome.has_value()) {
+			return {std::move(events), *outcome};
 		}
 		if (end_of_turn(events)) {
 			return {std::move(events), BattleOutcome::defeat};
@@ -113,10 +126,16 @@ void Battle::player_action(const Command& command, std::vector<Event>& events) {
 
 void Battle::melee(std::vector<Event>& events) {
 	const domain::CharacterSheet current = sheet();
+	if (monster_dodges(events)) {
+		return;
+	}
 	const std::int64_t base =
 	    domain::pct(rng_->roll(current.melee_min, current.melee_max), 100 + current.physical_damage);
 	auto [damage, crit] = roll_crit(base, current);
 	damage = resisted(damage, current.weapon_element);
+	if (monster_parries(damage, current.weapon_element, events)) {
+		return;
+	}
 	hit_monster(damage);
 	events.push_back(
 	    Event{"player_attacked", {{"damage", damage}, {"crit", crit}, {"element", current.weapon_element}}});
@@ -130,6 +149,10 @@ void Battle::cast(const domain::SpellDef& spell, std::vector<Event>& events) {
 	    domain::spell_level_for_uses(domain::count_of(caster.spell_uses, spell.id), data_->balance.spell_levels);
 	const std::int64_t cost = domain::pct(spell.mana, level.mana_pct);
 	caster.mp -= cost;
+	if (spell.kind == "attack" && monster_dodges(events)) {
+		after_cast(spell, cost, events);
+		return;
+	}
 	const std::int64_t bonus = caster.level * spell.per_level + caster.magic_level * spell.per_magic_level;
 	const std::int64_t amount = domain::pct(
 	    domain::pct(rng_->roll(spell.min + bonus, spell.max + bonus), level.effect_pct), 100 + current.spell_power);
@@ -137,6 +160,10 @@ void Battle::cast(const domain::SpellDef& spell, std::vector<Event>& events) {
 	if (spell.kind == "attack") {
 		auto [damage, crit] = roll_crit(amount, current);
 		damage = resisted(damage, spell.element);
+		if (monster_parries(damage, spell.element, events)) {
+			after_cast(spell, cost, events);
+			return;
+		}
 		hit_monster(damage);
 		events.push_back(Event{"spell_cast",
 		    {{"spellId", spell.id}, {"damage", damage}, {"crit", crit}, {"element", spell.element}, {"mana", cost}}});
@@ -161,9 +188,32 @@ void Battle::cast(const domain::SpellDef& spell, std::vector<Event>& events) {
 		}
 	}
 
-	for (Event& event : progression_.after_cast(caster, spell, cost)) {
+	after_cast(spell, cost, events);
+}
+
+void Battle::after_cast(const domain::SpellDef& spell, std::int64_t cost, std::vector<Event>& events) {
+	for (Event& event : progression_.after_cast(player(), spell, cost)) {
 		events.push_back(std::move(event));
 	}
+}
+
+bool Battle::monster_dodges(std::vector<Event>& events) {
+	if (!rng_->chance(enemy_class().dodge)) {
+		return false;
+	}
+	events.emplace_back("monster_dodged");
+	return true;
+}
+
+// Physical hits only: the monster takes nothing and reflects part of the hit (no mitigation).
+bool Battle::monster_parries(std::int64_t damage, std::string_view element, std::vector<Event>& events) {
+	if (element != domain::element::physical || !rng_->chance(enemy_class().parry)) {
+		return false;
+	}
+	const std::int64_t reflected = std::max<std::int64_t>(1, domain::pct(damage, data_->balance.parry_reflect_pct));
+	player().hp = std::max<std::int64_t>(0, player().hp - reflected);
+	events.push_back(Event{"monster_parried", {{"reflected", reflected}}});
+	return true;
 }
 
 void Battle::drink(const std::string& potion_id, std::vector<Event>& events) {
@@ -216,18 +266,26 @@ void Battle::leech(std::int64_t damage, const domain::CharacterSheet& current, s
 
 // ── step 3: monster phase ─────────────────────────────────────────────────────────────────────────────────────────
 
-// True when the monster died from its own status ticks.
-bool Battle::monster_phase(std::vector<Event>& events) {
+void Battle::monster_phase(std::vector<Event>& events) {
 	domain::MonsterInstance& foe = monster();
 	tick(target_monster, foe.statuses, events);
 	if (foe.hp <= 0) {
-		return true;
+		return;
 	}
 
 	if (consume_stun(foe.statuses)) {
 		foe.stun_cooldown = stun_cooldown_turns;
 		events.emplace_back("monster_stunned");
-		return false;
+		return;
+	}
+
+	// A healing monster does nothing else this turn; a boss does not advance its pattern.
+	if (foe.hp < foe.max_hp && rng_->chance(enemy_class().heal)) {
+		const std::int64_t healed =
+		    std::min(domain::pct(foe.max_hp, data_->balance.monster_heal_pct), foe.max_hp - foe.hp);
+		foe.hp += healed;
+		events.push_back(Event{"monster_healed", {{"amount", healed}}});
+		return;
 	}
 
 	if (foe.is_boss) {
@@ -238,13 +296,13 @@ bool Battle::monster_phase(std::vector<Event>& events) {
 			if (position == every - 1) {
 				const domain::MonsterAttack& charge = foe.attack(*charge_id);
 				events.push_back(Event{"boss_telegraph", {{"attackId", charge.id}, {"element", charge.element}}});
-				return false;
+				return;
 			}
 			if (position == every) {
 				// A copy: resolving the attack must not depend on the monster's attack list staying put.
 				const domain::MonsterAttack charge = foe.attack(*charge_id);
 				resolve_monster_attack(charge, true, events);
-				return false;
+				return;
 			}
 		}
 	}
@@ -256,7 +314,6 @@ bool Battle::monster_phase(std::vector<Event>& events) {
 	}
 	const domain::MonsterAttack attack = foe.attacks[rng_->weighted(weights)];
 	resolve_monster_attack(attack, false, events);
-	return false;
 }
 
 void Battle::resolve_monster_attack(const domain::MonsterAttack& attack, bool charged, std::vector<Event>& events) {
@@ -268,26 +325,32 @@ void Battle::resolve_monster_attack(const domain::MonsterAttack& attack, bool ch
 		events.push_back(Event{"attack_dodged", {{"attackId", attack.id}}});
 		return;
 	}
-	if (physical && rng_->chance(current.parry)) {
-		events.push_back(Event{"attack_parried", {{"attackId", attack.id}}});
-		return;
-	}
-
+	const domain::Balance& balance = data_->balance;
 	std::int64_t damage = rng_->roll(attack.min, attack.max);
 	if (charged) {
-		damage = domain::pct(damage, data_->balance.boss_charge_damage_pct);
+		damage = domain::pct(damage, balance.boss_charge_damage_pct);
+	}
+	if (physical && rng_->chance(current.parry)) {
+		const std::int64_t reflected = std::max<std::int64_t>(1, domain::pct(damage, balance.parry_reflect_pct));
+		hit_monster(reflected);
+		events.push_back(Event{"attack_parried", {{"attackId", attack.id}, {"reflected", reflected}}});
+		return;
+	}
+	const bool crit = rng_->chance(enemy_class().crit);
+	if (crit) {
+		damage = domain::pct(damage, balance.crit_multiplier_pct);
 	}
 	if (physical) {
 		damage = domain::armor_mitigation(damage, current.armor);
 	}
 	damage = domain::pct(damage, 100 - current.protection(attack.element));
 	if (target.defending) {
-		damage = domain::pct(damage, data_->balance.defend_damage_pct);
+		damage = domain::pct(damage, balance.defend_damage_pct);
 	}
 	damage = std::max<std::int64_t>(1, damage);
 	target.hp = std::max<std::int64_t>(0, target.hp - damage);
-	events.push_back(Event{"monster_attacked",
-	    {{"attackId", attack.id}, {"damage", damage}, {"element", attack.element}, {"charged", charged}}});
+	events.push_back(Event{"monster_attacked", {{"attackId", attack.id}, {"damage", damage},
+	                                               {"element", attack.element}, {"charged", charged}, {"crit", crit}}});
 
 	if (attack.status.has_value() && rng_->chance(attack.status->chance)) {
 		const std::int64_t per_turn = std::max<std::int64_t>(1, domain::pct(damage, attack.status->damage_pct));

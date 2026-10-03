@@ -1,4 +1,4 @@
-//! Headless balance simulator: the bot plays many runs and we aggregate how far it gets.
+//! Headless balance simulator: the bot plays many runs and we aggregate how often it wins and how far it gets.
 
 use std::collections::BTreeMap;
 use std::rc::Rc;
@@ -16,6 +16,7 @@ pub struct RunResult {
 	pub round: i64,
 	pub level: i64,
 	pub death_cause: String,
+	pub won: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -23,6 +24,7 @@ pub struct SimulationSummary {
 	pub vocation: String,
 	pub difficulty: String,
 	pub runs: usize,
+	pub wins: usize,
 	pub min_round: i64,
 	pub p10_round: i64,
 	pub median_round: i64,
@@ -30,6 +32,12 @@ pub struct SimulationSummary {
 	pub max_round: i64,
 	pub mean_level: i64,
 	pub top_killers: Vec<(String, i64)>,
+}
+
+impl SimulationSummary {
+	pub fn win_rate_pct(&self) -> usize {
+		self.wins * 100 / self.runs
+	}
 }
 
 pub fn play_one(data: &Rc<GameData>, config: RunConfig, seed: u64) -> Result<RunResult, String> {
@@ -52,6 +60,7 @@ pub fn play_one(data: &Rc<GameData>, config: RunConfig, seed: u64) -> Result<Run
 		round: state.round,
 		level: state.player.level,
 		death_cause: state.death_cause.clone().unwrap_or_default(),
+		won: state.won,
 	})
 }
 
@@ -75,7 +84,7 @@ pub fn simulate(
 	let mut rounds: Vec<i64> = results.iter().map(|result| result.round).collect();
 	rounds.sort_unstable();
 	let mut killers: BTreeMap<&str, i64> = BTreeMap::new();
-	for result in &results {
+	for result in results.iter().filter(|result| !result.death_cause.is_empty()) {
 		*killers.entry(&result.death_cause).or_insert(0) += 1;
 	}
 	let mut top_killers: Vec<(String, i64)> = killers.into_iter().map(|(id, count)| (id.to_owned(), count)).collect();
@@ -85,6 +94,7 @@ pub fn simulate(
 		vocation: vocation.to_owned(),
 		difficulty: difficulty.to_owned(),
 		runs,
+		wins: results.iter().filter(|result| result.won).count(),
 		min_round: rounds[0],
 		p10_round: percentile(&rounds, 10),
 		median_round: percentile(&rounds, 50),

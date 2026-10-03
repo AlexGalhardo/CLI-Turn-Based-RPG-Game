@@ -14,11 +14,24 @@ fn simulate_summary() {
 	let data = common::data();
 	let summary = simulate(&data, "warrior", "normal", 3, 10).unwrap();
 	assert_eq!(summary.runs, 3);
+	assert!(summary.wins <= 3);
+	assert_eq!(summary.win_rate_pct(), summary.wins * 100 / 3);
 	assert!(1 <= summary.min_round && summary.min_round <= summary.median_round);
 	assert!(summary.median_round <= summary.max_round);
 	assert!(summary.top_killers.iter().map(|(_, count)| count).sum::<i64>() <= 3);
 	assert!(simulate(&data, "warrior", "normal", 0, 1).unwrap_err().contains("positive"));
 	assert!(simulate(&data, "knight", "normal", 1, 1).unwrap_err().contains("invalid run config"));
+}
+
+#[test]
+fn simulator_counts_won_runs() {
+	let data = common::data();
+	let summary = simulate(&data, "archer", "easy", 2, 2002).unwrap();
+	assert!(summary.wins >= 1);
+	assert_eq!(summary.max_round, data.balance.final_round);
+	let won = play_one(&data, RunConfig::new("Bot", "archer", "easy"), 2002).unwrap();
+	assert!(won.won);
+	assert_eq!(won.death_cause, "");
 }
 
 #[test]
@@ -37,8 +50,8 @@ fn report_aligns_columns_like_the_reference() {
 	let report = render_report(&summaries, &data);
 	let lines: Vec<&str> = report.lines().collect();
 	assert_eq!(lines.len(), 4);
-	assert!(lines[0].starts_with("vocation  difficulty  runs  min"));
-	assert!(lines[1].starts_with("--------  ----------  ----  ---"));
+	assert!(lines[0].starts_with("vocation  difficulty  runs  wins  win %  min"));
+	assert!(lines[1].starts_with("--------  ----------  ----  ----  -----  ---"));
 	assert!(lines[2].starts_with("mage      easy        2"));
 	assert!(lines.iter().all(|line| !line.ends_with(' ')));
 }
@@ -60,6 +73,7 @@ fn binary_prints_version_help_and_simulator_report() {
 	assert!(output.status.success());
 	let report = String::from_utf8_lossy(&output.stdout).into_owned();
 	assert_eq!(report.lines().count(), 5, "{report}");
+	assert!(report.contains("win %"), "{report}");
 
 	let output = binary().args(["--simulate", "0"]).output().unwrap();
 	assert_eq!(output.status.code(), Some(2));

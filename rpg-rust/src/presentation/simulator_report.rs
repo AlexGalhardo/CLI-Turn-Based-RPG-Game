@@ -3,8 +3,8 @@
 use crate::application::simulator::SimulationSummary;
 use crate::domain::definitions::GameData;
 
-pub const HEADER: [&str; 10] =
-	["vocation", "difficulty", "runs", "min", "p10", "median", "p90", "max", "avg lvl", "top killers"];
+pub const HEADER: [&str; 12] =
+	["vocation", "difficulty", "runs", "wins", "win %", "min", "p10", "median", "p90", "max", "avg lvl", "top killers"];
 
 fn width(text: &str) -> usize {
 	text.chars().count()
@@ -22,6 +22,8 @@ pub fn render_report(summaries: &[SimulationSummary], data: &GameData) -> String
 			summary.vocation.clone(),
 			summary.difficulty.clone(),
 			summary.runs.to_string(),
+			summary.wins.to_string(),
+			format!("{}%", summary.win_rate_pct()),
 			summary.min_round.to_string(),
 			summary.p10_round.to_string(),
 			summary.median_round.to_string(),

@@ -29,7 +29,7 @@ application::SessionContext context_for(const fs::path& directory, std::string v
 application::GameSession start(const application::SessionContext& context, std::string vocation, std::string difficulty,
     std::uint64_t seed, std::string name = "Alex") {
 	auto started = application::GameSession::start(rpg::testing::test_data(),
-	    application::RunConfig{std::move(name), std::move(vocation), std::move(difficulty)}, seed, context);
+	    application::RunConfig{std::move(name), std::move(vocation), std::move(difficulty), false}, seed, context);
 	REQUIRE(started.has_value());
 	return std::move(started->first);
 }
@@ -42,12 +42,14 @@ TEST_CASE("a new session autosaves at the merchant", "[integration][persistence]
 	const rpg::testing::TempDir directory;
 	const auto context = context_for(directory.path(), "9.9.9");
 	auto started = application::GameSession::start(
-	    rpg::testing::test_data(), application::RunConfig{"Alex", "archer", "normal"}, 5, context);
+	    rpg::testing::test_data(), application::RunConfig{"Alex", "archer", "normal", false}, 5, context);
 	REQUIRE(started.has_value());
 	auto& [session, events] = *started;
 	REQUIRE(events.front().type == "run_started");
 	json save = read_json(directory.path() / "save.json");
-	REQUIRE(save["schemaVersion"] == 1);
+	REQUIRE(save["schemaVersion"] == 2);
+	REQUIRE(save["run"]["config"]["autoEquip"] == false);
+	REQUIRE(save["run"]["won"] == false);
 	REQUIRE(save["implementation"] == "cpp");
 	REQUIRE(save["gameVersion"] == "9.9.9");
 	REQUIRE(save["session"]["runId"] == session.info.run_id);
@@ -57,14 +59,14 @@ TEST_CASE("a new session autosaves at the merchant", "[integration][persistence]
 	REQUIRE(save["run"]["player"]["potions"]["health_potion"] == 6);
 	// Written like the reference: tab indentation and a final newline.
 	const std::string text = rpg::testing::read_file(directory.path() / "save.json");
-	REQUIRE(text.starts_with("{\n\t\"schemaVersion\": 1,"));
+	REQUIRE(text.starts_with("{\n\t\"schemaVersion\": 2,"));
 	REQUIRE(text.ends_with("}\n"));
 }
 
 TEST_CASE("an invalid config does not start a session", "[integration][persistence]") {
 	const rpg::testing::TempDir directory;
 	const auto started = application::GameSession::start(rpg::testing::test_data(),
-	    application::RunConfig{"Alex", "knight", "normal"}, 5, context_for(directory.path()));
+	    application::RunConfig{"Alex", "knight", "normal", false}, 5, context_for(directory.path()));
 	REQUIRE_FALSE(started.has_value());
 	REQUIRE_FALSE(fs::exists(directory.path() / "save.json"));
 }
@@ -74,6 +76,8 @@ TEST_CASE("quitting mid-battle resumes from the last merchant", "[integration][p
 	const auto context = context_for(directory.path());
 	auto session = start(context, "warrior", "normal", 5);
 	session.step(application::NextFight{});
+	session.state().monster->hp = 1'000'000;
+	session.state().monster->max_hp = 1'000'000;
 	session.step(application::Attack{});
 	REQUIRE(session.state().phase == domain::Phase::battle);
 	session.save_and_quit();
@@ -145,12 +149,19 @@ TEST_CASE("settings round trip", "[integration][persistence]") {
 	const rpg::testing::TempDir directory;
 	const infrastructure::SettingsRepository repository(directory.path());
 	REQUIRE(repository.load() == infrastructure::Settings{});
-	repository.save(infrastructure::Settings{"pt-BR"});
-	REQUIRE(repository.load() == infrastructure::Settings{"pt-BR"});
+	repository.save(infrastructure::Settings{"pt-BR", true, 2});
+	REQUIRE(repository.load() == infrastructure::Settings{"pt-BR", true, 2});
+	REQUIRE(read_json(directory.path() / "settings.json") ==
+	        json{{"schemaVersion", 2}, {"locale", "pt-BR"}, {"autoEquip", true}, {"battleSpeed", 2}});
 	repository.save(infrastructure::Settings{});
 	REQUIRE(repository.load() == infrastructure::Settings{});
 	rpg::testing::write_file(directory.path() / "settings.json", R"({"schemaVersion": 1, "locale": "fr"})");
 	REQUIRE(repository.load() == infrastructure::Settings{});
+	rpg::testing::write_file(directory.path() / "settings.json", R"({"schemaVersion": 1, "locale": "en"})");
+	REQUIRE(repository.load() == infrastructure::Settings{"en", false, 1});
+	rpg::testing::write_file(
+	    directory.path() / "settings.json", R"({"schemaVersion": 2, "autoEquip": true, "battleSpeed": 7})");
+	REQUIRE(repository.load() == infrastructure::Settings{std::nullopt, true, 1});
 }
 
 TEST_CASE("profile round trip and Hall of Fame order", "[integration][persistence]") {
@@ -158,7 +169,7 @@ TEST_CASE("profile round trip and Hall of Fame order", "[integration][persistenc
 	application::ProfileService service(rpg::testing::test_data(), application::Profile{});
 	for (std::int64_t index = 0; index < 12; ++index) {
 		service.record_finished_run(application::HallOfFameEntry{"run" + std::to_string(index), "A", "mage", "normal",
-		    index % 5, index, std::format("2026-01-{:02}T00:00:00Z", index + 1)});
+		    index % 5, index, std::format("2026-01-{:02}T00:00:00Z", index + 1), false});
 	}
 	const auto& hall = service.profile.hall_of_fame;
 	REQUIRE(hall.size() == 10);
@@ -166,6 +177,9 @@ TEST_CASE("profile round trip and Hall of Fame order", "[integration][persistenc
 	REQUIRE(hall[1].round == 4);
 	REQUIRE(hall[2].round == 3);
 	REQUIRE(hall[0].level > hall[1].level);
+	service.record_finished_run(
+	    application::HallOfFameEntry{"winner", "W", "mage", "easy", 1, 1, "2026-02-01T00:00:00Z", true});
+	REQUIRE(service.profile.hall_of_fame.front().run_id == "winner");
 	infrastructure::FileProfileRepository repository(directory.path());
 	repository.save(service.profile);
 	REQUIRE(repository.load() == service.profile);
@@ -185,19 +199,11 @@ TEST_CASE("run id, timestamps and clock", "[integration][persistence]") {
 	REQUIRE(clock.now() > moment);
 }
 
-TEST_CASE("a save written by the Python reference continues identically", "[integration][persistence]") {
-	const rpg::testing::TempDir directory;
-	fs::copy_file(fixtures_dir / "python_save.json", directory.path() / "save.json");
-	fs::copy_file(fixtures_dir / "python_profile.json", directory.path() / "profile.json");
-	const auto context = context_for(directory.path());
+namespace {
 
-	const auto save = context.repositories.saves->load();
-	REQUIRE(save.has_value());
-	REQUIRE(save->implementation_name == "python");
-	// The parsed run serialises back to exactly the Python document.
-	REQUIRE(json::parse(application::to_json(save->run).dump()) == read_json(fixtures_dir / "python_save.json")["run"]);
-	REQUIRE(context.repositories.profile->load().bestiary.size() > 0);
-
+// Plays a resumed session with the bot until the run ends and compares it with the Python continuation.
+void require_python_continuation(const fs::path& directory, const json& expected) {
+	const auto context = context_for(directory);
 	auto session = application::GameSession::resume(rpg::testing::test_data(), context);
 	REQUIRE(session.has_value());
 	REQUIRE(session->info.sessions == 2);
@@ -207,13 +213,52 @@ TEST_CASE("a save written by the Python reference continues identically", "[inte
 		session->step(bot.choose(session->state()));
 		steps += 1;
 	}
-	const json expected = read_json(fixtures_dir / "python_save_continued.json");
 	const auto& state = session->state();
 	REQUIRE(steps == expected["steps"]);
 	REQUIRE(state.round == expected["round"]);
 	REQUIRE(state.player.level == expected["level"]);
 	REQUIRE(state.player.gold == expected["gold"]);
 	REQUIRE(session->engine.rng_state() == expected["rngState"]);
-	REQUIRE(state.death_cause == expected["deathCause"].get<std::string>());
+	REQUIRE(state.death_cause.value_or("") == expected["deathCause"].get<std::string>());
+	REQUIRE(state.won == expected["won"].get<bool>());
 	REQUIRE(json::parse(application::to_json(state.stats).dump()) == expected["stats"]);
+}
+
+} // namespace
+
+TEST_CASE("a save written by the Python reference continues identically", "[integration][persistence]") {
+	const rpg::testing::TempDir directory;
+	fs::copy_file(fixtures_dir / "python_save.json", directory.path() / "save.json");
+	fs::copy_file(fixtures_dir / "python_profile.json", directory.path() / "profile.json");
+	const auto context = context_for(directory.path());
+
+	const auto save = context.repositories.saves->load();
+	REQUIRE(save.has_value());
+	REQUIRE(save->schema == 2);
+	REQUIRE(save->implementation_name == "python");
+	REQUIRE(save->run.config.auto_equip);
+	// The parsed run serialises back to exactly the Python document.
+	REQUIRE(json::parse(application::to_json(save->run).dump()) == read_json(fixtures_dir / "python_save.json")["run"]);
+	const application::Profile profile = context.repositories.profile->load();
+	REQUIRE(profile.bestiary.size() > 0);
+	REQUIRE(json::parse(application::to_json(profile).dump()) == read_json(fixtures_dir / "python_profile.json"));
+
+	require_python_continuation(directory.path(), read_json(fixtures_dir / "python_save_continued.json"));
+}
+
+TEST_CASE("a version 1 save is migrated like the reference and continues identically", "[integration][persistence]") {
+	const rpg::testing::TempDir directory;
+	fs::copy_file(fixtures_dir / "python_save_v1.json", directory.path() / "save.json");
+	fs::copy_file(fixtures_dir / "python_profile_v1.json", directory.path() / "profile.json");
+	const auto context = context_for(directory.path());
+	const json migrated = read_json(fixtures_dir / "python_save_v1_migrated.json");
+
+	const auto save = context.repositories.saves->load();
+	REQUIRE(save.has_value());
+	REQUIRE(save->schema == 2);
+	REQUIRE(json::parse(application::to_json(save->run).dump()) == migrated["run"]);
+	const application::Profile profile = context.repositories.profile->load();
+	REQUIRE(json::parse(application::to_json(profile).dump()) == migrated["profile"]);
+
+	require_python_continuation(directory.path(), read_json(fixtures_dir / "python_save_v1_continued.json"));
 }

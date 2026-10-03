@@ -12,7 +12,11 @@ export type Command =
 	| { readonly type: "sell_item"; readonly uid: number }
 	| { readonly type: "equip"; readonly uid: number }
 	| { readonly type: "unequip"; readonly slot: Slot }
-	| { readonly type: "buy_stock_item"; readonly index: number };
+	| { readonly type: "buy_stock_item"; readonly index: number }
+	/** Victory phase: close the won run (history + Hall of Fame). */
+	| { readonly type: "end_run" }
+	/** Victory phase: keep playing endlessly after beating the final boss. */
+	| { readonly type: "continue_run" };
 
 export type BattleCommand = Extract<Command, { type: "attack" | "cast" | "potion" | "defend" }>;
 export type MerchantCommand = Extract<
@@ -30,6 +34,8 @@ export const SellItem = (uid: number): Command => ({ type: "sell_item", uid });
 export const Equip = (uid: number): Command => ({ type: "equip", uid });
 export const Unequip = (slot: Slot): Command => ({ type: "unequip", slot });
 export const BuyStockItem = (index: number): Command => ({ type: "buy_stock_item", index });
+export const EndRun = (): Command => ({ type: "end_run" });
+export const ContinueRun = (): Command => ({ type: "continue_run" });
 
 export function commandToJson(command: Command): JsonObject {
 	return { ...command };
@@ -59,6 +65,10 @@ export function commandFromJson(raw: JsonValue): Command {
 			return Unequip(parseEnum(SLOTS, jsonStr(field(data, "slot")), "slot"));
 		case "buy_stock_item":
 			return BuyStockItem(jsonInt(field(data, "index")));
+		case "end_run":
+			return EndRun();
+		case "continue_run":
+			return ContinueRun();
 		default:
 			throw new TypeError(`unknown command type: ${type}`);
 	}

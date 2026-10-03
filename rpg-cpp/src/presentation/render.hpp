@@ -18,6 +18,21 @@ std::string_view element_color(std::string_view element);
 // The colour of an item rarity ("" when unknown).
 std::string_view rarity_color(std::string_view rarity);
 
+// Semantic colours used by the equipment screen (docs/tui.md): empty slots, score/stat gains and losses.
+inline constexpr std::string_view style_warning = "warning";
+inline constexpr std::string_view style_gain = "gain";
+inline constexpr std::string_view style_loss = "loss";
+inline constexpr std::string_view style_dim = "dim";
+
+// The colour of a semantic style ("" when unknown).
+std::string_view style_color(std::string_view style);
+
+// "+N" for a gain, "-N" for a loss, "0" otherwise.
+std::string format_delta(std::int64_t delta);
+
+// style_gain, style_loss or "" (no colour) for a zero delta.
+std::string_view delta_style(std::int64_t delta);
+
 // `█` filled / `░` empty cells. A living creature always shows at least one filled cell.
 std::string bar(std::int64_t current, std::int64_t maximum, std::int64_t width);
 
@@ -33,5 +48,7 @@ std::optional<std::size_t> list_index(std::string_view key);
 // UTF-8 helpers for text input (a name may contain accented letters).
 std::size_t utf8_length(std::string_view text);
 void utf8_pop_back(std::string& text);
+// The first `count` code points of a UTF-8 string.
+std::string utf8_prefix(std::string_view text, std::size_t count);
 
 } // namespace rpg::presentation

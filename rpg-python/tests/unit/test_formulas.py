@@ -98,4 +98,4 @@ def test_scaling_combines_difficulty_cycle_and_position(data: GameData) -> None:
 def test_boss_ignores_position_scaling(data: GameData) -> None:
 	normal = data.balance.difficulty("normal")
 	info = round_info(10, data.balance, data.tier_count)
-	assert scaling(info, data.balance, normal).hp_pct_product == 100 * 100 * 100
+	assert scaling(info, data.balance, normal).hp_pct_product == normal.hp_pct * 100 * 100

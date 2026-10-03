@@ -51,10 +51,13 @@ class RunStatistics:
 	gold_spent: int = 0
 	gold_earned: int = 0
 	items_sold: int = 0
+	items_auto_equipped: int = 0
 	bosses_killed: int = 0
+	elites_killed: int = 0
 	spells_cast: Counter[str] = field(default_factory=Counter)
 	potions_used: Counter[str] = field(default_factory=Counter)
 	potions_bought: Counter[str] = field(default_factory=Counter)
+	potions_dropped: Counter[str] = field(default_factory=Counter)
 	items_dropped: Counter[str] = field(default_factory=Counter)
 	kills: Counter[str] = field(default_factory=Counter)
 	statuses_applied: Counter[str] = field(default_factory=Counter)
@@ -62,9 +65,11 @@ class RunStatistics:
 
 	def record(self, events: list[Event], current_round: int) -> None:
 		for event in events:
-			self._record_one(event, current_round)
+			if not self._record_combat(event):
+				self._record_loot(event, current_round)
 
-	def _record_one(self, event: Event, current_round: int) -> None:
+	def _record_combat(self, event: Event) -> bool:
+		"""Battle counters; returns False when the event is not a battle event."""
 		match event["type"]:
 			case "player_attacked":
 				self.normal_attacks += 1
@@ -87,6 +92,9 @@ class RunStatistics:
 				self.dodges += 1
 			case "attack_parried":
 				self.parries += 1
+				self.damage_dealt += _int_field(event, "reflected")
+			case "monster_parried":
+				self.damage_taken += _int_field(event, "reflected")
 			case "status_ticked":
 				if event["target"] == "player":
 					self.damage_taken += _int_field(event, "damage")
@@ -99,6 +107,14 @@ class RunStatistics:
 				self.kills[_str_field(event, "monsterId")] += 1
 				if event["isBoss"] is True:
 					self.bosses_killed += 1
+				if event["enemyClass"] == "elite":
+					self.elites_killed += 1
+			case _:
+				return False
+		return True
+
+	def _record_loot(self, event: Event, current_round: int) -> None:
+		match event["type"]:
 			case "gold_looted":
 				self.gold_looted += _int_field(event, "amount")
 			case "item_dropped":
@@ -110,6 +126,10 @@ class RunStatistics:
 				self.gold_spent += _int_field(event, "gold")
 			case "item_bought":
 				self.gold_spent += _int_field(event, "gold")
+			case "potion_dropped":
+				self.potions_dropped[_str_field(event, "potionId")] += 1
+			case "item_auto_equipped":
+				self.items_auto_equipped += 1
 			case "item_sold" | "item_auto_sold":
 				self.items_sold += 1
 				self.gold_earned += _int_field(event, "gold")
@@ -138,10 +158,13 @@ class RunStatistics:
 			"goldSpent": self.gold_spent,
 			"goldEarned": self.gold_earned,
 			"itemsSold": self.items_sold,
+			"itemsAutoEquipped": self.items_auto_equipped,
 			"bossesKilled": self.bosses_killed,
+			"elitesKilled": self.elites_killed,
 			"spellsCast": _counter_to(self.spells_cast),
 			"potionsUsed": _counter_to(self.potions_used),
 			"potionsBought": _counter_to(self.potions_bought),
+			"potionsDropped": _counter_to(self.potions_dropped),
 			"itemsDropped": _counter_to(self.items_dropped),
 			"kills": _counter_to(self.kills),
 			"statusesApplied": _counter_to(self.statuses_applied),
@@ -167,10 +190,13 @@ class RunStatistics:
 			gold_spent=json_int(data["goldSpent"]),
 			gold_earned=json_int(data["goldEarned"]),
 			items_sold=json_int(data["itemsSold"]),
+			items_auto_equipped=json_int(data["itemsAutoEquipped"]),
 			bosses_killed=json_int(data["bossesKilled"]),
+			elites_killed=json_int(data["elitesKilled"]),
 			spells_cast=_counter_from(data["spellsCast"]),
 			potions_used=_counter_from(data["potionsUsed"]),
 			potions_bought=_counter_from(data["potionsBought"]),
+			potions_dropped=_counter_from(data["potionsDropped"]),
 			items_dropped=_counter_from(data["itemsDropped"]),
 			kills=_counter_from(data["kills"]),
 			statuses_applied=_counter_from(data["statusesApplied"]),

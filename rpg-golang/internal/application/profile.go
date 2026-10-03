@@ -34,6 +34,7 @@ type HallOfFameEntry struct {
 	Round      int    `json:"round"`
 	Level      int    `json:"level"`
 	EndedAt    string `json:"endedAt"`
+	Won        bool   `json:"won"`
 }
 
 // Profile is the cross-run profile (profile.json). Maps marshal with sorted keys, like the reference.
@@ -145,15 +146,29 @@ func (s *ProfileService) progress(achievement domain.AchievementDef, state *RunS
 		}
 
 		return 0
+	case "run_won":
+		if state.Won {
+			return 1
+		}
+
+		return 0
 	default:
 		return 0
 	}
 }
 
-// RecordFinishedRun inserts a run into the Hall of Fame (round desc, level desc, earliest end first).
+// RecordFinishedRun inserts a run into the Hall of Fame (won first, round desc, level desc, earliest end first).
 func (s *ProfileService) RecordFinishedRun(entry HallOfFameEntry) {
 	ranking := append(slices.Clone(s.Profile.HallOfFame), entry)
 	slices.SortStableFunc(ranking, func(a, b HallOfFameEntry) int {
+		if a.Won != b.Won {
+			if a.Won {
+				return -1
+			}
+
+			return 1
+		}
+
 		if a.Round != b.Round {
 			return b.Round - a.Round
 		}

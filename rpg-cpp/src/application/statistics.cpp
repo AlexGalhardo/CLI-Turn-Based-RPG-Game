@@ -14,11 +14,13 @@ std::int64_t RunStatistics::total_kills() const {
 
 void RunStatistics::record(std::span<const Event> events, std::int64_t current_round) {
 	for (const Event& event : events) {
-		record_one(event, current_round);
+		if (!record_combat(event)) {
+			record_loot(event, current_round);
+		}
 	}
 }
 
-void RunStatistics::record_one(const Event& event, std::int64_t current_round) {
+bool RunStatistics::record_combat(const Event& event) {
 	const std::string& type = event.type;
 	if (type == "player_attacked") {
 		normal_attacks += 1;
@@ -42,6 +44,9 @@ void RunStatistics::record_one(const Event& event, std::int64_t current_round) {
 		dodges += 1;
 	} else if (type == "attack_parried") {
 		parries += 1;
+		damage_dealt += event.integer("reflected");
+	} else if (type == "monster_parried") {
+		damage_taken += event.integer("reflected");
 	} else if (type == "status_ticked") {
 		if (event.text("target") == "player") {
 			damage_taken += event.integer("damage");
@@ -57,7 +62,18 @@ void RunStatistics::record_one(const Event& event, std::int64_t current_round) {
 		if (event.flag("isBoss")) {
 			bosses_killed += 1;
 		}
-	} else if (type == "gold_looted") {
+		if (event.text("enemyClass") == "elite") {
+			elites_killed += 1;
+		}
+	} else {
+		return false;
+	}
+	return true;
+}
+
+void RunStatistics::record_loot(const Event& event, std::int64_t current_round) {
+	const std::string& type = event.type;
+	if (type == "gold_looted") {
 		gold_looted += event.integer("amount");
 	} else if (type == "item_dropped") {
 		items_dropped[event.text("rarity")] += 1;
@@ -67,6 +83,10 @@ void RunStatistics::record_one(const Event& event, std::int64_t current_round) {
 		gold_spent += event.integer("gold");
 	} else if (type == "item_bought") {
 		gold_spent += event.integer("gold");
+	} else if (type == "potion_dropped") {
+		potions_dropped[event.text("potionId")] += 1;
+	} else if (type == "item_auto_equipped") {
+		items_auto_equipped += 1;
 	} else if (type == "item_sold" || type == "item_auto_sold") {
 		items_sold += 1;
 		gold_earned += event.integer("gold");

@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use crate::application::events::Event;
-use crate::domain::enums::{Resource, Target};
+use crate::domain::enums::{EnemyClass, Resource, Target};
 
 /// A `collections.Counter`: keys serialise sorted, missing keys count as zero.
 pub type Counter = BTreeMap<String, i64>;
@@ -38,10 +38,13 @@ pub struct RunStatistics {
 	pub gold_spent: i64,
 	pub gold_earned: i64,
 	pub items_sold: i64,
+	pub items_auto_equipped: i64,
 	pub bosses_killed: i64,
+	pub elites_killed: i64,
 	pub spells_cast: Counter,
 	pub potions_used: Counter,
 	pub potions_bought: Counter,
+	pub potions_dropped: Counter,
 	pub items_dropped: Counter,
 	pub kills: Counter,
 	pub statuses_applied: Counter,
@@ -78,7 +81,11 @@ impl RunStatistics {
 			Event::PlayerDefended => self.defends += 1,
 			Event::MonsterAttacked { damage, .. } => self.damage_taken += damage,
 			Event::AttackDodged { .. } => self.dodges += 1,
-			Event::AttackParried { .. } => self.parries += 1,
+			Event::AttackParried { reflected, .. } => {
+				self.parries += 1;
+				self.damage_dealt += reflected;
+			}
+			Event::MonsterParried { reflected } => self.damage_taken += reflected,
 			Event::StatusTicked { target, damage, .. } => {
 				if *target == Target::Player {
 					self.damage_taken += damage;
@@ -89,10 +96,13 @@ impl RunStatistics {
 			Event::StatusApplied { target: Target::Monster, status, .. } => {
 				increment(&mut self.statuses_applied, status, 1);
 			}
-			Event::MonsterKilled { monster_id, is_boss } => {
+			Event::MonsterKilled { monster_id, is_boss, enemy_class } => {
 				increment(&mut self.kills, monster_id, 1);
 				if *is_boss {
 					self.bosses_killed += 1;
+				}
+				if *enemy_class == EnemyClass::Elite {
+					self.elites_killed += 1;
 				}
 			}
 			Event::GoldLooted { amount } => self.gold_looted += amount,
@@ -109,6 +119,8 @@ impl RunStatistics {
 				self.gold_spent += gold;
 			}
 			Event::ItemBought { gold, .. } => self.gold_spent += gold,
+			Event::PotionDropped { potion_id } => increment(&mut self.potions_dropped, potion_id, 1),
+			Event::ItemAutoEquipped { .. } => self.items_auto_equipped += 1,
 			Event::ItemSold { gold, .. } | Event::ItemAutoSold { gold, .. } => {
 				self.items_sold += 1;
 				self.gold_earned += gold;

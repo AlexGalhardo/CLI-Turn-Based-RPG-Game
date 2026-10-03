@@ -42,6 +42,7 @@ export class EventFormatter {
 		if (evt.crit === true) variant = "_crit";
 		else if (evt.charged === true) variant = "_charged";
 		else if (evt.type === "round_started" && evt.isBoss === true) variant = "_boss";
+		else if (evt.type === "round_started" && evt.enemyClass === "elite") variant = "_elite";
 		else if (evt.target !== undefined) variant = `_${String(evt.target)}`;
 		return `event.${evt.type}${variant}`;
 	}

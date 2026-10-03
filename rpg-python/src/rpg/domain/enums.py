@@ -25,7 +25,26 @@ class Slot(StrEnum):
 class Phase(StrEnum):
 	MERCHANT = "merchant"
 	BATTLE = "battle"
+	VICTORY = "victory"
 	GAME_OVER = "game_over"
+
+
+class EnemyClass(StrEnum):
+	NORMAL = "normal"
+	ELITE = "elite"
+	BOSS = "boss"
+
+
+EQUIPMENT_SLOT_ORDER: tuple[Slot, ...] = (
+	Slot.WEAPON,
+	Slot.SHIELD,
+	Slot.HELMET,
+	Slot.ARMOR,
+	Slot.LEGS,
+	Slot.BOOTS,
+	Slot.RING,
+	Slot.AMULET,
+)
 
 
 class Resource(StrEnum):

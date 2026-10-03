@@ -5,6 +5,7 @@
 #include <format>
 #include <random>
 
+#include "application/auto_battle.hpp"
 #include "application/loot.hpp"
 #include "application/merchant.hpp"
 #include "domain/character.hpp"
@@ -15,7 +16,11 @@ namespace rpg::presentation {
 
 namespace {
 
-bool is_battle_view(View view) { return view == View::battle || view == View::spells || view == View::potions; }
+bool is_battle_view(View view) {
+	return view == View::battle || view == View::spells || view == View::potions || view == View::auto_battle;
+}
+
+bool is_styled(View view) { return view == View::equipment || view == View::compare || view == View::equipped_slot; }
 
 bool is_text_input(View view) { return view == View::name || view == View::quantity; }
 
@@ -62,7 +67,7 @@ std::uint64_t random_seed() {
 Controller::Controller(Services injected, std::optional<std::uint64_t> seed, std::string_view locale_override,
     std::function<std::uint64_t()> seed_source) :
     services(std::move(injected)), seed_(seed), seed_source_(seed_source ? std::move(seed_source) : random_seed) {
-	const infrastructure::Settings settings = services.settings->load();
+	settings = services.settings->load();
 	std::string initial{infrastructure::default_locale};
 	if (!locale_override.empty()) {
 		initial = locale_override;
@@ -95,12 +100,16 @@ std::string Controller::title() const {
 		return t("language.title");
 	case View::title:
 		return t("app.title");
+	case View::settings:
+		return t("settings.title");
 	case View::difficulty:
 		return t("new_run.difficulty");
 	case View::name:
 		return t("new_run.name");
 	case View::vocation:
 		return t("new_run.vocation");
+	case View::auto_equip:
+		return t("new_run.auto_equip");
 	case View::merchant: {
 		const std::int64_t round = session.has_value() ? session->state().round : 0;
 		return round == 0 ? t("merchant.title_start") : t("merchant.title", {{"round", round}});
@@ -113,6 +122,10 @@ std::string Controller::title() const {
 		return t("merchant.sell_items");
 	case View::equipment:
 		return t("merchant.equipment");
+	case View::compare:
+		return compare_title();
+	case View::equipped_slot:
+		return t("slot." + slot_);
 	case View::stock:
 		return t("merchant.stock");
 	case View::character:
@@ -123,8 +136,14 @@ std::string Controller::title() const {
 		return t("battle.spells");
 	case View::potions:
 		return t("battle.potions");
-	case View::game_over:
-		return t("gameover.title");
+	case View::auto_battle:
+		return t("auto_battle.title");
+	case View::victory:
+		return t("victory.title");
+	case View::game_over: {
+		const bool won = session.has_value() && session->state().won;
+		return t(won ? "gameover.title_won" : "gameover.title");
+	}
 	case View::hall_of_fame:
 		return t("menu.hall_of_fame");
 	case View::bestiary:
@@ -144,7 +163,14 @@ std::vector<MenuOption> Controller::options() {
 }
 
 std::vector<std::string> Controller::body_lines() {
-	std::vector<std::string> lines = body();
+	std::vector<std::string> lines;
+	if (is_styled(view)) {
+		for (BodyLine& line : styled_body()) {
+			lines.push_back(std::move(line.text));
+		}
+	} else {
+		lines = body();
+	}
 	if (!is_paged(view) || lines.size() <= page_size) {
 		return lines;
 	}
@@ -157,6 +183,17 @@ std::vector<std::string> Controller::body_lines() {
 	visible.emplace_back();
 	visible.push_back(t("menu.page", {{"page", page + 1}, {"pages", pages}}));
 	return visible;
+}
+
+std::vector<std::string> Controller::body_colors() {
+	if (is_styled(view)) {
+		std::vector<std::string> colors;
+		for (BodyLine& line : styled_body()) {
+			colors.push_back(std::move(line.color));
+		}
+		return colors;
+	}
+	return std::vector<std::string>(body_lines().size());
 }
 
 std::string Controller::input_prompt() const {
@@ -225,7 +262,8 @@ std::optional<MonsterView> Controller::monster_view() const {
 	if (const std::string statuses = status_text(monster.statuses); !statuses.empty()) {
 		details += " · " + statuses;
 	}
-	return MonsterView{creature.name, creature.id, monster.hp, monster.max_hp, monster.is_boss, main->element, details};
+	return MonsterView{creature.name, creature.id, monster.hp, monster.max_hp, monster.is_boss, monster.enemy_class,
+	    main->element, details};
 }
 
 std::optional<PlayerView> Controller::player_view() const {
@@ -250,6 +288,9 @@ std::optional<PlayerView> Controller::player_view() const {
 // ── input ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 void Controller::press(std::string_view key) {
+	if (auto_battle_active()) {
+		return;
+	}
 	message.clear();
 	if (is_text_input(view)) {
 		text_input(key);
@@ -268,6 +309,39 @@ void Controller::press(std::string_view key) {
 			return;
 		}
 	}
+}
+
+// ── auto-battle (docs/game-design.md §13, docs/tui.md) ───────────────────────────────────────────────────────────────
+
+std::int64_t Controller::auto_battle_interval_ms() const { return auto_battle_base_ms / settings.battle_speed; }
+
+bool Controller::auto_battle_step() {
+	if (!auto_battle_.has_value() || !session.has_value() || session->state().phase != domain::Phase::battle) {
+		auto_battle_.reset();
+		return false;
+	}
+	auto_turns_ += 1;
+	// A copy: step() may end the fight and reset the policy.
+	const application::Command chosen = auto_battle_->choose(session->state());
+	step(chosen);
+	if (!session.has_value() || session->state().phase != domain::Phase::battle ||
+	    auto_turns_ >= max_auto_battle_turns) {
+		auto_battle_.reset();
+	}
+	return auto_battle_active();
+}
+
+void Controller::run_auto_battle() {
+	while (auto_battle_step()) {
+	}
+}
+
+void Controller::start_auto_battle(application::AutoBattleMode mode) {
+	auto_turns_ = 0;
+	auto_battle_.emplace(*services.data, mode);
+	view = View::battle;
+	const std::string mode_name = t("auto_battle." + std::string(application::to_string(mode)));
+	push_log(t("auto_battle.started", {{"mode", mode_name}}));
 }
 
 void Controller::text_input(std::string_view key) {
@@ -324,6 +398,8 @@ std::vector<Controller::MenuEntry> Controller::menu() {
 		return entries;
 	case View::title:
 		return title_menu();
+	case View::settings:
+		return settings_menu();
 	case View::difficulty:
 		for (std::size_t i = 0; i < data.balance.difficulties.size(); ++i) {
 			const std::string id = data.balance.difficulties[i].id;
@@ -340,6 +416,8 @@ std::vector<Controller::MenuEntry> Controller::menu() {
 		}
 		entries.push_back(back(View::difficulty));
 		return entries;
+	case View::auto_equip:
+		return auto_equip_menu();
 	case View::merchant:
 		return {
 		    {{"1", t("merchant.buy_potions"), ""}, go_to(View::buy_potions)},
@@ -362,6 +440,10 @@ std::vector<Controller::MenuEntry> Controller::menu() {
 		entries = equipment_menu();
 		entries.push_back(back(View::merchant));
 		return entries;
+	case View::compare:
+		return {{{"1", t("equipment.equip"), "", "", ""}, [this] { equip_compared(); }}, back(View::equipment)};
+	case View::equipped_slot:
+		return {{{"1", t("equipment.unequip"), "", "", ""}, [this] { unequip_slot(); }}, back(View::equipment)};
 	case View::stock:
 		entries = stock_menu();
 		entries.push_back(back(View::merchant));
@@ -375,7 +457,15 @@ std::vector<Controller::MenuEntry> Controller::menu() {
 		    {{"2", t("battle.spells"), ""}, go_to(View::spells)},
 		    {{"3", t("battle.potions"), ""}, go_to(View::potions)},
 		    {{"4", t("battle.defend"), ""}, command(application::Defend{})},
+		    {{"5", t("battle.auto"), ""}, go_to(View::auto_battle)},
 		    {{"q", t("battle.save_quit"), ""}, [this] { save_and_quit(); }},
+		};
+	case View::auto_battle:
+		return auto_battle_menu();
+	case View::victory:
+		return {
+		    {{"1", t("victory.end_run"), ""}, command(application::EndRun{})},
+		    {{"2", t("victory.continue"), ""}, command(application::ContinueRun{})},
 		};
 	case View::spells:
 		entries = spell_menu();
@@ -430,8 +520,67 @@ std::vector<Controller::MenuEntry> Controller::title_menu() {
 	entries.push_back({{"3", t("menu.hall_of_fame"), ""}, go_to(View::hall_of_fame)});
 	entries.push_back({{"4", t("menu.bestiary"), ""}, go_to(View::bestiary)});
 	entries.push_back({{"5", t("menu.achievements"), ""}, go_to(View::achievements)});
-	entries.push_back({{"6", t("menu.language"), ""}, [this] { open_language(); }});
+	entries.push_back({{"6", t("menu.settings"), ""}, go_to(View::settings)});
 	entries.push_back({{"0", t("menu.quit"), ""}, [this] { exit_requested = true; }});
+	return entries;
+}
+
+std::string Controller::on_off(bool enabled) const { return t(enabled ? "settings.on" : "settings.off"); }
+
+std::vector<Controller::MenuEntry> Controller::settings_menu() {
+	return {
+	    {{"1", t("settings.language", {{"language", t("language." + locale)}}), ""}, [this] { open_language(); }},
+	    {{"2", t("settings.auto_equip", {{"state", on_off(settings.auto_equip)}}), ""},
+	        [this] {
+		        infrastructure::Settings changed = settings;
+		        changed.auto_equip = !changed.auto_equip;
+		        save_settings(std::move(changed));
+	        }},
+	    {{"3", t("settings.battle_speed", {{"speed", settings.battle_speed}}), ""}, [this] { cycle_battle_speed(); }},
+	    back(View::title),
+	};
+}
+
+void Controller::save_settings(infrastructure::Settings changed) {
+	settings = std::move(changed);
+	try {
+		services.settings->save(settings);
+	} catch (const std::exception& failure) {
+		error = failure.what();
+	}
+}
+
+void Controller::cycle_battle_speed() {
+	const auto& speeds = infrastructure::kBattleSpeeds;
+	const auto found = std::ranges::find(speeds, settings.battle_speed);
+	const std::size_t index = found == speeds.end() ? 0 : static_cast<std::size_t>(found - speeds.begin());
+	infrastructure::Settings changed = settings;
+	changed.battle_speed = speeds[(index + 1) % speeds.size()];
+	save_settings(std::move(changed));
+}
+
+std::vector<Controller::MenuEntry> Controller::auto_equip_menu() {
+	const std::string marker = t("new_run.default");
+	std::vector<MenuEntry> entries;
+	for (const bool enabled : {true, false}) {
+		std::string label = t(enabled ? "new_run.auto_equip_on" : "new_run.auto_equip_off");
+		if (enabled == settings.auto_equip) {
+			label += " " + marker;
+		}
+		entries.push_back({{enabled ? "1" : "2", std::move(label), ""}, [this, enabled] { start_run(enabled); }});
+	}
+	entries.push_back(back(View::vocation));
+	return entries;
+}
+
+std::vector<Controller::MenuEntry> Controller::auto_battle_menu() {
+	std::vector<MenuEntry> entries;
+	for (std::size_t i = 0; i < application::kAutoBattleModes.size(); ++i) {
+		const application::AutoBattleMode mode = application::kAutoBattleModes[i];
+		const std::string label = t("auto_battle." + std::string(application::to_string(mode)));
+		entries.push_back({{std::to_string(i + 1), label, ""}, [this, mode] { start_auto_battle(mode); }});
+	}
+	entries.push_back(back(View::battle));
 	return entries;
 }
 
@@ -470,25 +619,83 @@ std::vector<Controller::MenuEntry> Controller::sell_menu() {
 	return entries;
 }
 
-std::vector<Controller::MenuEntry> Controller::equipment_menu() {
+std::vector<domain::ItemInstance> Controller::usable_bag() const {
 	const domain::Player& player = session->state().player;
 	const domain::VocationDef& vocation = services.data->vocation(player.vocation_id);
-	std::vector<MenuEntry> entries;
-	const auto add = [&](std::string label, const std::string& color, application::Command action) {
-		entries.push_back({{list_key(entries.size()), std::move(label), color}, command(std::move(action))});
-	};
+	std::vector<domain::ItemInstance> result;
 	for (const auto& item : player.bag) {
 		if (application::can_use(services.data->item(item.item_id), vocation)) {
-			add(item_label("merchant.equip_option", item, {}), item.rarity, application::Equip{item.uid});
+			result.push_back(item);
 		}
 	}
-	for (const std::string_view slot : domain::kSlots) {
-		if (const auto found = player.equipment.find(slot); found != player.equipment.end()) {
-			add(item_label("merchant.unequip_option", found->second, {}), found->second.rarity,
-			    application::Unequip{std::string(slot)});
+	return result;
+}
+
+// The score of `item` minus the score of what is equipped in its slot (0 for an empty slot).
+std::int64_t Controller::score_delta(const domain::ItemInstance& item) const {
+	const domain::GameData& data = *services.data;
+	const auto& equipment = session->state().player.equipment;
+	const auto equipped = equipment.find(data.item(item.item_id).slot);
+	const std::int64_t current = equipped == equipment.end() ? 0 : domain::item_score(equipped->second, data);
+	return domain::item_score(item, data) - current;
+}
+
+// Usable bag items first (keys 1..n, as in docs/tui.md), then the equipped slots.
+std::vector<Controller::MenuEntry> Controller::equipment_menu() {
+	const domain::GameData& data = *services.data;
+	const domain::Player& player = session->state().player;
+	std::vector<MenuEntry> entries;
+	for (const domain::ItemInstance& item : usable_bag()) {
+		const domain::ItemDef& definition = data.item(item.item_id);
+		const std::int64_t level = domain::required_level(item, data);
+		std::string label = t("equipment.bag_option",
+		    {{"name", definition.name}, {"rarity", t("rarity." + item.rarity)}, {"slot", t("slot." + definition.slot)},
+		        {"level", level}, {"score", domain::item_score(item, data)}});
+		const bool too_high = level > player.level;
+		if (too_high) {
+			label += " · " + t("equipment.requires_level", {{"level", level}});
 		}
+		const std::int64_t delta = score_delta(item);
+		const std::int64_t uid = item.uid;
+		entries.push_back({{list_key(entries.size()), std::move(label), too_high ? std::string(style_dim) : item.rarity,
+		                       format_delta(delta), std::string(delta_style(delta))},
+		    [this, uid] {
+			    compare_uid_ = uid;
+			    view = View::compare;
+		    }});
+	}
+	for (const std::string_view slot : domain::kEquipmentSlotOrder) {
+		const auto found = player.equipment.find(slot);
+		if (found == player.equipment.end()) {
+			continue;
+		}
+		const domain::ItemInstance& equipped = found->second;
+		const std::string label = t("equipment.slot_option",
+		    {{"slot", t("slot." + std::string(slot))}, {"name", data.item(equipped.item_id).name},
+		        {"rarity", t("rarity." + equipped.rarity)}});
+		const std::string slot_id{slot};
+		entries.push_back({{list_key(entries.size()), label, equipped.rarity, "", ""}, [this, slot_id] {
+			                   slot_ = slot_id;
+			                   view = View::equipped_slot;
+		                   }});
 	}
 	return entries;
+}
+
+const domain::ItemInstance* Controller::compared_item() const {
+	const auto& bag = session->state().player.bag;
+	const auto found = std::ranges::find(bag, compare_uid_, &domain::ItemInstance::uid);
+	return found == bag.end() ? nullptr : &*found;
+}
+
+void Controller::equip_compared() {
+	step(application::Equip{compare_uid_});
+	view = View::equipment;
+}
+
+void Controller::unequip_slot() {
+	step(application::Unequip{slot_});
+	view = View::equipment;
 }
 
 std::vector<Controller::MenuEntry> Controller::stock_menu() {
@@ -540,16 +747,14 @@ std::vector<Controller::MenuEntry> Controller::battle_potions() {
 
 void Controller::choose_language(const std::string& new_locale) {
 	set_locale(new_locale);
-	try {
-		services.settings->save(infrastructure::Settings{new_locale});
-	} catch (const std::exception& failure) {
-		error = failure.what();
-	}
+	infrastructure::Settings changed = settings;
+	changed.locale = new_locale;
+	save_settings(std::move(changed));
 	view = language_return_;
 }
 
 void Controller::open_language() {
-	language_return_ = View::title;
+	language_return_ = View::settings;
 	view = View::language;
 }
 
@@ -565,8 +770,13 @@ void Controller::choose_difficulty(const std::string& difficulty_id) {
 }
 
 void Controller::choose_vocation(const std::string& vocation_id) {
+	vocation_ = vocation_id;
+	view = View::auto_equip;
+}
+
+void Controller::start_run(bool auto_equip) {
 	const std::uint64_t seed = seed_.has_value() ? *seed_ : seed_source_();
-	const application::RunConfig config{name_, vocation_id, difficulty_};
+	const application::RunConfig config{name_, vocation_, difficulty_, auto_equip};
 	try {
 		auto started = application::GameSession::start(*services.data, config, seed, session_context());
 		if (!started.has_value()) {
@@ -598,7 +808,7 @@ void Controller::continue_run() {
 	log.clear();
 	const application::RunState& state = session->state();
 	push_log(t("menu.welcome_back", {{"name", state.player.name}, {"round", state.round}}));
-	view = View::merchant;
+	view = state.phase == domain::Phase::victory ? View::victory : View::merchant;
 }
 
 void Controller::ask_quantity(const std::string& potion_id) {
@@ -633,7 +843,9 @@ void Controller::step(const application::Command& command) {
 		view = View::battle;
 	} else if (phase == domain::Phase::game_over) {
 		view = View::game_over;
-	} else if (is_battle_view(view)) {
+	} else if (phase == domain::Phase::victory) {
+		view = View::victory;
+	} else if (is_battle_view(view) || view == View::victory) {
 		view = View::merchant;
 	}
 }

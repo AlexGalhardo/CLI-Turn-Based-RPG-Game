@@ -13,6 +13,7 @@ type RunConfig struct {
 	Name         string `json:"name"`
 	VocationID   string `json:"vocation"`
 	DifficultyID string `json:"difficulty"`
+	AutoEquip    bool   `json:"autoEquip"`
 }
 
 // RunState is everything needed to continue a run, except the PRNG state (kept by the engine).
@@ -28,6 +29,7 @@ type RunState struct {
 	MerchantStock []domain.ItemInstance   `json:"merchantStock"`
 	NextItemUID   int                     `json:"nextItemUid"`
 	DeathCause    *string                 `json:"deathCause"`
+	Won           bool                    `json:"won"`
 	Stats         *RunStatistics          `json:"stats"`
 }
 
@@ -148,6 +150,10 @@ func normaliseStats(stats *RunStatistics) {
 
 	if stats.PotionsBought == nil {
 		stats.PotionsBought = empty.PotionsBought
+	}
+
+	if stats.PotionsDropped == nil {
+		stats.PotionsDropped = empty.PotionsDropped
 	}
 
 	if stats.ItemsDropped == nil {

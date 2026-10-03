@@ -1,10 +1,11 @@
 """Merchant phase: potions, bag, equipment and rotating stock (docs/game-design.md §10)."""
 
+from rpg.application.auto_equip import auto_equip
 from rpg.application.commands import BuyPotion, BuyStockItem, Equip, SellItem, Unequip
 from rpg.application.events import ErrorCode, Event, error, event
 from rpg.application.loot import can_use, generate_item
 from rpg.application.run_state import RunState
-from rpg.domain.character import build_sheet, item_value
+from rpg.domain.character import build_sheet, item_value, required_level
 from rpg.domain.definitions import GameData
 from rpg.domain.entities import ItemInstance
 from rpg.domain.enums import Slot
@@ -34,7 +35,6 @@ class Merchant:
 	def enter(self) -> list[Event]:
 		"""Generates the rotating stock for the tier of the next round."""
 		state = self._state
-		difficulty = self._data.balance.difficulty(state.config.difficulty_id)
 		vocation = self._data.vocation(state.player.vocation_id)
 		tier = round_info(state.round + 1, self._data.balance, self._data.tier_count).tier
 		state.merchant_stock = []
@@ -44,8 +44,7 @@ class Merchant:
 				self._rng,
 				vocation=vocation,
 				tier=tier,
-				table="merchant",
-				difficulty=difficulty,
+				weights=self._data.balance.rarity_weights["merchant"],
 				uid=state.next_item_uid,
 			)
 			if item is not None:
@@ -101,6 +100,8 @@ class Merchant:
 		definition = self._data.item(item.item_id)
 		if not can_use(definition, self._data.vocation(player.vocation_id)):
 			return [error(ErrorCode.CANNOT_EQUIP)]
+		if required_level(item, self._data) > player.level:
+			return [error(ErrorCode.LEVEL_TOO_LOW)]
 		events: list[Event] = []
 		player.bag.remove(item)
 		previous = player.equipment.pop(definition.slot, None)
@@ -139,7 +140,10 @@ class Merchant:
 		state.player.gold -= price
 		state.merchant_stock.pop(index)
 		state.player.bag.append(item)
-		return [event("item_bought", uid=item.uid, itemId=item.item_id, gold=price)]
+		events = [event("item_bought", uid=item.uid, itemId=item.item_id, gold=price)]
+		if state.config.auto_equip:
+			events.extend(auto_equip(state, self._data))
+		return events
 
 	def _clamp_resources(self) -> None:
 		player = self._state.player

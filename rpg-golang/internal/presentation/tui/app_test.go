@@ -52,6 +52,12 @@ type harness struct {
 func newHarness(t *testing.T, dir, locale string) *harness {
 	t.Helper()
 
+	return newAnimatedHarness(t, dir, locale, false)
+}
+
+func newAnimatedHarness(t *testing.T, dir, locale string, animate bool) *harness {
+	t.Helper()
+
 	data, err := infrastructure.LoadGameData(assets.Shared())
 	if err != nil {
 		t.Fatal(err)
@@ -72,7 +78,7 @@ func newHarness(t *testing.T, dir, locale string) *harness {
 		t.Fatal(err)
 	}
 
-	model, _ := tui.NewModel(controller, infrastructure.NewArtLibrary(assets.Shared()), false).
+	model, _ := tui.NewModel(controller, infrastructure.NewArtLibrary(assets.Shared()), animate).
 		Update(tea.WindowSizeMsg{Width: presentation.MinColumns, Height: presentation.MinRows})
 
 	return &harness{t: t, model: model}
@@ -148,6 +154,12 @@ func TestModel_FirstLaunch(t *testing.T) {
 	h.typeText("Ana")
 	h.press("enter", "3")
 
+	if h.controller().View != presentation.ViewAutoEquip {
+		t.Fatal("the vocation leads to the auto-equip choice")
+	}
+
+	h.press("2")
+
 	if screen := h.screen(); !strings.Contains(screen, "Ana") || !strings.Contains(screen, "Mago") {
 		t.Fatalf("merchant screen:\n%s", screen)
 	}
@@ -163,7 +175,7 @@ func TestModel_BattleAndContinue(t *testing.T) {
 	h := newHarness(t, dataDir(t), "en")
 	h.press("2", "2")
 	h.typeText("Bo")
-	h.press("enter", "1", "1", "1", "1", "enter")
+	h.press("enter", "1", "2", "1", "1", "1", "enter")
 
 	if h.controller().Session.State().Player.PotionCount("health_potion") != 6 {
 		t.Fatal("potion purchase through the ui")
@@ -180,6 +192,9 @@ func TestModel_BattleAndContinue(t *testing.T) {
 	if screen := h.screen(); !strings.Contains(screen, "Round 1") || !strings.Contains(screen, "HP") || !strings.Contains(screen, "[1] Attack") {
 		t.Fatalf("battle screen:\n%s", screen)
 	}
+
+	monster := h.controller().Session.State().Monster
+	monster.HP, monster.MaxHP = 1_000_000, 1_000_000
 
 	h.press("1", "2", presentation.ListKey(0), "3", "escape", "q")
 
@@ -238,7 +253,9 @@ func keysFor(command application.Command, controller *presentation.Controller) [
 			}
 		}
 
-		return []string{"3", presentation.ListKey(slices.Index(usable, command.UID)), "0"}
+		return []string{"3", presentation.ListKey(slices.Index(usable, command.UID)), "1", "0"}
+	case application.CmdEndRun:
+		return []string{"1"}
 	default:
 		return []string{"4", presentation.ListKey(command.Index), "0"}
 	}
@@ -261,21 +278,34 @@ func TestModel_WholeRunByKeys(t *testing.T) {
 	h := newHarness(t, dir, "en")
 	h.press("2", "3")
 	h.typeText("Hero")
-	h.press("enter", "1")
+	h.press("enter", "1", "2")
 
 	controller := h.controller()
 	bot := application.NewGreedyBot(controller.Services.Data)
+	jumped := false
 
 	for range 5000 {
-		if controller.Session.State().Phase == domain.PhaseGameOver {
+		state := controller.Session.State()
+		if state.Phase == domain.PhaseGameOver {
 			break
 		}
 
-		h.press(keysFor(bot.Choose(controller.Session.State()), controller)...)
+		if !jumped && state.Phase == domain.PhaseMerchant && state.Stats.TotalKills() > 0 {
+			// After the first kill, skip ahead so the run ends quickly (each fight costs many key presses).
+			state.Round = 95
+			jumped = true
+		}
+
+		h.press(keysFor(bot.Choose(state), controller)...)
 	}
 
-	if !strings.Contains(h.screen(), "GAME OVER") {
-		t.Fatalf("game over screen expected:\n%s", h.screen())
+	expected := "GAME OVER"
+	if controller.Session.State().Won {
+		expected = "RUN COMPLETE"
+	}
+
+	if controller.View != presentation.ViewGameOver || !strings.Contains(h.screen(), expected) {
+		t.Fatalf("%s screen expected:\n%s", expected, h.screen())
 	}
 
 	h.press("2", "3")
@@ -298,6 +328,133 @@ func TestModel_WholeRunByKeys(t *testing.T) {
 
 	if entries, err := os.ReadDir(filepath.Join(dir, "history")); err != nil || len(entries) != 1 {
 		t.Fatal("one finished run in history")
+	}
+}
+
+func TestModel_FullRunWithAutoBattle(t *testing.T) {
+	t.Parallel()
+
+	dir := dataDir(t)
+	h := newHarness(t, dir, "en")
+	h.press("2", "1")
+	h.typeText("Auto")
+	h.press("enter", "2", "1")
+
+	controller := h.controller()
+	session := controller.Session
+
+	if !session.State().Config.AutoEquip {
+		t.Fatal("auto-equip chosen at the new-run step")
+	}
+
+	modes := []string{"1", "2", "3"}
+
+	for fight := range 5000 {
+		state := session.State()
+		if state.Phase == domain.PhaseGameOver {
+			break
+		}
+
+		if state.Phase == domain.PhaseVictory {
+			if !strings.Contains(h.screen(), "VICTORY") {
+				t.Fatalf("victory screen expected:\n%s", h.screen())
+			}
+
+			h.press("1")
+
+			continue
+		}
+
+		h.press("0", "5", modes[fight%len(modes)])
+
+		if controller.AutoBattleActive() {
+			t.Fatal("without animation the auto-battle is instant")
+		}
+	}
+
+	if controller.View != presentation.ViewGameOver || session.State().Round < 1 {
+		t.Fatal("the run ends with auto-battles")
+	}
+
+	if entries, err := os.ReadDir(filepath.Join(dir, "history")); err != nil || len(entries) != 1 {
+		t.Fatal("one finished run in history")
+	}
+}
+
+func TestModel_AutoBattleIsPacedByATimer(t *testing.T) {
+	t.Parallel()
+
+	dir := dataDir(t)
+	if err := infrastructure.NewSettingsRepository(dir).Save(infrastructure.Settings{Locale: "en", BattleSpeed: 2}); err != nil {
+		t.Fatal(err)
+	}
+
+	h := newAnimatedHarness(t, dir, "", true)
+	controller := h.controller()
+	send := func(msg tea.Msg) tea.Cmd {
+		var cmd tea.Cmd
+
+		h.model, cmd = h.model.Update(msg)
+
+		return cmd
+	}
+	key := func(text string) tea.Cmd {
+		if text == "enter" {
+			return send(tea.KeyPressMsg{Code: tea.KeyEnter})
+		}
+
+		return send(tea.KeyPressMsg{Code: []rune(text)[0], Text: text})
+	}
+
+	for _, k := range []string{"2", "1", "T", "i", "m", "enter", "1", "2", "0"} {
+		key(k)
+	}
+
+	if controller.View != presentation.ViewBattle {
+		t.Fatal("battle expected")
+	}
+
+	state := controller.Session.State()
+	state.Monster.HP, state.Monster.MaxHP = 1_000_000, 1_000_000
+	state.Player.HP = 1_000_000
+
+	key("5")
+
+	tick := key("1")
+	if !controller.AutoBattleActive() || tick == nil || controller.AutoBattleIntervalMs() != 300 {
+		t.Fatal("the auto-battle starts a 300 ms timer at 2x")
+	}
+
+	turn := state.Turn
+	started := time.Now()
+	msg := tick()
+
+	if time.Since(started) < 250*time.Millisecond {
+		t.Fatal("the timer waits for the battle speed interval")
+	}
+
+	tick = send(msg)
+	if state.Turn <= turn || tick == nil {
+		t.Fatal("each tick plays one turn and schedules the next")
+	}
+
+	turn = state.Turn
+	if key("4"); state.Turn != turn {
+		t.Fatal("keys are ignored while the auto-battle runs")
+	}
+
+	state.Monster.HP = 1
+
+	for range 20 {
+		if tick == nil {
+			break
+		}
+
+		tick = send(tick())
+	}
+
+	if controller.AutoBattleActive() || controller.View == presentation.ViewBattle {
+		t.Fatal("the auto-battle stops when the fight ends")
 	}
 }
 

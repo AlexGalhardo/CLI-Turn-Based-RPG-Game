@@ -85,7 +85,12 @@ func TestResumeSession(t *testing.T) {
 	}
 
 	_, _ = session.Step(application.NextFight())
+	session.State().Monster.HP, session.State().Monster.MaxHP = 1_000_000, 1_000_000
 	_, _ = session.Step(application.Attack())
+
+	if session.State().Phase != domain.PhaseBattle {
+		t.Fatal("the fight must still be going on")
+	}
 
 	if err := session.SaveAndQuit(); err != nil {
 		t.Fatal(err)

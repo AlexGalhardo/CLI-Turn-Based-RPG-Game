@@ -13,9 +13,10 @@
 namespace rpg::testing {
 
 // Real file adapters over a test directory, like the reference make_controller().
-inline presentation::Services services_for(const std::filesystem::path& directory) {
+inline presentation::Services services_for(
+    const std::filesystem::path& directory, const domain::GameData& data = test_data()) {
 	return presentation::Services{
-	    .data = &test_data(),
+	    .data = &data,
 	    .shared = &assets::embedded_shared(),
 	    .settings = std::make_shared<infrastructure::SettingsRepository>(directory),
 	    .repositories = infrastructure::file_repositories(directory),
@@ -24,13 +25,15 @@ inline presentation::Services services_for(const std::filesystem::path& director
 	};
 }
 
-inline presentation::Controller make_controller(const std::filesystem::path& directory, std::string_view lang = "en") {
-	return presentation::Controller(services_for(directory), 7, lang);
+// The data must outlive the controller.
+inline presentation::Controller make_controller(
+    const std::filesystem::path& directory, std::string_view lang = "en", const domain::GameData& data = test_data()) {
+	return presentation::Controller(services_for(directory, data), 7, lang);
 }
 
-// Title → new run → normal difficulty → name → vocation.
-inline void start_run(
-    presentation::Controller& controller, std::string_view name = "Zed", std::string_view vocation_key = "1") {
+// Title → new run → normal difficulty → name → vocation → auto-equip ("2" = off).
+inline void start_run(presentation::Controller& controller, std::string_view name = "Zed",
+    std::string_view vocation_key = "1", std::string_view auto_equip_key = "2") {
 	controller.press("2");
 	controller.press("2");
 	for (const char character : name) {
@@ -38,6 +41,7 @@ inline void start_run(
 	}
 	controller.press("enter");
 	controller.press(vocation_key);
+	controller.press(auto_equip_key);
 }
 
 } // namespace rpg::testing

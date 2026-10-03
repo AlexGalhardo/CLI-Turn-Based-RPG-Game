@@ -115,6 +115,8 @@ fn key(event: &Map<String, Value>) -> String {
 		"_charged".to_owned()
 	} else if event_type == "round_started" && is_true("isBoss") {
 		"_boss".to_owned()
+	} else if event_type == "round_started" && event.get("enemyClass").and_then(Value::as_str) == Some("elite") {
+		"_elite".to_owned()
 	} else if let Some(target) = event.get("target") {
 		format!("_{}", value_text(target))
 	} else {

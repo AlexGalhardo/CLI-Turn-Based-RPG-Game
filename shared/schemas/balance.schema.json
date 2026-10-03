@@ -24,6 +24,15 @@
 			"type": "integer",
 			"minimum": 0
 		},
+		"finalRound": {
+			"type": "integer",
+			"minimum": 1
+		},
+		"eliteChancePct": {
+			"type": "integer",
+			"minimum": 0,
+			"maximum": 100
+		},
 		"difficulties": {
 			"type": "array",
 			"minItems": 1,
@@ -50,20 +59,246 @@
 					"xpPct": {
 						"type": "integer",
 						"minimum": 1
-					},
-					"nonCommonWeightPct": {
-						"type": "integer",
-						"minimum": 1
 					}
 				},
-				"required": ["id", "hpPct", "damagePct", "goldPct", "xpPct", "nonCommonWeightPct"]
+				"required": ["id", "hpPct", "damagePct", "goldPct", "xpPct"]
 			}
+		},
+		"enemyClasses": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"normal": {
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"statPct": {
+							"type": "integer",
+							"minimum": 1
+						},
+						"rewardPct": {
+							"type": "integer",
+							"minimum": 0
+						},
+						"dodge": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"parry": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"crit": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"heal": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"dropChancePct": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"drops": {
+							"type": "integer",
+							"minimum": 0
+						},
+						"potionDropPct": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"rarityWeights": {
+							"type": "object",
+							"minProperties": 1,
+							"propertyNames": {
+								"enum": ["common", "rare", "legendary", "mythic"]
+							},
+							"additionalProperties": {
+								"type": "integer",
+								"minimum": 0
+							}
+						}
+					},
+					"required": [
+						"statPct",
+						"rewardPct",
+						"dodge",
+						"parry",
+						"crit",
+						"heal",
+						"dropChancePct",
+						"drops",
+						"potionDropPct",
+						"rarityWeights"
+					]
+				},
+				"elite": {
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"statPct": {
+							"type": "integer",
+							"minimum": 1
+						},
+						"rewardPct": {
+							"type": "integer",
+							"minimum": 0
+						},
+						"dodge": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"parry": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"crit": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"heal": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"dropChancePct": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"drops": {
+							"type": "integer",
+							"minimum": 0
+						},
+						"potionDropPct": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"rarityWeights": {
+							"type": "object",
+							"minProperties": 1,
+							"propertyNames": {
+								"enum": ["common", "rare", "legendary", "mythic"]
+							},
+							"additionalProperties": {
+								"type": "integer",
+								"minimum": 0
+							}
+						}
+					},
+					"required": [
+						"statPct",
+						"rewardPct",
+						"dodge",
+						"parry",
+						"crit",
+						"heal",
+						"dropChancePct",
+						"drops",
+						"potionDropPct",
+						"rarityWeights"
+					]
+				},
+				"boss": {
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"statPct": {
+							"type": "integer",
+							"minimum": 1
+						},
+						"rewardPct": {
+							"type": "integer",
+							"minimum": 0
+						},
+						"dodge": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"parry": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"crit": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"heal": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"dropChancePct": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"drops": {
+							"type": "integer",
+							"minimum": 0
+						},
+						"potionDropPct": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"rarityWeights": {
+							"type": "object",
+							"minProperties": 1,
+							"propertyNames": {
+								"enum": ["common", "rare", "legendary", "mythic"]
+							},
+							"additionalProperties": {
+								"type": "integer",
+								"minimum": 0
+							}
+						}
+					},
+					"required": [
+						"statPct",
+						"rewardPct",
+						"dodge",
+						"parry",
+						"crit",
+						"heal",
+						"dropChancePct",
+						"drops",
+						"potionDropPct",
+						"rarityWeights"
+					]
+				}
+			},
+			"required": ["normal", "elite", "boss"]
 		},
 		"critMultiplierPct": {
 			"type": "integer",
 			"minimum": 1
 		},
 		"defendDamagePct": {
+			"type": "integer",
+			"minimum": 0,
+			"maximum": 100
+		},
+		"parryReflectPct": {
+			"type": "integer",
+			"minimum": 0,
+			"maximum": 100
+		},
+		"monsterHealPct": {
 			"type": "integer",
 			"minimum": 0,
 			"maximum": 100
@@ -176,14 +411,122 @@
 			"type": "integer",
 			"minimum": 1
 		},
-		"dropChancePct": {
-			"type": "integer",
-			"minimum": 0,
-			"maximum": 100
-		},
-		"bossDrops": {
+		"itemLevelPerTier": {
 			"type": "integer",
 			"minimum": 0
+		},
+		"itemScoreWeights": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"attack": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"armor": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"maxHp": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"maxMp": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"hpRegen": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"mpRegen": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"critChance": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"critDamage": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"spellPower": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"physicalDamage": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"dodge": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"parry": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"lifeLeech": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"manaLeech": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"protPhysical": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"protFire": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"protIce": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"protEnergy": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"protEarth": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"protHoly": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"protDeath": {
+					"type": "integer",
+					"minimum": 0
+				}
+			},
+			"required": [
+				"attack",
+				"armor",
+				"maxHp",
+				"maxMp",
+				"hpRegen",
+				"mpRegen",
+				"critChance",
+				"critDamage",
+				"spellPower",
+				"physicalDamage",
+				"dodge",
+				"parry",
+				"lifeLeech",
+				"manaLeech",
+				"protPhysical",
+				"protFire",
+				"protIce",
+				"protEnergy",
+				"protEarth",
+				"protHoly",
+				"protDeath"
+			]
 		},
 		"rarities": {
 			"type": "array",
@@ -194,7 +537,7 @@
 				"additionalProperties": false,
 				"properties": {
 					"id": {
-						"enum": ["common", "rare", "epic", "legendary"]
+						"enum": ["common", "rare", "legendary", "mythic"]
 					},
 					"statPct": {
 						"type": "integer",
@@ -220,30 +563,11 @@
 			"type": "object",
 			"additionalProperties": false,
 			"properties": {
-				"monster": {
-					"type": "object",
-					"propertyNames": {
-						"enum": ["common", "rare", "epic", "legendary"]
-					},
-					"additionalProperties": {
-						"type": "integer",
-						"minimum": 0
-					}
-				},
-				"boss": {
-					"type": "object",
-					"propertyNames": {
-						"enum": ["common", "rare", "epic", "legendary"]
-					},
-					"additionalProperties": {
-						"type": "integer",
-						"minimum": 0
-					}
-				},
 				"merchant": {
 					"type": "object",
+					"minProperties": 1,
 					"propertyNames": {
-						"enum": ["common", "rare", "epic", "legendary"]
+						"enum": ["common", "rare", "legendary", "mythic"]
 					},
 					"additionalProperties": {
 						"type": "integer",
@@ -251,7 +575,7 @@
 					}
 				}
 			},
-			"required": ["monster", "boss", "merchant"]
+			"required": ["merchant"]
 		},
 		"merchantStockSize": {
 			"type": "integer",
@@ -264,6 +588,77 @@
 		"spellStatusDamagePct": {
 			"type": "integer",
 			"minimum": 0
+		},
+		"autoBattle": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"healBelowPct": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 100
+				},
+				"manaBelowPct": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 100
+				},
+				"emergencyHealBelowPct": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 100
+				},
+				"modes": {
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"melee": {
+							"type": "object",
+							"additionalProperties": false,
+							"properties": {
+								"offense": {
+									"enum": ["attack", "spell"]
+								},
+								"supportEvery": {
+									"type": "integer",
+									"minimum": 1
+								}
+							},
+							"required": ["offense", "supportEvery"]
+						},
+						"spells": {
+							"type": "object",
+							"additionalProperties": false,
+							"properties": {
+								"offense": {
+									"enum": ["attack", "spell"]
+								},
+								"supportEvery": {
+									"type": "integer",
+									"minimum": 1
+								}
+							},
+							"required": ["offense", "supportEvery"]
+						},
+						"balanced": {
+							"type": "object",
+							"additionalProperties": false,
+							"properties": {
+								"offense": {
+									"enum": ["attack", "spell"]
+								},
+								"supportEvery": {
+									"type": "integer",
+									"minimum": 1
+								}
+							},
+							"required": ["offense", "supportEvery"]
+						}
+					},
+					"required": ["melee", "spells", "balanced"]
+				}
+			},
+			"required": ["healBelowPct", "manaBelowPct", "emergencyHealBelowPct", "modes"]
 		}
 	},
 	"required": [
@@ -271,9 +666,14 @@
 		"cycleStatPct",
 		"cycleRewardPct",
 		"positionPct",
+		"finalRound",
+		"eliteChancePct",
 		"difficulties",
+		"enemyClasses",
 		"critMultiplierPct",
 		"defendDamagePct",
+		"parryReflectPct",
+		"monsterHealPct",
 		"bossTelegraphEvery",
 		"bossChargeDamagePct",
 		"caps",
@@ -282,12 +682,13 @@
 		"startingGold",
 		"startingPotions",
 		"bagCapacity",
-		"dropChancePct",
-		"bossDrops",
+		"itemLevelPerTier",
+		"itemScoreWeights",
 		"rarities",
 		"rarityWeights",
 		"merchantStockSize",
 		"merchantMarkupPct",
-		"spellStatusDamagePct"
+		"spellStatusDamagePct",
+		"autoBattle"
 	]
 }

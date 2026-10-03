@@ -14,16 +14,6 @@ const (
 	potionStockRoundDivisor = 5
 )
 
-// ItemScore is the sum of an item's stats (the bot's naive "better item" heuristic).
-func ItemScore(item domain.ItemInstance, data *domain.GameData) int {
-	score := 0
-	for _, value := range domain.ItemStats(item, data) {
-		score += value
-	}
-
-	return score
-}
-
 // maxBy mirrors Python's max(items, key=(number, id)): the highest number wins, ties broken by the higher id.
 func maxBy[T any](items []T, key func(T) (int, string)) (T, bool) {
 	var (
@@ -58,6 +48,10 @@ func NewGreedyBot(data *domain.GameData) *GreedyBot {
 func (b *GreedyBot) Choose(state *RunState) Command {
 	if state.Phase == domain.PhaseBattle {
 		return b.battle(state)
+	}
+
+	if state.Phase == domain.PhaseVictory {
+		return EndRun()
 	}
 
 	return b.merchant(state)
@@ -168,12 +162,12 @@ func (b *GreedyBot) merchant(state *RunState) Command {
 
 	for _, item := range bag {
 		definition := b.data.Item(item.ItemID)
-		if !CanUse(definition, vocation) {
+		if !CanUse(definition, vocation) || domain.RequiredLevel(item, b.data) > player.Level {
 			continue
 		}
 
 		current, equipped := player.Equipment[definition.Slot]
-		if !equipped || ItemScore(item, b.data) > ItemScore(current, b.data) {
+		if !equipped || domain.ItemScore(item, b.data) > domain.ItemScore(current, b.data) {
 			return Equip(item.UID)
 		}
 	}

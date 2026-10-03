@@ -57,7 +57,30 @@ class BuyStockItem:
 	index: int
 
 
-type Command = Attack | Cast | UsePotion | Defend | NextFight | BuyPotion | SellItem | Equip | Unequip | BuyStockItem
+@dataclass(frozen=True, slots=True)
+class EndRun:
+	"""Victory phase: close the won run (history + Hall of Fame)."""
+
+
+@dataclass(frozen=True, slots=True)
+class ContinueRun:
+	"""Victory phase: keep playing endlessly after beating the final boss."""
+
+
+type Command = (
+	Attack
+	| Cast
+	| UsePotion
+	| Defend
+	| NextFight
+	| BuyPotion
+	| SellItem
+	| Equip
+	| Unequip
+	| BuyStockItem
+	| EndRun
+	| ContinueRun
+)
 
 
 def command_to_dict(command: Command) -> JsonObject:
@@ -82,6 +105,10 @@ def command_to_dict(command: Command) -> JsonObject:
 			return {"type": "unequip", "slot": slot.value}
 		case BuyStockItem(index):
 			return {"type": "buy_stock_item", "index": index}
+		case EndRun():
+			return {"type": "end_run"}
+		case ContinueRun():
+			return {"type": "continue_run"}
 
 
 def command_from_dict(raw: JsonValue) -> Command:
@@ -107,5 +134,9 @@ def command_from_dict(raw: JsonValue) -> Command:
 			return Unequip(Slot(json_str(data["slot"])))
 		case "buy_stock_item":
 			return BuyStockItem(json_int(data["index"]))
+		case "end_run":
+			return EndRun()
+		case "continue_run":
+			return ContinueRun()
 		case other:
 			raise ValueError(f"unknown command type: {other}")

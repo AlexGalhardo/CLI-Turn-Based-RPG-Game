@@ -20,6 +20,7 @@ namespace {
 
 // Layout constants (same as the Textual, Ink and Bubble Tea renderers). Heights include the borders.
 constexpr auto animation_interval = std::chrono::milliseconds(500);
+constexpr auto timer_resolution = std::chrono::milliseconds(10);
 constexpr std::size_t log_lines = 5;
 constexpr std::size_t two_column_threshold = 4;
 constexpr int column_label_width = 43;
@@ -52,6 +53,9 @@ std::string_view option_color(std::string_view color) {
 	if (const std::string_view rarity = rarity_color(color); !rarity.empty()) {
 		return rarity;
 	}
+	if (const std::string_view style = style_color(color); !style.empty()) {
+		return style;
+	}
 	if (color == "heal") {
 		return "#5fd75f";
 	}
@@ -82,6 +86,8 @@ std::string key_name(const Event& event) {
 	return {};
 }
 
+Event auto_battle_event() { return Event::Special("rpg:auto_battle"); }
+
 App::App(Controller& controller, infrastructure::ArtLibrary& art, bool animate) :
     controller_(&controller), art_(&art), animate_(animate), width_(min_columns), height_(min_rows) {}
 
@@ -108,6 +114,10 @@ bool App::handle(const Event& event) {
 		tick();
 		return true;
 	}
+	if (event == auto_battle_event()) {
+		auto_battle_tick();
+		return true;
+	}
 	const std::string key = key_name(event);
 	if (key.empty()) {
 		return false;
@@ -119,9 +129,38 @@ bool App::handle(const Event& event) {
 		}
 		return true;
 	}
+	if (controller_->auto_battle_active() && !auto_timer_) {
+		start_auto_battle();
+	}
+	take_cues();
+	return true;
+}
+
+void App::take_cues() {
 	cues_ = animate_ ? controller_->animation_cues : std::vector<std::string>{};
 	controller_->animation_cues.clear();
-	return true;
+}
+
+void App::start_auto_battle() {
+	if (!animate_) {
+		controller_->run_auto_battle();
+		return;
+	}
+	auto_timer_ = true;
+	if (on_auto_battle_timer) {
+		on_auto_battle_timer(controller_->auto_battle_interval_ms());
+	}
+}
+
+void App::auto_battle_tick() {
+	const bool running = controller_->auto_battle_step();
+	if (!running && auto_timer_) {
+		auto_timer_ = false;
+		if (on_auto_battle_timer) {
+			on_auto_battle_timer(0);
+		}
+	}
+	take_cues();
 }
 
 Component App::component() {
@@ -185,6 +224,8 @@ Element App::top() {
 		Element name = text(upper(monster->name)) | bold;
 		if (monster->is_boss) {
 			name = hbox({styled(controller.t("hud.boss") + " ", "#d75fff") | bold, name});
+		} else if (monster->enemy_class == domain::enemy_class::elite) {
+			name = hbox({styled(controller.t("hud.elite") + " ", "#ffd75f") | bold, name});
 		}
 		info = {
 		    name,
@@ -230,8 +271,15 @@ Element App::player_panel() {
 Element App::menu_panel() {
 	Controller& controller = *controller_;
 	Elements lines{text(controller.title()) | bold | underlined};
-	for (const std::string& line : controller.body_lines()) {
-		lines.push_back(text(line));
+	const std::vector<std::string> body = controller.body_lines();
+	const std::vector<std::string> body_colors = controller.body_colors();
+	for (std::size_t i = 0; i < body.size(); ++i) {
+		Element line = text(body[i]);
+		if (const std::string_view line_color = option_color(i < body_colors.size() ? body_colors[i] : "");
+		    !line_color.empty()) {
+			line = line | color(hex(line_color));
+		}
+		lines.push_back(line);
 	}
 	const std::vector<MenuOption> options = controller.options();
 	if (!options.empty()) {
@@ -243,9 +291,23 @@ Element App::menu_panel() {
 		for (std::size_t i = start; i < std::min(options.size(), start + columns); ++i) {
 			const MenuOption& option = options[i];
 			row.push_back(styled("[" + upper(option.key) + "] ", "#5fd7ff") | bold);
-			Element label = text(option.label);
+			const std::string detail = option.detail.empty() ? std::string{} : "  " + option.detail;
+			std::string label_text = option.label;
+			if (columns > 1) {
+				// Keep the detail visible: the label is cut to the room left in the column.
+				const std::size_t room = static_cast<std::size_t>(column_label_width) - utf8_length(detail);
+				label_text = utf8_prefix(label_text, room);
+			}
+			Element label = text(label_text);
 			if (const std::string_view label_color = option_color(option.color); !label_color.empty()) {
 				label = label | color(hex(label_color));
+			}
+			if (!detail.empty()) {
+				Element detail_element = text(detail);
+				if (const std::string_view detail_color = option_color(option.detail_color); !detail_color.empty()) {
+					detail_element = detail_element | color(hex(detail_color));
+				}
+				label = hbox({label, detail_element});
 			}
 			if (columns > 1) {
 				label = hbox({label | size(WIDTH, EQUAL, column_label_width), text(" ")});
@@ -275,14 +337,33 @@ void run_tui(Controller& controller, infrastructure::ArtLibrary& art, bool anima
 	app.track_terminal = true;
 	app.on_quit = screen.ExitLoopClosure();
 
-	// The animation clock lives outside the UI thread and only posts events; the UI state is touched by the loop.
+	// The animation and auto-battle clocks live outside the UI thread and only post events; the UI state is touched by
+	// the loop. The auto-battle interval (0 = stopped) is the only value shared with the UI thread.
 	std::atomic<bool> running{animate};
+	std::atomic<std::int64_t> auto_interval_ms{0};
+	app.on_auto_battle_timer = [&auto_interval_ms](std::int64_t interval) { auto_interval_ms.store(interval); };
 	std::thread ticker;
 	if (animate) {
 		ticker = std::thread([&] {
+			using clock = std::chrono::steady_clock;
+			auto next_animation = clock::now() + animation_interval;
+			auto next_auto_battle = clock::time_point::max();
 			while (running.load()) {
-				std::this_thread::sleep_for(animation_interval);
-				screen.PostEvent(Event::Custom);
+				std::this_thread::sleep_for(timer_resolution);
+				const auto now = clock::now();
+				if (now >= next_animation) {
+					next_animation = now + animation_interval;
+					screen.PostEvent(Event::Custom);
+				}
+				const std::int64_t interval = auto_interval_ms.load();
+				if (interval <= 0) {
+					next_auto_battle = clock::time_point::max();
+				} else if (next_auto_battle == clock::time_point::max()) {
+					next_auto_battle = now + std::chrono::milliseconds(interval);
+				} else if (now >= next_auto_battle) {
+					next_auto_battle = now + std::chrono::milliseconds(interval);
+					screen.PostEvent(auto_battle_event());
+				}
 			}
 		});
 	}

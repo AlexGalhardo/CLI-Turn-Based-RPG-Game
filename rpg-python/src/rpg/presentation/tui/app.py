@@ -6,6 +6,7 @@ from rich.text import Text
 from textual import events
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, VerticalScroll
+from textual.timer import Timer
 from textual.widgets import Static
 
 from rpg import __version__
@@ -27,6 +28,7 @@ from rpg.presentation.render import (
 	MIN_COLUMNS,
 	MIN_ROWS,
 	RARITY_COLORS,
+	STYLE_COLORS,
 	bar,
 	hp_color,
 )
@@ -51,7 +53,7 @@ Screen { layout: vertical; background: $background; }
 def option_style(color: str | None) -> str:
 	if color is None:
 		return ""
-	return RARITY_COLORS.get(color) or ELEMENT_COLORS.get(color) or color
+	return RARITY_COLORS.get(color) or STYLE_COLORS.get(color) or ELEMENT_COLORS.get(color) or color
 
 
 class RpgApp(App[int]):
@@ -65,6 +67,7 @@ class RpgApp(App[int]):
 		self._animations_enabled = animate
 		self._tick = 0
 		self._cues: list[str] = []
+		self._auto_timer: Timer | None = None
 
 	def compose(self) -> ComposeResult:
 		with Horizontal(id="top"):
@@ -95,8 +98,29 @@ class RpgApp(App[int]):
 		if self.controller.exit_requested:
 			self.exit(0)
 			return
+		if self.controller.auto_battle_active and self._auto_timer is None:
+			self._start_auto_battle()
+		self._take_cues()
+		self.refresh_view()
+
+	def _take_cues(self) -> None:
 		self._cues = list(self.controller.animation_cues) if self._animations_enabled else []
 		self.controller.animation_cues = []
+
+	def _start_auto_battle(self) -> None:
+		"""Paced by the battle speed setting; instant without animation (--no-anim, tests)."""
+		if not self._animations_enabled:
+			self.controller.run_auto_battle()
+			return
+		seconds = self.controller.auto_battle_interval_ms() / 1000
+		self._auto_timer = self.set_interval(seconds, self._auto_battle_tick)
+
+	def _auto_battle_tick(self) -> None:
+		running = self.controller.auto_battle_step()
+		if not running and self._auto_timer is not None:
+			self._auto_timer.stop()
+			self._auto_timer = None
+		self._take_cues()
 		self.refresh_view()
 
 	def on_resize(self, _: events.Resize) -> None:
@@ -138,6 +162,8 @@ class RpgApp(App[int]):
 		text = Text()
 		if monster.is_boss:
 			text.append(controller.t("hud.boss") + " ", style="bold magenta")
+		elif monster.enemy_class == "elite":
+			text.append(controller.t("hud.elite") + " ", style="bold yellow")
 		text.append(monster.name.upper() + "\n", style="bold")
 		text.append("HP ", style="bold")
 		text.append(bar(monster.hp, monster.max_hp), style=hp_color(monster.hp, monster.max_hp))
@@ -167,8 +193,8 @@ class RpgApp(App[int]):
 		text = Text()
 		text.append(controller.title(), style="bold underline")
 		text.append("\n")
-		for line in controller.body_lines():
-			text.append(line + "\n")
+		for line, color in zip(controller.body_lines(), controller.body_colors(), strict=True):
+			text.append(line + "\n", style=option_style(color))
 		options = controller.options()
 		if options:
 			text.append("\n")
@@ -176,8 +202,13 @@ class RpgApp(App[int]):
 		for index, option in enumerate(options):
 			text.append(f"[{option.key.upper()}] ", style="bold cyan")
 			last_in_row = columns == 1 or index % columns == columns - 1 or index == len(options) - 1
-			label = option.label if columns == 1 else option.label[: COLUMN_WIDTH - 1].ljust(COLUMN_WIDTH)
-			text.append(label + ("\n" if last_in_row else ""), style=option_style(option.color))
+			detail = f"  {option.detail}" if option.detail else ""
+			label = option.label if columns == 1 else option.label[: COLUMN_WIDTH - 1 - len(detail)]
+			text.append(label, style=option_style(option.color))
+			text.append(detail, style=option_style(option.detail_color))
+			if columns > 1:
+				text.append(" " * (COLUMN_WIDTH - len(label) - len(detail)))
+			text.append("\n" if last_in_row else "")
 		prompt = controller.input_prompt()
 		if prompt is not None:
 			text.append("\n" + prompt, style="bold")

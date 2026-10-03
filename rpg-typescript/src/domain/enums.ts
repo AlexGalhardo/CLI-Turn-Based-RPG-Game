@@ -4,8 +4,22 @@ export type Element = (typeof ELEMENTS)[number];
 export const SLOTS = ["helmet", "armor", "legs", "boots", "amulet", "ring", "weapon", "shield"] as const;
 export type Slot = (typeof SLOTS)[number];
 
-export const PHASES = ["merchant", "battle", "game_over"] as const;
+export const PHASES = ["merchant", "battle", "victory", "game_over"] as const;
 export type Phase = (typeof PHASES)[number];
+
+export const ENEMY_CLASSES = ["normal", "elite", "boss"] as const;
+export type EnemyClass = (typeof ENEMY_CLASSES)[number];
+
+export const EQUIPMENT_SLOT_ORDER: readonly Slot[] = [
+	"weapon",
+	"shield",
+	"helmet",
+	"armor",
+	"legs",
+	"boots",
+	"ring",
+	"amulet",
+];
 
 export type Resource = "hp" | "mp";
 export type SpellKind = "attack" | "heal";

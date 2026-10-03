@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use crate::domain::definitions::MonsterAttack;
-use crate::domain::enums::{Slot, Stat};
+use crate::domain::enums::{EnemyClass, Slot, Stat};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -105,6 +105,7 @@ impl Player {
 pub struct MonsterInstance {
 	pub creature_id: String,
 	pub is_boss: bool,
+	pub enemy_class: EnemyClass,
 	pub hp: i64,
 	pub max_hp: i64,
 	pub xp: i64,

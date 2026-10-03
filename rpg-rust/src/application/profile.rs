@@ -11,7 +11,7 @@ use crate::application::run_state::RunState;
 use crate::application::save_game::{PersistenceError, check_schema};
 use crate::domain::definitions::{AchievementDef, GameData};
 
-pub const PROFILE_SCHEMA_VERSION: i64 = 1;
+pub const PROFILE_SCHEMA_VERSION: i64 = 2;
 pub const HALL_OF_FAME_SIZE: usize = 10;
 pub const BESTIARY_REVEAL_KILLS: i64 = 5;
 
@@ -39,6 +39,7 @@ pub struct HallOfFameEntry {
 	pub round: i64,
 	pub level: i64,
 	pub ended_at: String,
+	pub won: bool,
 }
 
 fn profile_schema_version() -> i64 {
@@ -129,16 +130,22 @@ impl ProfileService {
 			"gold_held" => player.gold,
 			"distinct_monsters" => bestiary.len() as i64,
 			"hard_round_reached" if state.config.difficulty_id == "hard" => state.round,
+			"run_won" => i64::from(state.won),
 			_ => 0,
 		}
 	}
 
-	/// Keeps the top entries by round, then level, then earliest end (a stable sort, like Python's `sorted`).
+	/// Keeps the top entries: won runs first, then by round, then level, then earliest end (a stable sort, like
+	/// Python's `sorted`).
 	pub fn record_finished_run(&mut self, entry: HallOfFameEntry) {
 		let ranking = &mut self.profile.hall_of_fame;
 		ranking.push(entry);
 		ranking.sort_by(|a, b| {
-			b.round.cmp(&a.round).then(b.level.cmp(&a.level)).then_with(|| a.ended_at.cmp(&b.ended_at))
+			b.won
+				.cmp(&a.won)
+				.then(b.round.cmp(&a.round))
+				.then(b.level.cmp(&a.level))
+				.then_with(|| a.ended_at.cmp(&b.ended_at))
 		});
 		ranking.truncate(HALL_OF_FAME_SIZE);
 	}

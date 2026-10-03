@@ -209,7 +209,7 @@ defmodule Rpg.Domain.Definitions do
 
   defmodule DifficultyDef do
     @moduledoc false
-    @enforce_keys [:id, :hp_pct, :damage_pct, :gold_pct, :xp_pct, :non_common_weight_pct]
+    @enforce_keys [:id, :hp_pct, :damage_pct, :gold_pct, :xp_pct]
     defstruct @enforce_keys
 
     @type t :: %__MODULE__{
@@ -217,8 +217,7 @@ defmodule Rpg.Domain.Definitions do
             hp_pct: integer(),
             damage_pct: integer(),
             gold_pct: integer(),
-            xp_pct: integer(),
-            non_common_weight_pct: integer()
+            xp_pct: integer()
           }
   end
 
@@ -234,6 +233,63 @@ defmodule Rpg.Domain.Definitions do
             affix_min: integer(),
             affix_max: integer()
           }
+  end
+
+  defmodule EnemyClassDef do
+    @moduledoc "A row of `balance.enemyClasses`: multipliers, combat chances and drop table (docs/game-design.md §3)."
+    @enforce_keys [
+      :id,
+      :stat_pct,
+      :reward_pct,
+      :dodge,
+      :parry,
+      :crit,
+      :heal,
+      :drop_chance_pct,
+      :drops,
+      :potion_drop_pct,
+      :rarity_weights
+    ]
+    defstruct @enforce_keys
+
+    @type t :: %__MODULE__{
+            id: String.t(),
+            stat_pct: integer(),
+            reward_pct: integer(),
+            dodge: integer(),
+            parry: integer(),
+            crit: integer(),
+            heal: integer(),
+            drop_chance_pct: integer(),
+            drops: integer(),
+            potion_drop_pct: integer(),
+            rarity_weights: %{String.t() => integer()}
+          }
+  end
+
+  defmodule AutoBattleModeDef do
+    @moduledoc false
+    @enforce_keys [:id, :offense, :support_every]
+    defstruct @enforce_keys
+    @type t :: %__MODULE__{id: String.t(), offense: String.t(), support_every: pos_integer()}
+  end
+
+  defmodule AutoBattleDef do
+    @moduledoc false
+    @enforce_keys [:heal_below_pct, :mana_below_pct, :emergency_heal_below_pct, :modes]
+    defstruct @enforce_keys
+
+    @type t :: %__MODULE__{
+            heal_below_pct: integer(),
+            mana_below_pct: integer(),
+            emergency_heal_below_pct: integer(),
+            modes: [AutoBattleModeDef.t()]
+          }
+
+    @spec mode(t(), String.t()) :: AutoBattleModeDef.t()
+    def mode(%__MODULE__{modes: modes}, id) do
+      Enum.find(modes, &(&1.id == id)) || raise UnknownIdError, id: id
+    end
   end
 
   defmodule SpellLevelDef do
@@ -264,9 +320,14 @@ defmodule Rpg.Domain.Definitions do
       :cycle_stat_pct,
       :cycle_reward_pct,
       :position_pct,
+      :final_round,
+      :elite_chance_pct,
       :difficulties,
+      :enemy_classes,
       :crit_multiplier_pct,
       :defend_damage_pct,
+      :parry_reflect_pct,
+      :monster_heal_pct,
       :boss_telegraph_every,
       :boss_charge_damage_pct,
       :caps,
@@ -276,13 +337,14 @@ defmodule Rpg.Domain.Definitions do
       :starting_gold,
       :starting_potions,
       :bag_capacity,
-      :drop_chance_pct,
-      :boss_drops,
+      :item_level_per_tier,
+      :item_score_weights,
       :rarities,
       :rarity_weights,
       :merchant_stock_size,
       :merchant_markup_pct,
-      :spell_status_damage_pct
+      :spell_status_damage_pct,
+      :auto_battle
     ]
     defstruct @enforce_keys
 
@@ -291,9 +353,14 @@ defmodule Rpg.Domain.Definitions do
             cycle_stat_pct: integer(),
             cycle_reward_pct: integer(),
             position_pct: integer(),
+            final_round: integer(),
+            elite_chance_pct: integer(),
             difficulties: [DifficultyDef.t()],
+            enemy_classes: [EnemyClassDef.t()],
             crit_multiplier_pct: integer(),
             defend_damage_pct: integer(),
+            parry_reflect_pct: integer(),
+            monster_heal_pct: integer(),
             boss_telegraph_every: integer(),
             boss_charge_damage_pct: integer(),
             caps: Caps.t(),
@@ -303,18 +370,24 @@ defmodule Rpg.Domain.Definitions do
             starting_gold: integer(),
             starting_potions: [{String.t(), integer()}],
             bag_capacity: integer(),
-            drop_chance_pct: integer(),
-            boss_drops: integer(),
+            item_level_per_tier: integer(),
+            item_score_weights: %{String.t() => integer()},
             rarities: [RarityDef.t()],
             rarity_weights: %{String.t() => %{String.t() => integer()}},
             merchant_stock_size: integer(),
             merchant_markup_pct: integer(),
-            spell_status_damage_pct: integer()
+            spell_status_damage_pct: integer(),
+            auto_battle: AutoBattleDef.t()
           }
 
     @spec difficulty(t(), String.t()) :: DifficultyDef.t()
     def difficulty(%__MODULE__{difficulties: difficulties}, id) do
       Enum.find(difficulties, &(&1.id == id)) || raise UnknownIdError, id: id
+    end
+
+    @spec enemy_class(t(), String.t()) :: EnemyClassDef.t()
+    def enemy_class(%__MODULE__{enemy_classes: classes}, id) do
+      Enum.find(classes, &(&1.id == id)) || raise UnknownIdError, id: id
     end
 
     @spec rarity(t(), String.t()) :: RarityDef.t()

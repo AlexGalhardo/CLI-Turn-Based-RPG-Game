@@ -1,27 +1,38 @@
 defmodule Rpg.Application.Loot do
   @moduledoc "Item factory: base item + rarity + affixes (docs/game-design.md §8)."
 
-  alias Rpg.Domain.Definitions.{DifficultyDef, GameData, ItemDef, VocationDef}
+  alias Rpg.Domain.Definitions.{GameData, ItemDef, RarityDef, VocationDef}
   alias Rpg.Domain.Entities.{AffixRoll, ItemInstance}
-  alias Rpg.Domain.{Formulas, Rng}
+  alias Rpg.Domain.Rng
 
   @spec can_use(ItemDef.t(), VocationDef.t()) :: boolean()
   def can_use(%ItemDef{slot: "weapon", type: type}, %VocationDef{} = vocation), do: type in vocation.weapon_types
   def can_use(%ItemDef{slot: "shield", type: type}, %VocationDef{} = vocation), do: type in vocation.shield_types
   def can_use(%ItemDef{}, %VocationDef{}), do: true
 
-  @spec rarity_weights(GameData.t(), String.t(), DifficultyDef.t()) :: [non_neg_integer()]
-  def rarity_weights(%GameData{} = data, table, %DifficultyDef{} = difficulty) do
-    weights = Map.fetch!(data.balance.rarity_weights, table)
+  @doc "Weighted roll in the order of `balance.rarities`; zero weights are skipped and a single option is not rolled."
+  @spec roll_rarity(GameData.t(), Rng.t(), %{String.t() => integer()}) :: {RarityDef.t(), Rng.t()}
+  def roll_rarity(%GameData{} = data, %Rng{} = rng, weights) do
+    options =
+      data.balance.rarities
+      |> Enum.map(&{&1, Map.get(weights, &1.id, 0)})
+      |> Enum.filter(fn {_rarity, weight} -> weight > 0 end)
 
-    Enum.map(data.balance.rarities, fn rarity ->
-      weight = Map.get(weights, rarity.id, 0)
-      if rarity.id == "common", do: weight, else: Formulas.pct(weight, difficulty.non_common_weight_pct)
-    end)
+    case options do
+      [] ->
+        raise ArgumentError, "rarity table without a positive weight"
+
+      [{rarity, _weight}] ->
+        {rarity, rng}
+
+      _ ->
+        {index, rng} = Rng.weighted(rng, Enum.map(options, &elem(&1, 1)))
+        {elem(Enum.at(options, index), 0), rng}
+    end
   end
 
   @doc """
-  Generates one item. Options: `:vocation`, `:tier`, `:table`, `:difficulty`, `:uid`.
+  Generates one item. Options: `:vocation`, `:tier`, `:weights` (rarity id => weight), `:uid`.
   Returns `{nil, rng}` (consuming no randomness) when no item fits the vocation and tier.
   """
   @spec generate_item(GameData.t(), Rng.t(), keyword()) :: {ItemInstance.t() | nil, Rng.t()}
@@ -39,9 +50,7 @@ defmodule Rpg.Application.Loot do
       {nil, rng}
     else
       {base, rng} = Rng.pick(rng, candidates)
-      weights = rarity_weights(data, Keyword.fetch!(opts, :table), Keyword.fetch!(opts, :difficulty))
-      {rarity_index, rng} = Rng.weighted(rng, weights)
-      rarity = Enum.at(data.balance.rarities, rarity_index)
+      {rarity, rng} = roll_rarity(data, rng, Keyword.fetch!(opts, :weights))
       {affix_count, rng} = Rng.roll(rng, rarity.affix_min, rarity.affix_max)
       {rolls, rng} = roll_affixes(data, rng, base, tier, affix_count, [])
 

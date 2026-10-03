@@ -69,6 +69,7 @@ func (p *Player) PotionCount(potionID string) int {
 type MonsterInstance struct {
 	CreatureID   string          `json:"creatureId"`
 	IsBoss       bool            `json:"isBoss"`
+	EnemyClass   string          `json:"enemyClass"`
 	HP           int             `json:"hp"`
 	MaxHP        int             `json:"maxHp"`
 	XP           int             `json:"xp"`

@@ -48,7 +48,9 @@ def test_new_session_autosaves_at_merchant(data: GameData, tmp_path: Path) -> No
 	)
 	assert events[0]["type"] == "run_started"
 	save = json.loads((tmp_path / "save.json").read_text(encoding="utf-8"))
-	assert save["schemaVersion"] == 1
+	assert save["schemaVersion"] == 2
+	assert save["run"]["config"]["autoEquip"] is False
+	assert save["run"]["won"] is False
 	assert save["implementation"] == "python"
 	assert save["gameVersion"] == "9.9.9"
 	assert save["session"]["runId"] == session.info.run_id
@@ -65,6 +67,9 @@ def test_quit_mid_battle_resumes_from_last_merchant(data: GameData, tmp_path: Pa
 		data, RunConfig("Alex", "warrior", "normal"), 5, repositories=repos, clock=clock, game_version="1"
 	)
 	session.step(NextFight())
+	monster = session.state.monster
+	assert monster is not None
+	monster.hp = monster.max_hp = 1_000_000
 	session.step(Attack())
 	assert session.state.phase is Phase.BATTLE
 	session.save_and_quit()
@@ -119,12 +124,19 @@ def test_newer_schema_is_refused(data: GameData, tmp_path: Path) -> None:
 def test_settings_round_trip(tmp_path: Path) -> None:
 	repo = SettingsRepository(tmp_path)
 	assert repo.load() == Settings()
-	repo.save(Settings("pt-BR"))
-	assert repo.load() == Settings("pt-BR")
+	repo.save(Settings("pt-BR", auto_equip=True, battle_speed=2))
+	assert repo.load() == Settings("pt-BR", auto_equip=True, battle_speed=2)
+	saved = json.loads((tmp_path / "settings.json").read_text(encoding="utf-8"))
+	assert saved == {"schemaVersion": 2, "locale": "pt-BR", "autoEquip": True, "battleSpeed": 2}
 	repo.save(Settings())
 	assert repo.load() == Settings()
 	(tmp_path / "settings.json").write_text(json.dumps({"schemaVersion": 1, "locale": "fr"}), encoding="utf-8")
 	assert repo.load() == Settings()
+	(tmp_path / "settings.json").write_text(json.dumps({"schemaVersion": 1, "locale": "en"}), encoding="utf-8")
+	assert repo.load() == Settings("en", auto_equip=False, battle_speed=1)
+	document = {"schemaVersion": 2, "autoEquip": True, "battleSpeed": 7}
+	(tmp_path / "settings.json").write_text(json.dumps(document), encoding="utf-8")
+	assert repo.load() == Settings(None, auto_equip=True, battle_speed=1)
 
 
 def test_profile_round_trip_and_hall_of_fame_order(data: GameData, tmp_path: Path) -> None:
@@ -139,6 +151,8 @@ def test_profile_round_trip_and_hall_of_fame_order(data: GameData, tmp_path: Pat
 	assert len(hall) == 10
 	assert [e.round for e in hall[:3]] == [4, 4, 3]
 	assert hall[0].level > hall[1].level
+	service.record_finished_run(HallOfFameEntry("winner", "W", "mage", "easy", 1, 1, "2026-02-01T00:00:00Z", True))
+	assert service.profile.hall_of_fame[0].run_id == "winner"
 	repo = FileProfileRepository(tmp_path)
 	repo.save(service.profile)
 	assert repo.load() == service.profile

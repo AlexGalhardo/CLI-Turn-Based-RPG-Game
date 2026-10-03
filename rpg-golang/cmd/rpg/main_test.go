@@ -23,6 +23,7 @@ func TestRun(t *testing.T) {
 		{"bad seed", []string{"--seed", "-1"}, 2, "", "argument --seed: must be >= 0"},
 		{"unknown vocation", []string{"--simulate", "1", "--vocation", "knight"}, 2, "", "invalid run config"},
 		{"simulator", []string{"--simulate", "1", "--vocation", "mage", "--difficulty", "hard", "--seed", "5"}, 0, "median", ""},
+		{"win rate", []string{"--simulate", "1", "--vocation", "mage", "--difficulty", "hard", "--seed", "5"}, 0, "win %", ""},
 		{"all combinations", []string{"--simulate", "1"}, 0, "archer    normal", ""},
 	}
 	for _, tt := range tests {

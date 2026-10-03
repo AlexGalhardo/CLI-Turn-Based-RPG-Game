@@ -80,7 +80,7 @@ export class GameSession {
 		const now = formatTimestamp(this.context.clock.now());
 		const unlocked = this.profile.observe(events, this.state, now, this.info.runId);
 		let profileChanged = unlocked.length > 0 || events.some((evt) => evt.type === "monster_killed");
-		if (this.state.phase === "merchant") {
+		if (this.state.phase === "merchant" || this.state.phase === "victory") {
 			this.#merchantSnapshot = [this.state.clone(), this.engine.rngState];
 			this.writeSave();
 		} else if (this.state.phase === "game_over" && this.finishedRecord === null) {
@@ -91,7 +91,7 @@ export class GameSession {
 		return unlocked;
 	}
 
-	/** Persists play time. Mid-battle quits resume from the last merchant visit. */
+	/** Persists play time. Mid-battle quits resume from the last merchant (or victory) snapshot. */
 	saveAndQuit(): void {
 		if (this.state.phase !== "game_over") this.writeSave();
 	}
@@ -133,6 +133,7 @@ export class GameSession {
 			level: state.player.level,
 			magicLevel: state.player.magicLevel,
 			deathCause: state.deathCause ?? "",
+			won: state.won,
 			stats: state.stats,
 		};
 		this.context.repositories.history.add(record);
@@ -145,6 +146,7 @@ export class GameSession {
 			round: record.round,
 			level: record.level,
 			endedAt: record.endedAt,
+			won: record.won,
 		});
 		this.finishedRecord = record;
 	}

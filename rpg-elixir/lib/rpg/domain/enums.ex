@@ -11,7 +11,9 @@ defmodule Rpg.Domain.Enums do
   @slots ~w(helmet armor legs boots amulet ring weapon shield)
   @stats ~w(attack armor maxHp maxMp hpRegen mpRegen critChance critDamage spellPower physicalDamage dodge parry
             lifeLeech manaLeech protPhysical protFire protIce protEnergy protEarth protHoly protDeath)
-  @phases [:merchant, :battle, :game_over]
+  @phases [:merchant, :battle, :victory, :game_over]
+  @enemy_classes ~w(normal elite boss)
+  @equipment_slot_order ~w(weapon shield helmet armor legs boots ring amulet)
 
   @protection_by_element %{
     "physical" => "protPhysical",
@@ -26,7 +28,8 @@ defmodule Rpg.Domain.Enums do
   @type element :: String.t()
   @type slot :: String.t()
   @type stat :: String.t()
-  @type phase :: :merchant | :battle | :game_over
+  @type phase :: :merchant | :battle | :victory | :game_over
+  @type enemy_class :: String.t()
   @type resource :: :hp | :mp
   @type spell_kind :: :attack | :heal
   @type status_kind :: :dot | :stun
@@ -39,6 +42,14 @@ defmodule Rpg.Domain.Enums do
   @doc "Equipment slots in declaration order."
   @spec slots() :: [slot()]
   def slots, do: @slots
+
+  @doc "Order in which auto-equip and the equipment screen walk the slots (docs/game-design.md §8.1)."
+  @spec equipment_slot_order() :: [slot()]
+  def equipment_slot_order, do: @equipment_slot_order
+
+  @doc "Enemy classes in declaration order: `normal`, `elite`, `boss`."
+  @spec enemy_classes() :: [enemy_class()]
+  def enemy_classes, do: @enemy_classes
 
   @spec stats() :: [stat()]
   def stats, do: @stats

@@ -9,7 +9,7 @@ import (
 
 // Shared file format constants (docs/persistence.md).
 const (
-	SchemaVersion   = 1
+	SchemaVersion   = 2
 	Implementation  = "golang"
 	timestampFormat = "2006-01-02T15:04:05Z"
 	runIDFormat     = "20060102T150405Z"
@@ -121,5 +121,6 @@ type RunRecord struct {
 	Level           int            `json:"level"`
 	MagicLevel      int            `json:"magicLevel"`
 	DeathCause      string         `json:"deathCause"`
+	Won             bool           `json:"won"`
 	Stats           *RunStatistics `json:"stats"`
 }

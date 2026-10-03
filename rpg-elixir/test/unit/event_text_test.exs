@@ -4,7 +4,7 @@ defmodule Rpg.Unit.EventTextTest do
   alias Rpg.Application.Commands.NextFight
   alias Rpg.Application.GameEngine
   alias Rpg.Domain.Definitions.GameData
-  alias Rpg.Domain.Entities.ItemInstance
+  alias Rpg.Domain.Entities.{ItemInstance, MonsterInstance}
   alias Rpg.Infrastructure.I18n
   alias Rpg.Presentation.EventText
   alias Rpg.Test.Helpers
@@ -40,12 +40,57 @@ defmodule Rpg.Unit.EventTextTest do
        "hp" => 5
      }, "Round 10: the boss Munster challenges you! (5 HP)"},
     {%{"type" => "item_sold", "uid" => 3, "itemId" => "sword", "gold" => 25}, "You sold Sword for 25 gold."},
-    {%{"type" => "error", "code" => "not_enough_mana"}, "Not enough mana."}
+    {%{"type" => "error", "code" => "not_enough_mana"}, "Not enough mana."},
+    {%{"type" => "error", "code" => "level_too_low"}, "Your level is too low for that item."},
+    {%{
+       "type" => "round_started",
+       "round" => 3,
+       "tier" => 0,
+       "cycle" => 0,
+       "monsterId" => "rat",
+       "isBoss" => false,
+       "enemyClass" => "elite",
+       "hp" => 90
+     }, "Round 3: an ELITE Rat appears! (90 HP)"},
+    {%{
+       "type" => "monster_attacked",
+       "attackId" => "bite",
+       "damage" => 9,
+       "element" => "physical",
+       "charged" => false,
+       "crit" => true
+     }, "CRITICAL! Rat hits you for 9 physical damage."},
+    {%{"type" => "monster_dodged"}, "Rat dodges your attack!"},
+    {%{"type" => "monster_parried", "reflected" => 4}, "Rat parries your attack: you take 4 damage!"},
+    {%{"type" => "monster_healed", "amount" => 12}, "Rat heals 12 HP."},
+    {%{"type" => "attack_parried", "attackId" => "bite", "reflected" => 3},
+     "You parry the attack and reflect 3 damage!"},
+    {%{"type" => "item_auto_equipped", "uid" => 5, "itemId" => "sword", "slot" => "weapon", "score" => 60},
+     "Auto-equipped Sword (score 60)."},
+    {%{"type" => "item_auto_sold", "uid" => 6, "itemId" => "bow", "gold" => 30}, "Sold Bow for 30 gold (auto-sell)."},
+    {%{"type" => "potion_dropped", "potionId" => "mana_potion"}, "Loot: Mana Potion!"},
+    {%{"type" => "run_won", "round" => 100}, "VICTORY! You defeated the final boss on round 100!"},
+    {%{"type" => "run_ended", "won" => true}, "Your victory is recorded in the Hall of Fame."}
   ]
+
+  defp rat do
+    %MonsterInstance{
+      creature_id: "rat",
+      is_boss: false,
+      enemy_class: "normal",
+      hp: 10,
+      max_hp: 10,
+      xp: 1,
+      gold_min: 1,
+      gold_max: 1,
+      attacks: []
+    }
+  end
 
   for {{event, expected}, index} <- Enum.with_index(@cases) do
     test "formats event #{index} (#{event["type"]})" do
-      assert format(unquote(Macro.escape(event)), Helpers.new_engine().state) == unquote(expected)
+      state = %{Helpers.new_engine().state | monster: rat()}
+      assert format(unquote(Macro.escape(event)), state) == unquote(expected)
     end
   end
 

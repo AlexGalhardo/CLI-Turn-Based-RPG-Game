@@ -90,6 +90,11 @@
 			"id": "hardcore",
 			"type": "hard_round_reached",
 			"value": 30
+		},
+		{
+			"id": "conqueror",
+			"type": "run_won",
+			"value": 1
 		}
 	]
 }

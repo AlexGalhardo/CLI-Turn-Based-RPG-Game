@@ -13,7 +13,7 @@ Tests always point `RPG_DATA_DIR` at a temporary directory.
 
 ```
 ~/.cli-turn-based-rpg/
-├── settings.json          # { "schemaVersion": 1, "locale": "en" | "pt-BR" }
+├── settings.json          # { "schemaVersion": 2, "locale": "en" | "pt-BR", "autoEquip": false, "battleSpeed": 1 | 2 }
 ├── save.json              # the single active run (absent when there is none)
 ├── profile.json           # bestiary, achievements, hall of fame
 └── history/
@@ -24,13 +24,13 @@ Tests always point `RPG_DATA_DIR` at a temporary directory.
 
 ```json
 {
-	"schemaVersion": 1,
-	"gameVersion": "0.2.0",
+	"schemaVersion": 2,
+	"gameVersion": "1.4.0",
 	"implementation": "python",
 	"savedAt": "2026-09-27T21:04:11Z",
 	"rngState": 2891336453,
 	"session": { "runId": "20260927T210411Z-42", "startedAt": "2026-09-27T21:04:11Z", "playTimeSeconds": 1520, "sessions": 2 },
-	"run": { "seed": 42, "config": { }, "phase": "merchant", "round": 12, "player": { }, "merchantStock": [ ], "stats": { } }
+	"run": { "seed": 42, "config": { "autoEquip": false }, "phase": "merchant", "round": 12, "won": false, "player": { }, "merchantStock": [ ], "stats": { } }
 }
 ```
 
@@ -38,13 +38,15 @@ Tests always point `RPG_DATA_DIR` at a temporary directory.
 the snapshot. Loading a save = restoring that state and PRNG, so the continued run is identical to an uninterrupted
 one (tested by `test_restore_mid_run_continues_identically`).
 
-- Written when entering the merchant and after every merchant action (auto-save), and on "Save & quit".
+- Written when entering the merchant, after every merchant action (auto-save), when entering the `victory` phase (so
+  quitting on the Victory screen resumes there), and on "Save & quit".
 - Written atomically: write `save.json.tmp`, then rename.
 - `session.startedAt` is kept across sessions; `session.sessions` counts how many times the run was played (1 +
   resumes) and `playTimeSeconds` accumulates time played, so a run can be spread over several days.
 - Quitting mid-battle keeps the **last merchant snapshot**: the run resumes before that fight (the fight is lost, not
   the run).
-- On death the run is moved to `history/<runId>.json` (with `endedAt` and cause of death) and `save.json` is deleted.
+- When the run ends (death, or `end_run` after a victory) it is moved to `history/<runId>.json` (with `endedAt`, `won`
+  and the cause of death, empty for a won run ended with `end_run`) and `save.json` is deleted.
 
 ## Run id
 
@@ -54,10 +56,10 @@ one (tested by `test_restore_mid_run_continues_identically`).
 
 ```json
 {
-	"schemaVersion": 1,
+	"schemaVersion": 2,
 	"bestiary": { "dragon": { "kills": 12, "firstKilledAt": "…" } },
 	"achievements": { "boss_slayer": { "unlockedAt": "…", "runId": "…" } },
-	"hallOfFame": [{ "runId": "…", "name": "Alex", "vocation": "knight", "difficulty": "hard", "round": 57, "level": 41, "endedAt": "…" }]
+	"hallOfFame": [{ "runId": "…", "name": "Alex", "vocation": "knight", "difficulty": "hard", "round": 57, "level": 41, "endedAt": "…", "won": false }]
 }
 ```
 
@@ -66,3 +68,18 @@ one (tested by `test_restore_mid_run_continues_identically`).
 Every file carries `schemaVersion`. A loader that finds a newer version refuses to overwrite it and tells the player
 to update the game. Older versions are migrated in code (`infrastructure/migrations`). Changing a file format is a
 **MINOR** bump when migrations keep old files readable, **MAJOR** otherwise.
+
+## Schema version 2 (1.4.0)
+
+All four files (`settings.json`, `save.json`, history records, `profile.json`) are written with `schemaVersion: 2`;
+version 1 files are upgraded on load by `infrastructure/migrations` and rewritten as version 2 on the next save.
+
+- `settings.json`: adds `autoEquip` (default for new runs, `false`) and `battleSpeed` (`1` or `2`, auto-battle turn
+  pace; any other value loads as `1`). Version 1 files load with those defaults.
+- `save.json`: `run.config.autoEquip`, `run.won`, `phase` may be `victory`, `monster.enemyClass`, and three new
+  statistics counters (`stats.itemsAutoEquipped`, `stats.elitesKilled`, `stats.potionsDropped`). Version 1 saves load
+  with `autoEquip: false`, `won: false`, the monster class derived from `isBoss` (`boss` or `normal`), zeroed new
+  counters, and every `epic` item (bag, equipment, merchant stock, `stats.droppedItems`) turned into `legendary`, with
+  the `epic` count of `stats.itemsDropped` added to `legendary` (the rarity no longer exists).
+- History files carry `won` and the same statistics; version 1 records load with `won: false` and the migrated
+  statistics. `profile.json` Hall of Fame entries carry `won` (version 1 entries load with `false`).

@@ -1,6 +1,8 @@
 //! Use cases: the deterministic engine, merchant, loot, progression, statistics, the bot, the simulator and the
 //! persistence-aware game session.
 
+pub mod auto_battle;
+pub mod auto_equip;
 pub mod battle;
 pub mod bot;
 pub mod commands;

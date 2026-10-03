@@ -1,13 +1,13 @@
-"""Save file and finished-run record formats, shared by the three implementations (docs/persistence.md)."""
+"""Save file and finished-run record formats, shared by the six implementations (docs/persistence.md)."""
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from rpg.application.run_state import RunState
 from rpg.application.statistics import RunStatistics
-from rpg.domain.json_types import JsonObject, JsonValue, json_int, json_obj, json_str
+from rpg.domain.json_types import JsonObject, JsonValue, json_bool, json_int, json_obj, json_str
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 IMPLEMENTATION = "python"
 
 
@@ -112,6 +112,7 @@ class RunRecord:
 	level: int
 	magic_level: int
 	death_cause: str
+	won: bool = False
 	stats: RunStatistics = field(default_factory=RunStatistics)
 
 	def to_dict(self) -> JsonObject:
@@ -132,6 +133,7 @@ class RunRecord:
 			"level": self.level,
 			"magicLevel": self.magic_level,
 			"deathCause": self.death_cause,
+			"won": self.won,
 			"stats": self.stats.to_dict(),
 		}
 
@@ -155,5 +157,6 @@ class RunRecord:
 			level=json_int(data["level"]),
 			magic_level=json_int(data["magicLevel"]),
 			death_cause=json_str(data["deathCause"]),
+			won=json_bool(data["won"]),
 			stats=RunStatistics.from_dict(data["stats"]),
 		)

@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::rc::Rc;
 
 use rpg::application::bot::GreedyBot;
-use rpg::application::commands::{command_from_json, command_to_json};
+use rpg::application::commands::{Command, command_from_json, command_to_json};
 use rpg::application::engine::GameEngine;
 use rpg::application::events::Event;
 use rpg::application::run_state::{RunConfig, RunState};
@@ -70,7 +70,7 @@ fn prng_matches_reference_vectors() {
 
 #[test]
 fn golden_files_exist() {
-	assert!(scenario_files().len() >= 11);
+	assert!(scenario_files().len() >= 12);
 }
 
 #[test]
@@ -115,4 +115,30 @@ fn bot_issues_exactly_the_recorded_commands() {
 		checked += 1;
 	}
 	assert_eq!(checked, 9);
+}
+
+/// The victory scenario: the bot plays every merchant and battle turn; only the victory phase is scripted.
+#[test]
+fn bot_wins_and_continues_in_the_victory_scenario() {
+	let data = common::data();
+	let bot = GreedyBot::new(&data);
+	let golden = load(&golden_dir().join("bot-victory-continue-archer-easy.json"));
+	let config: RunConfig = serde_json::from_value(golden["config"].clone()).unwrap();
+	assert!(config.auto_equip);
+	let (mut engine, _) = GameEngine::new_run(Rc::clone(&data), config, golden["seed"].as_u64().unwrap()).unwrap();
+	let mut scripted = Vec::new();
+	for raw in golden["commands"].as_array().unwrap() {
+		let command = command_from_json(raw).unwrap();
+		if engine.state().phase == rpg::domain::enums::Phase::Victory {
+			scripted.push(command.clone());
+		} else {
+			assert_eq!(bot.choose(engine.state()), command);
+		}
+		engine.step(&command);
+	}
+	assert_eq!(scripted, [Command::Attack, Command::NextFight, Command::ContinueRun]);
+	let state = engine.state();
+	assert!(state.won);
+	assert_eq!(state.round, data.balance.final_round + 3);
+	assert_eq!(state.phase.as_str(), "merchant");
 }

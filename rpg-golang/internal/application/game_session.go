@@ -146,7 +146,7 @@ func (s *GameSession) afterStep(events []Event) ([]domain.AchievementDef, error)
 	}
 
 	switch {
-	case s.State().Phase == domain.PhaseMerchant:
+	case s.State().Phase == domain.PhaseMerchant || s.State().Phase == domain.PhaseVictory:
 		s.snapshot, s.snapshotRng = s.State().Clone(), s.Engine.RngState()
 		if err := s.writeSave(); err != nil {
 			return nil, err
@@ -211,7 +211,7 @@ func (s *GameSession) finish() error {
 		Difficulty: state.Config.DifficultyID, Seed: state.Seed, Implementation: Implementation,
 		GameVersion: s.context.GameVersion, StartedAt: s.Info.StartedAt, EndedAt: now,
 		PlayTimeSeconds: s.Info.PlayTimeSeconds, Sessions: s.Info.Sessions, Round: state.Round,
-		Level: state.Player.Level, MagicLevel: state.Player.MagicLevel, DeathCause: state.DeathCauseOr(""), Stats: state.Stats,
+		Level: state.Player.Level, MagicLevel: state.Player.MagicLevel, DeathCause: state.DeathCauseOr(""), Won: state.Won, Stats: state.Stats,
 	}
 
 	if err := s.context.Repositories.History.Add(record); err != nil {
@@ -224,7 +224,7 @@ func (s *GameSession) finish() error {
 
 	s.Profile.RecordFinishedRun(HallOfFameEntry{
 		RunID: record.RunID, Name: record.Name, Vocation: record.Vocation, Difficulty: record.Difficulty,
-		Round: record.Round, Level: record.Level, EndedAt: record.EndedAt,
+		Round: record.Round, Level: record.Level, EndedAt: record.EndedAt, Won: record.Won,
 	})
 	s.FinishedRecord = record
 

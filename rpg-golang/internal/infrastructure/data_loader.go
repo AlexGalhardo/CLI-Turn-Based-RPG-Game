@@ -79,23 +79,53 @@ type rawVocation struct {
 	Spells        []string `json:"spells"`
 }
 
+type rawEnemyClass struct {
+	StatPct       int            `json:"statPct"`
+	RewardPct     int            `json:"rewardPct"`
+	Dodge         int            `json:"dodge"`
+	Parry         int            `json:"parry"`
+	Crit          int            `json:"crit"`
+	Heal          int            `json:"heal"`
+	DropChancePct int            `json:"dropChancePct"`
+	Drops         int            `json:"drops"`
+	PotionDropPct int            `json:"potionDropPct"`
+	RarityWeights map[string]int `json:"rarityWeights"`
+}
+
+type rawAutoBattleMode struct {
+	Offense      string `json:"offense"`
+	SupportEvery int    `json:"supportEvery"`
+}
+
+// rawAutoBattle keeps `modes` as raw JSON so the mode order of the file is preserved.
+type rawAutoBattle struct {
+	HealBelowPct          int             `json:"healBelowPct"`
+	ManaBelowPct          int             `json:"manaBelowPct"`
+	EmergencyHealBelowPct int             `json:"emergencyHealBelowPct"`
+	Modes                 json.RawMessage `json:"modes"`
+}
+
 type rawBalance struct {
 	RoundsPerTier  int `json:"roundsPerTier"`
 	CycleStatPct   int `json:"cycleStatPct"`
 	CycleRewardPct int `json:"cycleRewardPct"`
 	PositionPct    int `json:"positionPct"`
+	FinalRound     int `json:"finalRound"`
+	EliteChancePct int `json:"eliteChancePct"`
 	Difficulties   []struct {
-		ID                 string `json:"id"`
-		HPPct              int    `json:"hpPct"`
-		DamagePct          int    `json:"damagePct"`
-		GoldPct            int    `json:"goldPct"`
-		XPPct              int    `json:"xpPct"`
-		NonCommonWeightPct int    `json:"nonCommonWeightPct"`
+		ID        string `json:"id"`
+		HPPct     int    `json:"hpPct"`
+		DamagePct int    `json:"damagePct"`
+		GoldPct   int    `json:"goldPct"`
+		XPPct     int    `json:"xpPct"`
 	} `json:"difficulties"`
-	CritMultiplierPct   int `json:"critMultiplierPct"`
-	DefendDamagePct     int `json:"defendDamagePct"`
-	BossTelegraphEvery  int `json:"bossTelegraphEvery"`
-	BossChargeDamagePct int `json:"bossChargeDamagePct"`
+	EnemyClasses        map[string]rawEnemyClass `json:"enemyClasses"`
+	CritMultiplierPct   int                      `json:"critMultiplierPct"`
+	DefendDamagePct     int                      `json:"defendDamagePct"`
+	ParryReflectPct     int                      `json:"parryReflectPct"`
+	MonsterHealPct      int                      `json:"monsterHealPct"`
+	BossTelegraphEvery  int                      `json:"bossTelegraphEvery"`
+	BossChargeDamagePct int                      `json:"bossChargeDamagePct"`
 	Caps                struct {
 		CritChance int `json:"critChance"`
 		Dodge      int `json:"dodge"`
@@ -118,10 +148,10 @@ type rawBalance struct {
 		PotionID string `json:"potionId"`
 		Quantity int    `json:"quantity"`
 	} `json:"startingPotions"`
-	BagCapacity   int `json:"bagCapacity"`
-	DropChancePct int `json:"dropChancePct"`
-	BossDrops     int `json:"bossDrops"`
-	Rarities      []struct {
+	BagCapacity      int            `json:"bagCapacity"`
+	ItemLevelPerTier int            `json:"itemLevelPerTier"`
+	ItemScoreWeights map[string]int `json:"itemScoreWeights"`
+	Rarities         []struct {
 		ID       string `json:"id"`
 		StatPct  int    `json:"statPct"`
 		ValuePct int    `json:"valuePct"`
@@ -132,6 +162,7 @@ type rawBalance struct {
 	MerchantStockSize    int                       `json:"merchantStockSize"`
 	MerchantMarkupPct    int                       `json:"merchantMarkupPct"`
 	SpellStatusDamagePct int                       `json:"spellStatusDamagePct"`
+	AutoBattle           rawAutoBattle             `json:"autoBattle"`
 }
 
 // rawItem keeps `stats` as raw JSON so the stat order of the file is preserved.
@@ -191,50 +222,94 @@ func convertCreatures(raw []rawCreature, isBoss bool) []domain.MonsterDef {
 	return creatures
 }
 
-// orderedStats decodes a JSON object into stat/value pairs in file order.
-func orderedStats(raw json.RawMessage) ([]domain.StatValue, error) {
+// orderedObject decodes a JSON object into key/value pairs in file order (Go maps would lose it).
+func orderedObject[T any](raw json.RawMessage, visit func(key string, value T)) error {
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	if _, err := decoder.Token(); err != nil {
-		return nil, fmt.Errorf("stats: %w", err)
+		return fmt.Errorf("object: %w", err)
 	}
-
-	stats := []domain.StatValue{}
 
 	for decoder.More() {
 		key, err := decoder.Token()
 		if err != nil {
-			return nil, fmt.Errorf("stats key: %w", err)
+			return fmt.Errorf("object key: %w", err)
 		}
 
-		var value int
+		var value T
 		if err := decoder.Decode(&value); err != nil {
-			return nil, fmt.Errorf("stats value: %w", err)
+			return fmt.Errorf("object value: %w", err)
 		}
 
 		name, _ := key.(string)
-		stats = append(stats, domain.StatValue{Stat: domain.Stat(name), Value: value})
+		visit(name, value)
 	}
 
-	return stats, nil
+	return nil
 }
 
-func convertBalance(raw *rawBalance) domain.Balance {
+// orderedStats decodes a JSON object into stat/value pairs in file order.
+func orderedStats(raw json.RawMessage) ([]domain.StatValue, error) {
+	stats := []domain.StatValue{}
+	err := orderedObject(raw, func(key string, value int) {
+		stats = append(stats, domain.StatValue{Stat: domain.Stat(key), Value: value})
+	})
+
+	return stats, err
+}
+
+func convertAutoBattle(raw *rawAutoBattle) (domain.AutoBattleDef, error) {
+	autoBattle := domain.AutoBattleDef{
+		HealBelowPct: raw.HealBelowPct, ManaBelowPct: raw.ManaBelowPct, EmergencyHealBelowPct: raw.EmergencyHealBelowPct,
+	}
+	err := orderedObject(raw.Modes, func(key string, mode rawAutoBattleMode) {
+		autoBattle.Modes = append(autoBattle.Modes, domain.AutoBattleModeDef{ID: key, Offense: mode.Offense, SupportEvery: mode.SupportEvery})
+	})
+
+	return autoBattle, err
+}
+
+func convertBalance(raw *rawBalance) (domain.Balance, error) {
+	autoBattle, err := convertAutoBattle(&raw.AutoBattle)
+	if err != nil {
+		return domain.Balance{}, fmt.Errorf("%w: balance.autoBattle: %w", ErrData, err)
+	}
+
+	weights := make(map[domain.Stat]int, len(raw.ItemScoreWeights))
+	for stat, weight := range raw.ItemScoreWeights {
+		weights[domain.Stat(stat)] = weight
+	}
+
 	balance := domain.Balance{
 		RoundsPerTier: raw.RoundsPerTier, CycleStatPct: raw.CycleStatPct, CycleRewardPct: raw.CycleRewardPct,
-		PositionPct: raw.PositionPct, CritMultiplierPct: raw.CritMultiplierPct, DefendDamagePct: raw.DefendDamagePct,
+		PositionPct: raw.PositionPct, FinalRound: raw.FinalRound, EliteChancePct: raw.EliteChancePct,
+		CritMultiplierPct: raw.CritMultiplierPct, DefendDamagePct: raw.DefendDamagePct,
+		ParryReflectPct: raw.ParryReflectPct, MonsterHealPct: raw.MonsterHealPct,
 		BossTelegraphEvery: raw.BossTelegraphEvery, BossChargeDamagePct: raw.BossChargeDamagePct,
 		Caps: domain.Caps{
 			CritChance: raw.Caps.CritChance, Dodge: raw.Caps.Dodge, Parry: raw.Caps.Parry, Leech: raw.Caps.Leech,
 			Protection: raw.Caps.Protection,
 		},
 		MagicLevelBase: raw.MagicLevel.Base, MagicLevelGrowthPct: raw.MagicLevel.GrowthPct, StartingGold: raw.StartingGold,
-		BagCapacity: raw.BagCapacity, DropChancePct: raw.DropChancePct, BossDrops: raw.BossDrops,
+		BagCapacity: raw.BagCapacity, ItemLevelPerTier: raw.ItemLevelPerTier, ItemScoreWeights: weights,
 		RarityWeights: raw.RarityWeights, MerchantStockSize: raw.MerchantStockSize,
-		MerchantMarkupPct: raw.MerchantMarkupPct, SpellStatusDamagePct: raw.SpellStatusDamagePct,
+		MerchantMarkupPct: raw.MerchantMarkupPct, SpellStatusDamagePct: raw.SpellStatusDamagePct, AutoBattle: autoBattle,
 	}
 	for _, d := range raw.Difficulties {
 		balance.Difficulties = append(balance.Difficulties, domain.DifficultyDef{
-			ID: d.ID, HPPct: d.HPPct, DamagePct: d.DamagePct, GoldPct: d.GoldPct, XPPct: d.XPPct, NonCommonWeightPct: d.NonCommonWeightPct,
+			ID: d.ID, HPPct: d.HPPct, DamagePct: d.DamagePct, GoldPct: d.GoldPct, XPPct: d.XPPct,
+		})
+	}
+
+	for _, id := range domain.EnemyClasses {
+		row, ok := raw.EnemyClasses[string(id)]
+		if !ok {
+			return domain.Balance{}, fmt.Errorf("%w: balance.enemyClasses.%s is required", ErrData, id)
+		}
+
+		balance.EnemyClasses = append(balance.EnemyClasses, domain.EnemyClassDef{
+			ID: string(id), StatPct: row.StatPct, RewardPct: row.RewardPct, Dodge: row.Dodge, Parry: row.Parry,
+			Crit: row.Crit, Heal: row.Heal, DropChancePct: row.DropChancePct, Drops: row.Drops,
+			PotionDropPct: row.PotionDropPct, RarityWeights: row.RarityWeights,
 		})
 	}
 
@@ -250,7 +325,7 @@ func convertBalance(raw *rawBalance) domain.Balance {
 		balance.Rarities = append(balance.Rarities, domain.RarityDef{ID: r.ID, StatPct: r.StatPct, ValuePct: r.ValuePct, AffixMin: r.AffixMin, AffixMax: r.AffixMax})
 	}
 
-	return balance
+	return balance, nil
 }
 
 // LoadGameData parses shared/data (untrusted JSON, validated by schemas in CI) into domain definitions.
@@ -291,8 +366,13 @@ func LoadGameData(shared fs.FS) (*domain.GameData, error) {
 		}
 	}
 
+	convertedBalance, err := convertBalance(&balance)
+	if err != nil {
+		return nil, err
+	}
+
 	data := &domain.GameData{
-		Balance:      convertBalance(&balance),
+		Balance:      convertedBalance,
 		Monsters:     convertCreatures(monsters.Monsters, false),
 		Bosses:       convertCreatures(bosses.Bosses, true),
 		Potions:      potions.Potions,

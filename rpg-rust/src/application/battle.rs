@@ -5,7 +5,7 @@ use crate::application::events::{ErrorCode, Event};
 use crate::application::progression::Progression;
 use crate::application::run_state::RunState;
 use crate::domain::character::{CharacterSheet, build_sheet};
-use crate::domain::definitions::{GameData, MonsterAttack, SpellDef};
+use crate::domain::definitions::{EnemyClassDef, GameData, MonsterAttack, SpellDef};
 use crate::domain::entities::{ActiveStatus, MonsterInstance, Player};
 use crate::domain::enums::{Element, Resource, SpellKind, StatusKind, Target};
 use crate::domain::formulas::{armor_mitigation, pct, spell_level_for_uses};
@@ -50,6 +50,10 @@ impl<'a> Battle<'a> {
 		build_sheet(&self.state.player, self.data)
 	}
 
+	fn class(&self) -> &'a EnemyClassDef {
+		self.data.balance.enemy_class(self.monster_ref().enemy_class)
+	}
+
 	// ── validation ────────────────────────────────────────────────────────────
 
 	/// Returns an error event for an invalid command. Validation never consumes randomness.
@@ -88,15 +92,13 @@ impl<'a> Battle<'a> {
 	pub fn play_turn(&mut self, command: &Command) -> (Vec<Event>, BattleOutcome) {
 		let mut events = Vec::new();
 		self.player_action(command, &mut events);
-		if self.monster_ref().hp <= 0 {
-			return (events, BattleOutcome::Victory);
-		}
 		loop {
-			if self.monster_phase(&mut events) {
-				return (events, BattleOutcome::Victory);
+			if let Some(outcome) = self.death_check() {
+				return (events, outcome);
 			}
-			if self.state.player.hp <= 0 {
-				return (events, BattleOutcome::Defeat);
+			self.monster_phase(&mut events);
+			if let Some(outcome) = self.death_check() {
+				return (events, outcome);
 			}
 			if self.end_of_turn(&mut events) {
 				return (events, BattleOutcome::Defeat);
@@ -107,6 +109,17 @@ impl<'a> Battle<'a> {
 			self.player().stun_cooldown = STUN_COOLDOWN_TURNS;
 			events.push(Event::PlayerStunned);
 		}
+	}
+
+	/// Steps 2 and 4: a parried hit can kill the attacker, so the player is checked first.
+	fn death_check(&self) -> Option<BattleOutcome> {
+		if self.state.player.hp <= 0 {
+			return Some(BattleOutcome::Defeat);
+		}
+		if self.monster_ref().hp <= 0 {
+			return Some(BattleOutcome::Victory);
+		}
+		None
 	}
 
 	// ── step 1: player action ─────────────────────────────────────────────────
@@ -126,20 +139,54 @@ impl<'a> Battle<'a> {
 
 	fn melee(&mut self, events: &mut Vec<Event>) {
 		let sheet = self.sheet();
+		if self.monster_dodges(events) {
+			return;
+		}
 		let damage = pct(self.rng.roll(sheet.melee_min, sheet.melee_max), 100 + sheet.physical_damage);
 		let (damage, crit) = self.roll_crit(damage, &sheet);
 		let damage = self.resisted(damage, sheet.weapon_element);
+		if self.monster_parries(damage, sheet.weapon_element, events) {
+			return;
+		}
 		self.hit_monster(damage);
 		events.push(Event::PlayerAttacked { damage, crit, element: sheet.weapon_element });
 		self.leech(damage, &sheet, events);
+	}
+
+	fn monster_dodges(&mut self, events: &mut Vec<Event>) -> bool {
+		if !self.rng.chance(self.class().dodge) {
+			return false;
+		}
+		events.push(Event::MonsterDodged);
+		true
+	}
+
+	/// Physical hits only: the monster takes nothing and reflects part of the hit (no mitigation).
+	fn monster_parries(&mut self, damage: i64, element: Element, events: &mut Vec<Event>) -> bool {
+		if element != Element::Physical || !self.rng.chance(self.class().parry) {
+			return false;
+		}
+		let reflected = 1.max(pct(damage, self.data.balance.parry_reflect_pct));
+		let player = self.player();
+		player.hp = 0.max(player.hp - reflected);
+		events.push(Event::MonsterParried { reflected });
+		true
+	}
+
+	fn after_cast(&mut self, spell: &SpellDef, cost: i64, events: &mut Vec<Event>) {
+		events.extend(Progression::new(self.data).after_cast(&mut self.state.player, spell, cost));
 	}
 
 	fn cast(&mut self, spell: &SpellDef, events: &mut Vec<Event>) {
 		let sheet = self.sheet();
 		let level = spell_level_for_uses(self.state.player.spell_use_count(&spell.id), &self.data.balance.spell_levels);
 		let cost = pct(spell.mana, level.mana_pct);
-		let player = self.player();
-		player.mp -= cost;
+		self.player().mp -= cost;
+		if spell.kind == SpellKind::Attack && self.monster_dodges(events) {
+			self.after_cast(spell, cost, events);
+			return;
+		}
+		let player = &self.state.player;
 		let bonus = player.level * spell.per_level + player.magic_level * spell.per_magic_level;
 		let amount =
 			pct(pct(self.rng.roll(spell.min + bonus, spell.max + bonus), level.effect_pct), 100 + sheet.spell_power);
@@ -147,6 +194,10 @@ impl<'a> Battle<'a> {
 		if spell.kind == SpellKind::Attack {
 			let (damage, crit) = self.roll_crit(amount, &sheet);
 			let damage = self.resisted(damage, spell.element);
+			if self.monster_parries(damage, spell.element, events) {
+				self.after_cast(spell, cost, events);
+				return;
+			}
 			self.hit_monster(damage);
 			events.push(Event::SpellCast {
 				spell_id: spell.id.clone(),
@@ -176,7 +227,7 @@ impl<'a> Battle<'a> {
 			}
 		}
 
-		events.extend(Progression::new(self.data).after_cast(&mut self.state.player, spell, cost));
+		self.after_cast(spell, cost, events);
 	}
 
 	fn drink(&mut self, potion_id: &str, events: &mut Vec<Event>) {
@@ -235,16 +286,26 @@ impl<'a> Battle<'a> {
 
 	// ── step 3: monster phase ─────────────────────────────────────────────────
 
-	/// Returns true when the monster died from its own status ticks.
-	fn monster_phase(&mut self, events: &mut Vec<Event>) -> bool {
+	fn monster_phase(&mut self, events: &mut Vec<Event>) {
 		self.tick(Target::Monster, events);
 		if self.monster_ref().hp <= 0 {
-			return true;
+			return;
 		}
 		if consume_stun(&mut self.monster().statuses) {
 			self.monster().stun_cooldown = STUN_COOLDOWN_TURNS;
 			events.push(Event::MonsterStunned);
-			return false;
+			return;
+		}
+		// A healing monster does nothing else this turn; a boss does not advance its pattern.
+		let heal_pct = self.data.balance.monster_heal_pct;
+		let heal_chance = self.class().heal;
+		let monster = self.monster_ref();
+		if monster.hp < monster.max_hp && self.rng.chance(heal_chance) {
+			let monster = self.monster();
+			let healed = pct(monster.max_hp, heal_pct).min(monster.max_hp - monster.hp);
+			monster.hp += healed;
+			events.push(Event::MonsterHealed { amount: healed });
+			return;
 		}
 
 		if self.monster_ref().is_boss {
@@ -257,12 +318,12 @@ impl<'a> Battle<'a> {
 				if position == every - 1 {
 					let charge = self.monster_ref().attack(charge_id);
 					events.push(Event::BossTelegraph { attack_id: charge.id.clone(), element: charge.element });
-					return false;
+					return;
 				}
 				if position == every {
 					let charge = self.monster_ref().attack(charge_id).clone();
 					self.resolve_monster_attack(&charge, true, events);
-					return false;
+					return;
 				}
 			}
 		}
@@ -271,7 +332,6 @@ impl<'a> Battle<'a> {
 		let index = self.rng.weighted(&weights);
 		let attack = self.monster_ref().attacks[index].clone();
 		self.resolve_monster_attack(&attack, false, events);
-		false
 	}
 
 	fn resolve_monster_attack(&mut self, attack: &MonsterAttack, charged: bool, events: &mut Vec<Event>) {
@@ -280,13 +340,21 @@ impl<'a> Battle<'a> {
 			events.push(Event::AttackDodged { attack_id: attack.id.clone() });
 			return;
 		}
-		if attack.element == Element::Physical && self.rng.chance(sheet.parry) {
-			events.push(Event::AttackParried { attack_id: attack.id.clone() });
-			return;
-		}
+		let data = self.data;
+		let balance = &data.balance;
 		let mut damage = self.rng.roll(attack.min, attack.max);
 		if charged {
-			damage = pct(damage, self.data.balance.boss_charge_damage_pct);
+			damage = pct(damage, balance.boss_charge_damage_pct);
+		}
+		if attack.element == Element::Physical && self.rng.chance(sheet.parry) {
+			let reflected = 1.max(pct(damage, balance.parry_reflect_pct));
+			self.hit_monster(reflected);
+			events.push(Event::AttackParried { attack_id: attack.id.clone(), reflected });
+			return;
+		}
+		let crit = self.rng.chance(self.class().crit);
+		if crit {
+			damage = pct(damage, balance.crit_multiplier_pct);
 		}
 		if attack.element == Element::Physical {
 			damage = armor_mitigation(damage, sheet.armor);
@@ -298,7 +366,13 @@ impl<'a> Battle<'a> {
 		let damage = 1.max(damage);
 		let player = self.player();
 		player.hp = 0.max(player.hp - damage);
-		events.push(Event::MonsterAttacked { attack_id: attack.id.clone(), damage, element: attack.element, charged });
+		events.push(Event::MonsterAttacked {
+			attack_id: attack.id.clone(),
+			damage,
+			element: attack.element,
+			charged,
+			crit,
+		});
 		if let Some(status) = &attack.status
 			&& self.rng.chance(status.chance)
 		{

@@ -1,7 +1,8 @@
-/** Monster spawning for a round: tier, cycle, position and difficulty scaling (docs/game-design.md §3). */
-import type { DifficultyDef, GameData } from "../domain/definitions";
+/** Monster spawning for a round: tier, cycle, position, enemy class and difficulty scaling (docs/game-design.md §3). */
+import type { DifficultyDef, GameData, MonsterDef } from "../domain/definitions";
 import { MonsterInstance } from "../domain/entities";
-import { type RoundInfo, roundInfo, scaleReward, scaleStat, scaling } from "../domain/formulas";
+import type { EnemyClass } from "../domain/enums";
+import { pct, type RoundInfo, roundInfo, scaleReward, scaleStat, scaling } from "../domain/formulas";
 import type { Rng } from "../domain/rng";
 
 export function spawnMonster(
@@ -10,23 +11,38 @@ export function spawnMonster(
 	roundNumber: number,
 	difficulty: DifficultyDef,
 ): [MonsterInstance, RoundInfo] {
-	const info = roundInfo(roundNumber, data.balance, data.tierCount);
-	const creature = info.isBoss ? data.bossOfTier(info.tier) : rng.pick(data.monstersInTier(info.tier));
-	const factors = scaling(info, data.balance, difficulty);
-	const hp = Math.max(1, scaleStat(creature.hp, factors.hpPctProduct));
+	const balance = data.balance;
+	const info = roundInfo(roundNumber, balance, data.tierCount);
+	let creature: MonsterDef;
+	let enemyClass: EnemyClass;
+	if (info.isBoss) {
+		creature = data.bossOfTier(info.tier);
+		enemyClass = "boss";
+	} else {
+		creature = rng.pick(data.monstersInTier(info.tier));
+		enemyClass = rng.chance(balance.eliteChancePct) ? "elite" : "normal";
+	}
+	const row = balance.enemyClass(enemyClass);
+
+	const factors = scaling(info, balance, difficulty);
+	const stat = (value: number, product: number): number => Math.max(1, pct(scaleStat(value, product), row.statPct));
+	const reward = (value: number, product: number): number => pct(scaleReward(value, product), row.rewardPct);
+
+	const hp = stat(creature.hp, factors.hpPctProduct);
 	const attacks = creature.attacks.map((attack) => ({
 		...attack,
-		min: Math.max(1, scaleStat(attack.min, factors.damagePctProduct)),
-		max: Math.max(1, scaleStat(attack.max, factors.damagePctProduct)),
+		min: stat(attack.min, factors.damagePctProduct),
+		max: stat(attack.max, factors.damagePctProduct),
 	}));
 	const monster = new MonsterInstance(
 		creature.id,
 		creature.isBoss,
+		enemyClass,
 		hp,
 		hp,
-		scaleReward(creature.xp, factors.rewardXpPctProduct),
-		scaleReward(creature.goldMin, factors.rewardGoldPctProduct),
-		scaleReward(creature.goldMax, factors.rewardGoldPctProduct),
+		reward(creature.xp, factors.rewardXpPctProduct),
+		reward(creature.goldMin, factors.rewardGoldPctProduct),
+		reward(creature.goldMax, factors.rewardGoldPctProduct),
 		attacks,
 	);
 	return [monster, info];

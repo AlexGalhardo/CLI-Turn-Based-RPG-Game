@@ -6,9 +6,12 @@ from pathlib import Path
 from rpg.domain.definitions import (
 	AchievementDef,
 	AffixDef,
+	AutoBattleDef,
+	AutoBattleModeDef,
 	Balance,
 	Caps,
 	DifficultyDef,
+	EnemyClassDef,
 	GameData,
 	ItemDef,
 	Level3Bonus,
@@ -22,7 +25,7 @@ from rpg.domain.definitions import (
 	StatusOnHit,
 	VocationDef,
 )
-from rpg.domain.enums import Element, Resource, Slot, SpellKind, Stat, StatusKind
+from rpg.domain.enums import Element, EnemyClass, Resource, Slot, SpellKind, Stat, StatusKind
 from rpg.domain.json_types import JsonObject, JsonValue, json_bool, json_int, json_list, json_obj, json_str
 
 
@@ -130,14 +133,54 @@ def _vocation(raw: JsonObject) -> VocationDef:
 	)
 
 
+def _weights(raw: JsonValue) -> dict[str, int]:
+	return {rarity: json_int(weight) for rarity, weight in json_obj(raw).items()}
+
+
+def _enemy_class(class_id: str, raw: JsonObject) -> EnemyClassDef:
+	return EnemyClassDef(
+		id=class_id,
+		stat_pct=json_int(raw["statPct"]),
+		reward_pct=json_int(raw["rewardPct"]),
+		dodge=json_int(raw["dodge"]),
+		parry=json_int(raw["parry"]),
+		crit=json_int(raw["crit"]),
+		heal=json_int(raw["heal"]),
+		drop_chance_pct=json_int(raw["dropChancePct"]),
+		drops=json_int(raw["drops"]),
+		potion_drop_pct=json_int(raw["potionDropPct"]),
+		rarity_weights=_weights(raw["rarityWeights"]),
+	)
+
+
+def _auto_battle(raw: JsonObject) -> AutoBattleDef:
+	modes = json_obj(raw["modes"])
+	return AutoBattleDef(
+		heal_below_pct=json_int(raw["healBelowPct"]),
+		mana_below_pct=json_int(raw["manaBelowPct"]),
+		emergency_heal_below_pct=json_int(raw["emergencyHealBelowPct"]),
+		modes=tuple(
+			AutoBattleModeDef(
+				id=mode_id,
+				offense=json_str(json_obj(mode)["offense"]),
+				support_every=json_int(json_obj(mode)["supportEvery"]),
+			)
+			for mode_id, mode in modes.items()
+		),
+	)
+
+
 def _balance(raw: JsonObject) -> Balance:
 	caps = json_obj(raw["caps"])
 	magic = json_obj(raw["magicLevel"])
+	classes = json_obj(raw["enemyClasses"])
 	return Balance(
 		rounds_per_tier=json_int(raw["roundsPerTier"]),
 		cycle_stat_pct=json_int(raw["cycleStatPct"]),
 		cycle_reward_pct=json_int(raw["cycleRewardPct"]),
 		position_pct=json_int(raw["positionPct"]),
+		final_round=json_int(raw["finalRound"]),
+		elite_chance_pct=json_int(raw["eliteChancePct"]),
 		difficulties=tuple(
 			DifficultyDef(
 				id=json_str(d["id"]),
@@ -145,12 +188,14 @@ def _balance(raw: JsonObject) -> Balance:
 				damage_pct=json_int(d["damagePct"]),
 				gold_pct=json_int(d["goldPct"]),
 				xp_pct=json_int(d["xpPct"]),
-				non_common_weight_pct=json_int(d["nonCommonWeightPct"]),
 			)
 			for d in _objects(raw, "difficulties")
 		),
+		enemy_classes=tuple(_enemy_class(c.value, json_obj(classes[c.value])) for c in EnemyClass),
 		crit_multiplier_pct=json_int(raw["critMultiplierPct"]),
 		defend_damage_pct=json_int(raw["defendDamagePct"]),
+		parry_reflect_pct=json_int(raw["parryReflectPct"]),
+		monster_heal_pct=json_int(raw["monsterHealPct"]),
 		boss_telegraph_every=json_int(raw["bossTelegraphEvery"]),
 		boss_charge_damage_pct=json_int(raw["bossChargeDamagePct"]),
 		caps=Caps(
@@ -176,8 +221,8 @@ def _balance(raw: JsonObject) -> Balance:
 			(json_str(p["potionId"]), json_int(p["quantity"])) for p in _objects(raw, "startingPotions")
 		),
 		bag_capacity=json_int(raw["bagCapacity"]),
-		drop_chance_pct=json_int(raw["dropChancePct"]),
-		boss_drops=json_int(raw["bossDrops"]),
+		item_level_per_tier=json_int(raw["itemLevelPerTier"]),
+		item_score_weights={Stat(k): json_int(v) for k, v in json_obj(raw["itemScoreWeights"]).items()},
 		rarities=tuple(
 			RarityDef(
 				id=json_str(r["id"]),
@@ -188,13 +233,11 @@ def _balance(raw: JsonObject) -> Balance:
 			)
 			for r in _objects(raw, "rarities")
 		),
-		rarity_weights={
-			table: {rarity: json_int(weight) for rarity, weight in json_obj(weights).items()}
-			for table, weights in json_obj(raw["rarityWeights"]).items()
-		},
+		rarity_weights={table: _weights(weights) for table, weights in json_obj(raw["rarityWeights"]).items()},
 		merchant_stock_size=json_int(raw["merchantStockSize"]),
 		merchant_markup_pct=json_int(raw["merchantMarkupPct"]),
 		spell_status_damage_pct=json_int(raw["spellStatusDamagePct"]),
+		auto_battle=_auto_battle(json_obj(raw["autoBattle"])),
 	)
 
 

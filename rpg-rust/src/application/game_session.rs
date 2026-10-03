@@ -159,7 +159,7 @@ impl GameSession {
 		let mut profile_changed =
 			!unlocked.is_empty() || events.iter().any(|event| matches!(event, Event::MonsterKilled { .. }));
 		match self.state().phase {
-			Phase::Merchant => {
+			Phase::Merchant | Phase::Victory => {
 				self.merchant_snapshot = Some((self.state().clone(), self.engine.rng_state()));
 				self.write_save()?;
 			}
@@ -175,7 +175,7 @@ impl GameSession {
 		Ok(unlocked)
 	}
 
-	/// Persists play time. Mid-battle quits resume from the last merchant visit.
+	/// Persists play time. Mid-battle quits resume from the last merchant (or victory) snapshot.
 	pub fn save_and_quit(&mut self) -> Result<(), PersistenceError> {
 		if self.state().phase != Phase::GameOver {
 			self.write_save()?;
@@ -223,6 +223,7 @@ impl GameSession {
 			level: state.player.level,
 			magic_level: state.player.magic_level,
 			death_cause: state.death_cause.clone().unwrap_or_default(),
+			won: state.won,
 			stats: state.stats.clone(),
 		};
 		self.repositories.history.add(&record)?;
@@ -235,6 +236,7 @@ impl GameSession {
 			round: record.round,
 			level: record.level,
 			ended_at: record.ended_at.clone(),
+			won: record.won,
 		});
 		self.finished_record = Some(record);
 		Ok(())

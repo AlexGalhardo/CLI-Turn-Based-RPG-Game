@@ -20,6 +20,8 @@ std::string_view to_string(Phase phase) {
 		return "merchant";
 	case Phase::battle:
 		return "battle";
+	case Phase::victory:
+		return "victory";
 	case Phase::game_over:
 		return "game_over";
 	}
@@ -32,6 +34,9 @@ Phase phase_from_string(std::string_view text) {
 	}
 	if (text == "battle") {
 		return Phase::battle;
+	}
+	if (text == "victory") {
+		return Phase::victory;
 	}
 	if (text == "game_over") {
 		return Phase::game_over;

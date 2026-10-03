@@ -13,6 +13,8 @@ pub struct RunConfig {
 	pub vocation_id: String,
 	#[serde(rename = "difficulty")]
 	pub difficulty_id: String,
+	#[serde(rename = "autoEquip")]
+	pub auto_equip: bool,
 }
 
 impl RunConfig {
@@ -21,7 +23,15 @@ impl RunConfig {
 			name: name.to_owned(),
 			vocation_id: vocation_id.to_owned(),
 			difficulty_id: difficulty_id.to_owned(),
+			auto_equip: false,
 		}
+	}
+
+	/// The same config with the auto-equip option (docs/game-design.md §8.1).
+	#[must_use]
+	pub fn with_auto_equip(mut self, auto_equip: bool) -> RunConfig {
+		self.auto_equip = auto_equip;
+		self
 	}
 }
 
@@ -38,6 +48,7 @@ pub struct RunState {
 	pub merchant_stock: Vec<ItemInstance>,
 	pub next_item_uid: i64,
 	pub death_cause: Option<String>,
+	pub won: bool,
 	pub stats: RunStatistics,
 }
 
@@ -55,6 +66,7 @@ impl RunState {
 			merchant_stock: Vec::new(),
 			next_item_uid: 1,
 			death_cause: None,
+			won: false,
 			stats: RunStatistics::default(),
 		}
 	}

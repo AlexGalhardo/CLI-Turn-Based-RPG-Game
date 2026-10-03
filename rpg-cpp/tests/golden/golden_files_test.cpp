@@ -41,7 +41,7 @@ json load(const std::string& file) { return json::parse(testing::read_file(golde
 application::RunConfig config_of(const json& scenario) {
 	const json& config = scenario.at("config");
 	return {config.at("name").get<std::string>(), config.at("vocation").get<std::string>(),
-	    config.at("difficulty").get<std::string>()};
+	    config.at("difficulty").get<std::string>(), config.at("autoEquip").get<bool>()};
 }
 
 json final_state(const application::GameEngine& engine) {
@@ -75,7 +75,10 @@ TEST_CASE("PRNG matches the reference vectors", "[golden]") {
 	}
 }
 
-TEST_CASE("golden files exist", "[golden]") { REQUIRE(scenario_files().size() >= 11); }
+TEST_CASE("golden files exist", "[golden]") {
+	REQUIRE(scenario_files().size() >= 12);
+	REQUIRE(std::ranges::contains(scenario_files(), "bot-victory-continue-archer-easy.json"));
+}
 
 TEST_CASE("every golden scenario replays identically", "[golden]") {
 	const std::string file = GENERATE(from_range(scenario_files()));
@@ -126,4 +129,38 @@ TEST_CASE("the bot issues exactly the recorded Python commands", "[golden]") {
 		engine.step(command);
 	}
 	REQUIRE(commands == scenario.at("commands"));
+}
+
+// The reference generator's `bot_victory_then_continue`: the bot wins the run, probes invalid commands in the victory
+// phase, continues and stops at the merchant three rounds later.
+TEST_CASE("the victory-continue scenario issues the recorded commands", "[golden]") {
+	const json scenario = load("bot-victory-continue-archer-easy.json");
+	const auto& data = testing::test_data();
+	auto created =
+	    application::GameEngine::new_run(data, config_of(scenario), scenario.at("seed").get<std::uint64_t>());
+	REQUIRE(created.has_value());
+	auto& engine = created->first;
+	const application::GreedyBot bot(data);
+	std::vector<application::Command> at_victory{
+	    application::Attack{}, application::NextFight{}, application::ContinueRun{}};
+	constexpr std::int64_t extra_rounds = 3;
+	json commands = json::array();
+	while (engine.state.phase != domain::Phase::game_over) {
+		const auto& state = engine.state;
+		application::Command command;
+		if (state.phase == domain::Phase::victory) {
+			REQUIRE_FALSE(at_victory.empty());
+			command = at_victory.front();
+			at_victory.erase(at_victory.begin());
+		} else if (state.won && state.phase == domain::Phase::merchant &&
+		           state.round >= data.balance.final_round + extra_rounds) {
+			break;
+		} else {
+			command = bot.choose(state);
+		}
+		commands.push_back(application::command_to_json(command));
+		engine.step(command);
+	}
+	REQUIRE(commands == scenario.at("commands"));
+	REQUIRE(engine.state.won);
 }

@@ -27,16 +27,33 @@ def play_to_death(engine: GameEngine, bot: GreedyBot) -> list[list[Event]]:
 
 @pytest.mark.parametrize("vocation", ["warrior", "archer", "mage"])
 @pytest.mark.parametrize("difficulty", ["easy", "normal", "hard"])
-def test_bot_plays_until_death(data: GameData, vocation: str, difficulty: str) -> None:
+def test_bot_plays_until_the_run_ends(data: GameData, vocation: str, difficulty: str) -> None:
 	engine, _ = GameEngine.new_run(data, RunConfig("Bot", vocation, difficulty), 1234)
 	log = play_to_death(engine, GreedyBot(data))
 	state = engine.state
 	assert state.phase is Phase.GAME_OVER
 	assert state.round >= 1
-	assert state.death_cause
-	assert log[-1][-1]["type"] == "player_died"
-	assert sum(state.stats.kills.values()) == state.round - 1
 	assert state.stats.damage_dealt > 0
+	if state.won:
+		assert state.round == data.balance.final_round
+		assert state.death_cause is None
+		assert log[-2][-1] == {"type": "run_won", "round": state.round}
+		assert log[-1] == [{"type": "run_ended", "won": True}]
+		assert sum(state.stats.kills.values()) == state.round
+	else:
+		assert state.death_cause
+		assert log[-1][-1]["type"] == "player_died"
+		assert sum(state.stats.kills.values()) == state.round - 1
+
+
+def test_some_bot_runs_are_won(data: GameData) -> None:
+	"""The provisional balance must keep the victory reachable (the balance gate tunes the rates later)."""
+	won = 0
+	for seed in range(2002, 2006):
+		engine, _ = GameEngine.new_run(data, RunConfig("Bot", "archer", "easy"), seed)
+		play_to_death(engine, GreedyBot(data))
+		won += engine.state.won
+	assert won > 0
 
 
 def test_same_seed_same_events(data: GameData) -> None:

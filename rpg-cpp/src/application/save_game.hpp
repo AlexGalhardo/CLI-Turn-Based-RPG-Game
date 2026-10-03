@@ -14,7 +14,7 @@
 namespace rpg::application {
 
 // Shared file format constants (docs/persistence.md).
-inline constexpr std::int64_t schema_version = 1;
+inline constexpr std::int64_t schema_version = 2;
 inline constexpr std::string_view implementation = "cpp";
 
 using TimePoint = std::chrono::system_clock::time_point;
@@ -80,6 +80,7 @@ struct RunRecord {
 	std::int64_t level = 0;
 	std::int64_t magic_level = 0;
 	std::string death_cause;
+	bool won = false;
 	RunStatistics stats;
 
 	bool operator==(const RunRecord&) const = default;

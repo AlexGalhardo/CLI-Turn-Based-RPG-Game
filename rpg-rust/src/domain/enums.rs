@@ -92,6 +92,10 @@ impl PartialOrd for Slot {
 	}
 }
 
+/// The equipment screen and auto-equip order (docs/game-design.md §8.1, docs/tui.md).
+pub const EQUIPMENT_SLOT_ORDER: [Slot; 8] =
+	[Slot::Weapon, Slot::Shield, Slot::Helmet, Slot::Armor, Slot::Legs, Slot::Boots, Slot::Ring, Slot::Amulet];
+
 impl Slot {
 	pub fn parse(text: &str) -> Option<Slot> {
 		SLOTS.into_iter().find(|slot| slot.as_str() == text)
@@ -103,13 +107,30 @@ impl Slot {
 pub enum Phase {
 	Merchant,
 	Battle,
+	Victory,
 	GameOver,
 }
 
 string_enum!(Phase {
 	Merchant => "merchant",
 	Battle => "battle",
+	Victory => "victory",
 	GameOver => "game_over",
+});
+
+/// The class of a spawned monster: its row in `balance.enemyClasses` (docs/game-design.md §3).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EnemyClass {
+	Normal,
+	Elite,
+	Boss,
+}
+
+string_enum!(EnemyClass {
+	Normal => "normal",
+	Elite => "elite",
+	Boss => "boss",
 });
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -238,6 +259,9 @@ mod tests {
 		assert_eq!(StatusKind::Stun.to_string(), "stun");
 		assert_eq!(Target::Monster.to_string(), "monster");
 		assert_eq!(Phase::Battle.to_string(), "battle");
+		assert_eq!(Phase::Victory.to_string(), "victory");
+		assert_eq!(EnemyClass::Elite.to_string(), "elite");
+		assert_eq!(serde_json::to_value(EnemyClass::Boss).unwrap(), "boss");
 		for element in ELEMENTS {
 			let stat = protection_by_element(element);
 			assert_eq!(stat.as_str().to_lowercase(), format!("prot{element}"));

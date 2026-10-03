@@ -74,6 +74,7 @@ struct Player {
 struct MonsterInstance {
 	std::string creature_id;
 	bool is_boss = false;
+	std::string enemy_class;
 	std::int64_t hp = 0;
 	std::int64_t max_hp = 0;
 	std::int64_t xp = 0;

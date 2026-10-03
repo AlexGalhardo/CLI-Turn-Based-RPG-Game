@@ -48,6 +48,7 @@ inline constexpr std::string_view invalid_quantity = "invalid_quantity";
 inline constexpr std::string_view bag_full = "bag_full";
 inline constexpr std::string_view cannot_equip = "cannot_equip";
 inline constexpr std::string_view invalid_item = "invalid_item";
+inline constexpr std::string_view level_too_low = "level_too_low";
 } // namespace error_code
 
 } // namespace rpg::application

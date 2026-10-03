@@ -1,4 +1,4 @@
-"""Mutable run state. Serialised with camelCase keys: the save format is shared with TypeScript and Go."""
+"""Mutable run state. Serialised with camelCase keys: the save format is shared by the six implementations."""
 
 from dataclasses import dataclass, field
 
@@ -182,6 +182,7 @@ class MonsterInstance:
 
 	creature_id: str
 	is_boss: bool
+	enemy_class: str
 	hp: int
 	max_hp: int
 	xp: int
@@ -202,6 +203,7 @@ class MonsterInstance:
 		return {
 			"creatureId": self.creature_id,
 			"isBoss": self.is_boss,
+			"enemyClass": self.enemy_class,
 			"hp": self.hp,
 			"maxHp": self.max_hp,
 			"xp": self.xp,
@@ -219,6 +221,7 @@ class MonsterInstance:
 		return MonsterInstance(
 			creature_id=json_str(data["creatureId"]),
 			is_boss=json_bool(data["isBoss"]),
+			enemy_class=json_str(data["enemyClass"]),
 			hp=json_int(data["hp"]),
 			max_hp=json_int(data["maxHp"]),
 			xp=json_int(data["xp"]),

@@ -3,18 +3,27 @@ defmodule Rpg.Application.RunConfig do
   alias Rpg.Domain.JsonTypes
 
   @enforce_keys [:name, :vocation_id, :difficulty_id]
-  defstruct @enforce_keys
-  @type t :: %__MODULE__{name: String.t(), vocation_id: String.t(), difficulty_id: String.t()}
+  defstruct [:name, :vocation_id, :difficulty_id, auto_equip: false]
+
+  @type t :: %__MODULE__{
+          name: String.t(),
+          vocation_id: String.t(),
+          difficulty_id: String.t(),
+          auto_equip: boolean()
+        }
 
   @spec to_map(t()) :: map()
-  def to_map(%__MODULE__{} = c), do: %{"name" => c.name, "vocation" => c.vocation_id, "difficulty" => c.difficulty_id}
+  def to_map(%__MODULE__{} = c) do
+    %{"name" => c.name, "vocation" => c.vocation_id, "difficulty" => c.difficulty_id, "autoEquip" => c.auto_equip}
+  end
 
   @spec from_map(term()) :: t()
   def from_map(raw) do
     %__MODULE__{
       name: JsonTypes.str(JsonTypes.field(raw, "name")),
       vocation_id: JsonTypes.str(JsonTypes.field(raw, "vocation")),
-      difficulty_id: JsonTypes.str(JsonTypes.field(raw, "difficulty"))
+      difficulty_id: JsonTypes.str(JsonTypes.field(raw, "difficulty")),
+      auto_equip: JsonTypes.bool(JsonTypes.field(raw, "autoEquip"))
     }
   end
 end
@@ -38,6 +47,7 @@ defmodule Rpg.Application.RunState do
     merchant_stock: [],
     next_item_uid: 1,
     death_cause: nil,
+    won: false,
     stats: %RunStatistics{}
   ]
 
@@ -52,6 +62,7 @@ defmodule Rpg.Application.RunState do
           merchant_stock: [ItemInstance.t()],
           next_item_uid: integer(),
           death_cause: String.t() | nil,
+          won: boolean(),
           stats: RunStatistics.t()
         }
 
@@ -72,6 +83,7 @@ defmodule Rpg.Application.RunState do
       "merchantStock" => Enum.map(s.merchant_stock, &ItemInstance.to_map/1),
       "nextItemUid" => s.next_item_uid,
       "deathCause" => s.death_cause,
+      "won" => s.won,
       "stats" => RunStatistics.to_map(s.stats)
     }
   end
@@ -93,6 +105,7 @@ defmodule Rpg.Application.RunState do
       merchant_stock: Enum.map(JsonTypes.list(f.("merchantStock")), &ItemInstance.from_map/1),
       next_item_uid: JsonTypes.int(f.("nextItemUid")),
       death_cause: if(death_cause != nil, do: JsonTypes.str(death_cause)),
+      won: JsonTypes.bool(f.("won")),
       stats: RunStatistics.from_map(f.("stats"))
     }
   end

@@ -7,23 +7,19 @@ defmodule Rpg.Application.GreedyBot do
   Tie-breakers mirror Python's `max(key=(value, id))`: the highest value wins, then the highest id.
   """
 
-  alias Rpg.Application.Commands.{Attack, BuyPotion, Cast, Defend, Equip, NextFight, SellItem, UsePotion}
+  alias Rpg.Application.Commands.{Attack, BuyPotion, Cast, Defend, EndRun, Equip, NextFight, SellItem, UsePotion}
   alias Rpg.Application.{Battle, Commands, Loot, Merchant, RunState}
   alias Rpg.Domain.Definitions.{GameData, MonsterDef}
-  alias Rpg.Domain.Entities.{ItemInstance, MonsterInstance, Player}
+  alias Rpg.Domain.Entities.{MonsterInstance, Player}
   alias Rpg.Domain.Character
 
   @heal_threshold_pct 45
   @mana_potion_threshold_pct 25
   @max_potion_stock 20
 
-  @spec item_score(ItemInstance.t(), GameData.t()) :: integer()
-  def item_score(%ItemInstance{} = item, %GameData{} = data) do
-    item |> Character.item_stats(data) |> Map.values() |> Enum.sum()
-  end
-
   @spec choose(GameData.t(), RunState.t()) :: Commands.t()
   def choose(%GameData{} = data, %RunState{phase: :battle} = state), do: battle(data, state)
+  def choose(%GameData{}, %RunState{phase: :victory}), do: %EndRun{}
   def choose(%GameData{} = data, %RunState{} = state), do: merchant(data, state)
 
   # ── battle ──────────────────────────────────────────────────────────────────
@@ -106,10 +102,10 @@ defmodule Rpg.Application.GreedyBot do
       |> Enum.find(fn item ->
         definition = GameData.item(data, item.item_id)
 
-        Loot.can_use(definition, vocation) and
+        Loot.can_use(definition, vocation) and Character.required_level(item, data) <= player.level and
           case Map.get(player.equipment, definition.slot) do
             nil -> true
-            current -> item_score(item, data) > item_score(current, data)
+            current -> Character.item_score(item, data) > Character.item_score(current, data)
           end
       end)
 

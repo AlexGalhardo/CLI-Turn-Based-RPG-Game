@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(rpg_cpp VERSION 1.3.6 DESCRIPTION "Endless turn-based RPG for the terminal (C++ port)" LANGUAGES CXX)
+project(rpg_cpp VERSION 1.4.0 DESCRIPTION "Endless turn-based RPG for the terminal (C++ port)" LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -86,12 +86,14 @@ add_library(rpg_core STATIC
 	src/application/statistics.cpp
 	src/application/run_state.cpp
 	src/application/loot.cpp
+	src/application/auto_equip.cpp
 	src/application/spawner.cpp
 	src/application/progression.cpp
 	src/application/battle.cpp
 	src/application/merchant.cpp
 	src/application/engine.cpp
 	src/application/bot.cpp
+	src/application/auto_battle.cpp
 	src/application/simulator.cpp
 	src/application/save_game.cpp
 	src/application/profile.cpp
@@ -101,6 +103,7 @@ add_library(rpg_core STATIC
 	src/infrastructure/paths.cpp
 	src/infrastructure/i18n.cpp
 	src/infrastructure/art.cpp
+	src/infrastructure/migrations.cpp
 	src/infrastructure/repositories.cpp
 	src/presentation/event_text.cpp
 	src/presentation/render.cpp

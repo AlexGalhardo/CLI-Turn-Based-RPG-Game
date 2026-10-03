@@ -20,9 +20,31 @@ export const ELEMENT_COLORS: Readonly<Record<Element, string>> = {
 export const RARITY_COLORS: Readonly<Record<string, string>> = {
 	common: "white",
 	rare: "#1e90ff",
-	epic: "#af87ff",
 	legendary: "#ffaf00",
+	mythic: "#af87ff",
 };
+
+// Semantic colours used by the equipment screen (docs/tui.md): empty slots, score/stat gains and losses.
+export const STYLE_WARNING = "warning";
+export const STYLE_GAIN = "gain";
+export const STYLE_LOSS = "loss";
+export const STYLE_DIM = "dim";
+export const STYLE_COLORS: Readonly<Record<string, string>> = {
+	[STYLE_WARNING]: "yellow",
+	[STYLE_GAIN]: "green",
+	[STYLE_LOSS]: "red",
+	[STYLE_DIM]: "gray",
+};
+
+export function formatDelta(delta: number): string {
+	return delta > 0 ? `+${delta}` : String(delta);
+}
+
+export function deltaStyle(delta: number): string | null {
+	if (delta > 0) return STYLE_GAIN;
+	if (delta < 0) return STYLE_LOSS;
+	return null;
+}
 
 /** `█` filled / `░` empty. A living creature always shows at least one filled cell. */
 export function bar(current: number, maximum: number, width = BAR_WIDTH): string {

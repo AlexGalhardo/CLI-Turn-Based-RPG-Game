@@ -58,20 +58,26 @@ export class RunStatistics {
 	goldSpent = 0;
 	goldEarned = 0;
 	itemsSold = 0;
+	itemsAutoEquipped = 0;
 	bossesKilled = 0;
+	elitesKilled = 0;
 	spellsCast = new Counter();
 	potionsUsed = new Counter();
 	potionsBought = new Counter();
+	potionsDropped = new Counter();
 	itemsDropped = new Counter();
 	kills = new Counter();
 	statusesApplied = new Counter();
 	droppedItems: DroppedItem[] = [];
 
 	record(events: readonly Event[], currentRound: number): void {
-		for (const evt of events) this.#recordOne(evt, currentRound);
+		for (const evt of events) {
+			if (!this.#recordCombat(evt)) this.#recordLoot(evt, currentRound);
+		}
 	}
 
-	#recordOne(evt: Event, currentRound: number): void {
+	/** Battle counters; returns false when the event is not a battle event. */
+	#recordCombat(evt: Event): boolean {
 		switch (evt.type) {
 			case "player_attacked":
 				this.normalAttacks += 1;
@@ -100,6 +106,10 @@ export class RunStatistics {
 				break;
 			case "attack_parried":
 				this.parries += 1;
+				this.damageDealt += intField(evt, "reflected");
+				break;
+			case "monster_parried":
+				this.damageTaken += intField(evt, "reflected");
 				break;
 			case "status_ticked":
 				if (evt.target === "player") this.damageTaken += intField(evt, "damage");
@@ -111,7 +121,16 @@ export class RunStatistics {
 			case "monster_killed":
 				this.kills.add(strField(evt, "monsterId"));
 				if (evt.isBoss === true) this.bossesKilled += 1;
+				if (evt.enemyClass === "elite") this.elitesKilled += 1;
 				break;
+			default:
+				return false;
+		}
+		return true;
+	}
+
+	#recordLoot(evt: Event, currentRound: number): void {
+		switch (evt.type) {
 			case "gold_looted":
 				this.goldLooted += intField(evt, "amount");
 				break;
@@ -127,6 +146,12 @@ export class RunStatistics {
 				break;
 			case "item_bought":
 				this.goldSpent += intField(evt, "gold");
+				break;
+			case "potion_dropped":
+				this.potionsDropped.add(strField(evt, "potionId"));
+				break;
+			case "item_auto_equipped":
+				this.itemsAutoEquipped += 1;
 				break;
 			case "item_sold":
 			case "item_auto_sold":
@@ -160,10 +185,13 @@ export class RunStatistics {
 			goldSpent: this.goldSpent,
 			goldEarned: this.goldEarned,
 			itemsSold: this.itemsSold,
+			itemsAutoEquipped: this.itemsAutoEquipped,
 			bossesKilled: this.bossesKilled,
+			elitesKilled: this.elitesKilled,
 			spellsCast: this.spellsCast.toJson(),
 			potionsUsed: this.potionsUsed.toJson(),
 			potionsBought: this.potionsBought.toJson(),
+			potionsDropped: this.potionsDropped.toJson(),
 			itemsDropped: this.itemsDropped.toJson(),
 			kills: this.kills.toJson(),
 			statusesApplied: this.statusesApplied.toJson(),
@@ -191,10 +219,13 @@ export class RunStatistics {
 		stats.goldSpent = jsonInt(field(data, "goldSpent"));
 		stats.goldEarned = jsonInt(field(data, "goldEarned"));
 		stats.itemsSold = jsonInt(field(data, "itemsSold"));
+		stats.itemsAutoEquipped = jsonInt(field(data, "itemsAutoEquipped"));
 		stats.bossesKilled = jsonInt(field(data, "bossesKilled"));
+		stats.elitesKilled = jsonInt(field(data, "elitesKilled"));
 		stats.spellsCast = Counter.fromJson(field(data, "spellsCast"));
 		stats.potionsUsed = Counter.fromJson(field(data, "potionsUsed"));
 		stats.potionsBought = Counter.fromJson(field(data, "potionsBought"));
+		stats.potionsDropped = Counter.fromJson(field(data, "potionsDropped"));
 		stats.itemsDropped = Counter.fromJson(field(data, "itemsDropped"));
 		stats.kills = Counter.fromJson(field(data, "kills"));
 		stats.statusesApplied = Counter.fromJson(field(data, "statusesApplied"));

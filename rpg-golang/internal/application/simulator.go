@@ -19,6 +19,7 @@ type RunResult struct {
 	Round      int
 	Level      int
 	DeathCause string
+	Won        bool
 }
 
 // KillerCount counts deaths caused by a creature.
@@ -32,6 +33,7 @@ type SimulationSummary struct {
 	Vocation    string
 	Difficulty  string
 	Runs        int
+	Wins        int
 	MinRound    int
 	P10Round    int
 	MedianRound int
@@ -41,7 +43,12 @@ type SimulationSummary struct {
 	TopKillers  []KillerCount
 }
 
-// PlayOne lets the bot play a run until death.
+// WinRatePct is floor(wins * 100 / runs).
+func (s SimulationSummary) WinRatePct() int {
+	return s.Wins * 100 / s.Runs
+}
+
+// PlayOne lets the bot play a run until it ends (death, or end_run after the final boss).
 func PlayOne(data *domain.GameData, config RunConfig, seed uint64) (RunResult, error) {
 	engine, _, err := NewRun(data, config, seed)
 	if err != nil {
@@ -54,7 +61,7 @@ func PlayOne(data *domain.GameData, config RunConfig, seed uint64) (RunResult, e
 		if engine.State.Phase == domain.PhaseGameOver {
 			state := engine.State
 
-			return RunResult{Round: state.Round, Level: state.Player.Level, DeathCause: state.DeathCauseOr("")}, nil
+			return RunResult{Round: state.Round, Level: state.Player.Level, DeathCause: state.DeathCauseOr(""), Won: state.Won}, nil
 		}
 
 		engine.Step(bot.Choose(engine.State))
@@ -76,6 +83,7 @@ func Simulate(data *domain.GameData, vocation, difficulty string, runs int, base
 	rounds := make([]int, 0, runs)
 	killers := map[string]int{}
 	levels := 0
+	wins := 0
 
 	for i := range runs {
 		result, err := PlayOne(data, RunConfig{Name: "Bot", VocationID: vocation, DifficultyID: difficulty}, baseSeed+uint64(i))
@@ -84,7 +92,14 @@ func Simulate(data *domain.GameData, vocation, difficulty string, runs int, base
 		}
 
 		rounds = append(rounds, result.Round)
-		killers[result.DeathCause]++
+		if result.DeathCause != "" {
+			killers[result.DeathCause]++
+		}
+
+		if result.Won {
+			wins++
+		}
+
 		levels += result.Level
 	}
 
@@ -104,7 +119,7 @@ func Simulate(data *domain.GameData, vocation, difficulty string, runs int, base
 	})
 
 	return SimulationSummary{
-		Vocation: vocation, Difficulty: difficulty, Runs: runs,
+		Vocation: vocation, Difficulty: difficulty, Runs: runs, Wins: wins,
 		MinRound: rounds[0], P10Round: percentile(rounds, 10), MedianRound: percentile(rounds, 50),
 		P90Round: percentile(rounds, 90), MaxRound: rounds[len(rounds)-1], MeanLevel: levels / runs,
 		TopKillers: top[:min(3, len(top))],

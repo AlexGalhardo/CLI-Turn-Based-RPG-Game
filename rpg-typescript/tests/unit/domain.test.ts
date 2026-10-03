@@ -124,7 +124,9 @@ describe("formulas", () => {
 			Math.floor((100 * hard.xpPct * (100 + balance.cycleRewardPct)) / 10_000),
 		);
 		const normal = balance.difficulty("normal");
-		expect(scaling(roundInfo(10, balance, DATA.tierCount), balance, normal).hpPctProduct).toBe(1_000_000);
+		expect(scaling(roundInfo(10, balance, DATA.tierCount), balance, normal).hpPctProduct).toBe(
+			normal.hpPct * 100 * 100,
+		);
 	});
 });
 
@@ -132,7 +134,9 @@ describe("definitions and character", () => {
 	test("lookups and errors", () => {
 		expect(() => DATA.spell("avada_kedavra")).toThrow(UnknownIdError);
 		expect(() => DATA.balance.difficulty("nightmare")).toThrow(UnknownIdError);
-		expect(() => DATA.balance.rarity("mythic")).toThrow(UnknownIdError);
+		expect(() => DATA.balance.rarity("epic")).toThrow(UnknownIdError);
+		expect(() => DATA.balance.enemyClass("champion")).toThrow(UnknownIdError);
+		expect(() => DATA.balance.autoBattle.mode("berserk")).toThrow(UnknownIdError);
 		expect(() => DATA.creature("rat").attack("laser")).toThrow(UnknownIdError);
 		expect(() => DATA.bossOfTier(99)).toThrow(UnknownIdError);
 		expect(DATA.monstersInTier(99)).toEqual([]);
@@ -148,8 +152,8 @@ describe("definitions and character", () => {
 			tier: 0,
 			affixes: [{ stat: "maxHp", value: 7 }],
 		} as const;
-		expect(Object.fromEntries(itemStats(helmet, data))).toEqual({ armor: 15, maxHp: 82 });
-		expect(itemValue(helmet, data)).toBe(1000);
+		expect(Object.fromEntries(itemStats(helmet, data))).toEqual({ armor: 20, maxHp: 107 });
+		expect(itemValue(helmet, data)).toBe(600);
 		const player = new Player("A", "warrior", 10, 10, 0);
 		player.equipment.set("ring", { uid: 2, itemId: "test_ring", rarity: "common", tier: 0, affixes: [] });
 		const sheet = buildSheet(player, data);

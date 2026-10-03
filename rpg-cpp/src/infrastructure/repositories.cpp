@@ -6,6 +6,7 @@
 #include <stdexcept>
 
 #include "infrastructure/i18n.hpp"
+#include "infrastructure/migrations.hpp"
 
 namespace rpg::infrastructure {
 
@@ -56,16 +57,20 @@ void write_json_atomic(const fs::path& path, const ordered_json& document) {
 application::TimePoint SystemClock::now() { return std::chrono::system_clock::now(); }
 
 Settings SettingsRepository::load() const {
-	const std::optional<json> document = read_json(path_);
+	std::optional<json> document = read_json(path_);
 	if (!document.has_value()) {
 		return Settings{};
 	}
 	application::check_schema(*document, "settings.json");
-	const auto locale = document->value("locale", std::string{});
-	if (!is_supported_locale(locale)) {
-		return Settings{};
+	migrate_settings(*document);
+	Settings settings;
+	if (const auto locale = document->value("locale", std::string{}); is_supported_locale(locale)) {
+		settings.locale = locale;
 	}
-	return Settings{locale};
+	settings.auto_equip = document->at("autoEquip").get<bool>();
+	const auto speed = document->at("battleSpeed").get<std::int64_t>();
+	settings.battle_speed = std::ranges::contains(kBattleSpeeds, speed) ? speed : kBattleSpeeds.front();
+	return settings;
 }
 
 void SettingsRepository::save(const Settings& settings) const {
@@ -73,15 +78,18 @@ void SettingsRepository::save(const Settings& settings) const {
 	if (settings.locale.has_value()) {
 		document["locale"] = *settings.locale;
 	}
+	document["autoEquip"] = settings.auto_equip;
+	document["battleSpeed"] = settings.battle_speed;
 	write_json_atomic(path_, document);
 }
 
 std::optional<application::SaveGame> FileSaveRepository::load() {
-	const std::optional<json> document = read_json(path_);
+	std::optional<json> document = read_json(path_);
 	if (!document.has_value()) {
 		return std::nullopt;
 	}
-	return application::save_game_from_json(*document);
+	application::check_schema(*document, "save.json");
+	return application::save_game_from_json(migrate_save(*document));
 }
 
 void FileSaveRepository::save(const application::SaveGame& save) {
@@ -114,19 +122,21 @@ std::vector<application::RunRecord> FileHistoryRepository::list() {
 	// directory_iterator order is unspecified; sort by file name like the reference.
 	std::ranges::sort(files, {}, [](const fs::path& path) { return path.filename().string(); });
 	for (const fs::path& file : files) {
-		if (const std::optional<json> document = read_json(file)) {
-			records.push_back(application::run_record_from_json(*document));
+		if (std::optional<json> document = read_json(file)) {
+			application::check_schema(*document, "history record");
+			records.push_back(application::run_record_from_json(migrate_history(*document)));
 		}
 	}
 	return records;
 }
 
 application::Profile FileProfileRepository::load() {
-	const std::optional<json> document = read_json(path_);
+	std::optional<json> document = read_json(path_);
 	if (!document.has_value()) {
 		return application::Profile{};
 	}
-	return application::profile_from_json(*document);
+	application::check_schema(*document, "profile.json");
+	return application::profile_from_json(migrate_profile(*document));
 }
 
 void FileProfileRepository::save(const application::Profile& profile) {

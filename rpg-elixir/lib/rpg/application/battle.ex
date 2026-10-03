@@ -10,7 +10,7 @@ defmodule Rpg.Application.Battle do
   alias Rpg.Application.Commands.{Attack, Cast, Defend, UsePotion}
   alias Rpg.Application.{Events, Progression, RunState}
   alias Rpg.Domain.Character.CharacterSheet
-  alias Rpg.Domain.Definitions.{GameData, MonsterAttack, MonsterDef, SpellDef}
+  alias Rpg.Domain.Definitions.{Balance, GameData, MonsterAttack, MonsterDef, SpellDef}
   alias Rpg.Domain.Entities.{ActiveStatus, MonsterInstance, Player}
   alias Rpg.Domain.{Character, Formulas, Rng}
 
@@ -60,42 +60,42 @@ defmodule Rpg.Application.Battle do
   @doc "Plays one player command. Returns the events, the outcome, the new run state and the new PRNG."
   @spec play_turn(GameData.t(), Rng.t(), RunState.t(), command()) :: {[Events.t()], outcome(), RunState.t(), Rng.t()}
   def play_turn(%GameData{} = data, %Rng{} = rng, %RunState{} = state, command) do
-    battle = player_action(%__MODULE__{data: data, rng: rng, state: state}, command)
-
-    if monster(battle).hp <= 0 do
-      finish(battle, :victory)
-    else
-      enemy_turns(battle)
-    end
+    %__MODULE__{data: data, rng: rng, state: state}
+    |> player_action(command)
+    |> enemy_turns()
   end
 
   defp enemy_turns(battle) do
-    {battle, monster_died} = monster_phase(battle)
+    with nil <- death_check(battle),
+         battle = monster_phase(battle),
+         nil <- death_check(battle) do
+      case end_of_turn(battle) do
+        {battle, true} ->
+          finish(battle, :defeat)
 
+        {battle, false} ->
+          case consume_stun(player(battle).statuses) do
+            {_statuses, false} ->
+              finish(battle, :ongoing)
+
+            {statuses, true} ->
+              battle
+              |> update_player(&%{&1 | statuses: statuses, stun_cooldown: @stun_cooldown_turns})
+              |> emit(Events.event("player_stunned"))
+              |> enemy_turns()
+          end
+      end
+    else
+      {battle, outcome} -> finish(battle, outcome)
+    end
+  end
+
+  # Steps 2 and 4: a parried hit can kill the attacker, so the player is checked first.
+  defp death_check(battle) do
     cond do
-      monster_died ->
-        finish(battle, :victory)
-
-      player(battle).hp <= 0 ->
-        finish(battle, :defeat)
-
-      true ->
-        case end_of_turn(battle) do
-          {battle, true} ->
-            finish(battle, :defeat)
-
-          {battle, false} ->
-            case consume_stun(player(battle).statuses) do
-              {_statuses, false} ->
-                finish(battle, :ongoing)
-
-              {statuses, true} ->
-                battle
-                |> update_player(&%{&1 | statuses: statuses, stun_cooldown: @stun_cooldown_turns})
-                |> emit(Events.event("player_stunned"))
-                |> enemy_turns()
-            end
-        end
+      player(battle).hp <= 0 -> {battle, :defeat}
+      monster(battle).hp <= 0 -> {battle, :victory}
+      true -> nil
     end
   end
 
@@ -136,15 +136,57 @@ defmodule Rpg.Application.Battle do
 
   defp melee(battle) do
     sheet = sheet(battle)
-    {base, battle} = roll(battle, sheet.melee_min, sheet.melee_max)
-    damage = Formulas.pct(base, 100 + sheet.physical_damage)
-    {damage, crit, battle} = roll_crit(battle, damage, sheet)
-    damage = resisted(battle, damage, sheet.weapon_element)
 
-    battle
-    |> hit_monster(damage)
-    |> emit(Events.event("player_attacked", damage: damage, crit: crit, element: sheet.weapon_element))
-    |> leech(damage, sheet)
+    case monster_dodges(battle) do
+      {true, battle} ->
+        battle
+
+      {false, battle} ->
+        {base, battle} = roll(battle, sheet.melee_min, sheet.melee_max)
+        damage = Formulas.pct(base, 100 + sheet.physical_damage)
+        {damage, crit, battle} = roll_crit(battle, damage, sheet)
+        damage = resisted(battle, damage, sheet.weapon_element)
+
+        case monster_parries(battle, damage, sheet.weapon_element) do
+          {true, battle} ->
+            battle
+
+          {false, battle} ->
+            battle
+            |> hit_monster(damage)
+            |> emit(Events.event("player_attacked", damage: damage, crit: crit, element: sheet.weapon_element))
+            |> leech(damage, sheet)
+        end
+    end
+  end
+
+  defp enemy_class(battle), do: Balance.enemy_class(battle.data.balance, monster(battle).enemy_class)
+
+  defp monster_dodges(battle) do
+    case chance(battle, enemy_class(battle).dodge) do
+      {true, battle} -> {true, emit(battle, Events.event("monster_dodged"))}
+      {false, battle} -> {false, battle}
+    end
+  end
+
+  # Physical hits only: the monster takes nothing and reflects part of the hit (no mitigation).
+  defp monster_parries(battle, _damage, element) when element != "physical", do: {false, battle}
+
+  defp monster_parries(battle, damage, _element) do
+    case chance(battle, enemy_class(battle).parry) do
+      {true, battle} ->
+        reflected = max(1, Formulas.pct(damage, battle.data.balance.parry_reflect_pct))
+
+        battle =
+          battle
+          |> update_player(&%{&1 | hp: max(0, &1.hp - reflected)})
+          |> emit(Events.event("monster_parried", reflected: reflected))
+
+        {true, battle}
+
+      {false, battle} ->
+        {false, battle}
+    end
   end
 
   defp cast(battle, %SpellDef{} = spell) do
@@ -153,16 +195,23 @@ defmodule Rpg.Application.Battle do
     level = Formulas.spell_level_for_uses(Map.get(player.spell_uses, spell.id, 0), battle.data.balance.spell_levels)
     cost = Formulas.pct(spell.mana, level.mana_pct)
     battle = update_player(battle, &%{&1 | mp: &1.mp - cost})
-    bonus = player.level * spell.per_level + player.magic_level * spell.per_magic_level
-    {raw, battle} = roll(battle, spell.min + bonus, spell.max + bonus)
-    amount = Formulas.pct(Formulas.pct(raw, level.effect_pct), 100 + sheet.spell_power)
+    {dodged, battle} = if spell.kind == :attack, do: monster_dodges(battle), else: {false, battle}
 
     battle =
-      case spell.kind do
-        :attack -> cast_attack(battle, spell, level.level, amount, cost, sheet)
-        :heal -> cast_heal(battle, spell, level.level, amount, cost, sheet)
+      if dodged do
+        battle
+      else
+        bonus = player.level * spell.per_level + player.magic_level * spell.per_magic_level
+        {raw, battle} = roll(battle, spell.min + bonus, spell.max + bonus)
+        amount = Formulas.pct(Formulas.pct(raw, level.effect_pct), 100 + sheet.spell_power)
+
+        case spell.kind do
+          :attack -> cast_attack(battle, spell, level.level, amount, cost, sheet)
+          :heal -> cast_heal(battle, spell, level.level, amount, cost, sheet)
+        end
       end
 
+    # Dodged and parried casts still count as uses (docs/game-design.md §6).
     {player, events} = Progression.after_cast(battle.data, player(battle), spell, cost)
     battle |> update_player(fn _ -> player end) |> emit_all(events)
   end
@@ -171,6 +220,13 @@ defmodule Rpg.Application.Battle do
     {damage, crit, battle} = roll_crit(battle, amount, sheet)
     damage = resisted(battle, damage, spell.element)
 
+    case monster_parries(battle, damage, spell.element) do
+      {true, battle} -> battle
+      {false, battle} -> land_spell(battle, spell, level, damage, crit, cost, sheet)
+    end
+  end
+
+  defp land_spell(battle, spell, level, damage, crit, cost, sheet) do
     battle =
       battle
       |> hit_monster(damage)
@@ -275,25 +331,39 @@ defmodule Rpg.Application.Battle do
 
   # ── step 3: monster phase ───────────────────────────────────────────────────
 
-  # Returns {battle, true} when the monster died from its own status ticks.
   defp monster_phase(battle) do
     battle = tick(battle, :monster)
 
     if monster(battle).hp <= 0 do
-      {battle, true}
+      battle
     else
       case consume_stun(monster(battle).statuses) do
         {statuses, true} ->
-          battle =
-            battle
-            |> update_monster(&%{&1 | statuses: statuses, stun_cooldown: @stun_cooldown_turns})
-            |> emit(Events.event("monster_stunned"))
-
-          {battle, false}
+          battle
+          |> update_monster(&%{&1 | statuses: statuses, stun_cooldown: @stun_cooldown_turns})
+          |> emit(Events.event("monster_stunned"))
 
         {_statuses, false} ->
-          {monster_action(battle), false}
+          heal_or_act(battle)
       end
+    end
+  end
+
+  # A healing monster does nothing else this turn; a boss does not advance its pattern. No roll at full HP.
+  defp heal_or_act(battle) do
+    monster = monster(battle)
+
+    {heals, battle} =
+      if monster.hp < monster.max_hp, do: chance(battle, enemy_class(battle).heal), else: {false, battle}
+
+    if heals do
+      healed = min(Formulas.pct(monster.max_hp, battle.data.balance.monster_heal_pct), monster.max_hp - monster.hp)
+
+      battle
+      |> update_monster(&%{&1 | hp: &1.hp + healed})
+      |> emit(Events.event("monster_healed", amount: healed))
+    else
+      monster_action(battle)
     end
   end
 
@@ -339,20 +409,27 @@ defmodule Rpg.Application.Battle do
         emit(battle, Events.event("attack_dodged", attackId: attack.id))
 
       {false, battle} ->
+        balance = battle.data.balance
+        {damage, battle} = roll(battle, attack.min, attack.max)
+        damage = if charged, do: Formulas.pct(damage, balance.boss_charge_damage_pct), else: damage
         {parried, battle} = if attack.element == "physical", do: chance(battle, sheet.parry), else: {false, battle}
 
         if parried do
-          emit(battle, Events.event("attack_parried", attackId: attack.id))
+          reflected = max(1, Formulas.pct(damage, balance.parry_reflect_pct))
+
+          battle
+          |> hit_monster(reflected)
+          |> emit(Events.event("attack_parried", attackId: attack.id, reflected: reflected))
         else
-          land_monster_attack(battle, attack, charged, sheet)
+          land_monster_attack(battle, attack, charged, damage, sheet)
         end
     end
   end
 
-  defp land_monster_attack(battle, attack, charged, sheet) do
+  defp land_monster_attack(battle, attack, charged, damage, sheet) do
     balance = battle.data.balance
-    {damage, battle} = roll(battle, attack.min, attack.max)
-    damage = if charged, do: Formulas.pct(damage, balance.boss_charge_damage_pct), else: damage
+    {crit, battle} = chance(battle, enemy_class(battle).crit)
+    damage = if crit, do: Formulas.pct(damage, balance.crit_multiplier_pct), else: damage
     damage = if attack.element == "physical", do: Formulas.armor_mitigation(damage, sheet.armor), else: damage
     damage = Formulas.pct(damage, 100 - CharacterSheet.protection(sheet, attack.element))
     damage = if player(battle).defending, do: Formulas.pct(damage, balance.defend_damage_pct), else: damage
@@ -362,7 +439,13 @@ defmodule Rpg.Application.Battle do
       battle
       |> update_player(&%{&1 | hp: max(0, &1.hp - damage)})
       |> emit(
-        Events.event("monster_attacked", attackId: attack.id, damage: damage, element: attack.element, charged: charged)
+        Events.event("monster_attacked",
+          attackId: attack.id,
+          damage: damage,
+          element: attack.element,
+          charged: charged,
+          crit: crit
+        )
       )
 
     case attack.status do

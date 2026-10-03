@@ -9,7 +9,7 @@ use serde_json::Value;
 use crate::application::run_state::RunState;
 use crate::application::statistics::RunStatistics;
 
-pub const SCHEMA_VERSION: i64 = 1;
+pub const SCHEMA_VERSION: i64 = 2;
 pub const IMPLEMENTATION: &str = "rust";
 
 /// Days since 1970-01-01 → (year, month, day) in the proleptic Gregorian calendar (Howard Hinnant's algorithm).
@@ -187,6 +187,7 @@ pub struct RunRecord {
 	pub level: i64,
 	pub magic_level: i64,
 	pub death_cause: String,
+	pub won: bool,
 	pub stats: RunStatistics,
 }
 

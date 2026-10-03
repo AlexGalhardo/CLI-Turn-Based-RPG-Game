@@ -53,12 +53,36 @@ defmodule Rpg.Presentation.Tui.App do
   def handle_key(%__MODULE__{} = app, key) do
     controller = Controller.press(app.controller, key)
 
-    if controller.exit_requested do
-      {%{app | controller: controller}, :quit}
-    else
-      cues = if app.animate, do: controller.animation_cues, else: []
-      {%{app | controller: %{controller | animation_cues: []}, cues: cues}, :continue}
+    cond do
+      controller.exit_requested ->
+        {%{app | controller: controller}, :quit}
+
+      # Without animation (--no-anim, tests) an auto-battle plays instantly; otherwise the terminal loop paces it.
+      Controller.auto_battle_active?(controller) and not app.animate ->
+        {take_cues(%{app | controller: Controller.run_auto_battle(controller)}), :continue}
+
+      true ->
+        {take_cues(%{app | controller: controller}), :continue}
     end
+  end
+
+  defp take_cues(%__MODULE__{controller: controller} = app) do
+    cues = if app.animate, do: controller.animation_cues, else: []
+    %{app | controller: %{controller | animation_cues: []}, cues: cues}
+  end
+
+  @spec auto_battle_active?(t()) :: boolean()
+  def auto_battle_active?(%__MODULE__{controller: controller}), do: Controller.auto_battle_active?(controller)
+
+  @doc "Delay between two auto-battle turns, from the battle speed setting (600 ms at 1x, 300 ms at 2x)."
+  @spec auto_battle_interval_ms(t()) :: pos_integer()
+  def auto_battle_interval_ms(%__MODULE__{controller: controller}), do: Controller.auto_battle_interval_ms(controller)
+
+  @doc "Auto-battle timer: plays one turn. Returns the app and whether the fight goes on."
+  @spec auto_battle_tick(t()) :: {t(), boolean()}
+  def auto_battle_tick(%__MODULE__{} = app) do
+    {controller, running} = Controller.auto_battle_step(app.controller)
+    {take_cues(%{app | controller: controller}), running}
   end
 
   @doc "Animation timer (500 ms): advances the idle loop and consumes one one-shot cue."
@@ -96,7 +120,8 @@ defmodule Rpg.Presentation.Tui.App do
           {panel(app.width, @log_height, lines), used + @log_height}
         end
 
-      menu = panel(app.width, max(10, app.height - used), menu_lines(controller))
+      height = max(10, app.height - used)
+      menu = panel(app.width, height, menu_lines(controller, height - 2))
       top ++ player ++ log ++ menu
     end
   end
@@ -152,7 +177,16 @@ defmodule Rpg.Presentation.Tui.App do
         style = if animation == "hurt", do: [:bold, {:fg, "#ff5f5f"}], else: [{:fg, element_color}]
 
         boss =
-          if monster.is_boss, do: [{[:bold, {:fg, "#d75fff"}], Controller.t(controller, "hud.boss") <> " "}], else: []
+          cond do
+            monster.is_boss ->
+              [{[:bold, {:fg, "#d75fff"}], Controller.t(controller, "hud.boss") <> " "}]
+
+            monster.enemy_class == "elite" ->
+              [{[:bold, {:fg, "#ffd75f"}], Controller.t(controller, "hud.elite") <> " "}]
+
+            true ->
+              []
+          end
 
         info = [
           boss ++ [{[:bold], String.upcase(monster.name)}],
@@ -194,7 +228,7 @@ defmodule Rpg.Presentation.Tui.App do
     end
   end
 
-  defp menu_lines(controller) do
+  defp menu_lines(controller, rows) do
     options = Controller.options(controller)
     columns = if length(options) > @two_column_threshold, do: 2, else: 1
 
@@ -204,16 +238,22 @@ defmodule Rpg.Presentation.Tui.App do
       |> Enum.map(fn row ->
         row
         |> Enum.flat_map(fn option ->
+          detail = if option.detail != "", do: "  " <> option.detail, else: ""
+          width = String.length(detail)
+
           label =
             if columns == 1,
               do: option.label,
-              else: option.label |> String.slice(0, @column_width - 1) |> String.pad_trailing(@column_width)
+              else: String.slice(option.label, 0, max(0, @column_width - 1 - width))
 
-          color = Render.color_hex(option.color)
+          padding =
+            if columns == 1, do: "", else: String.duplicate(" ", max(0, @column_width - String.length(label) - width))
 
           [
             {[:bold, {:fg, @key_color}], "[#{String.upcase(option.key)}] "},
-            {if(color, do: [{:fg, color}], else: []), label}
+            {color_style(option.color), label},
+            {color_style(option.detail_color), detail},
+            {[], padding}
           ]
         end)
         |> trim_trailing()
@@ -221,17 +261,36 @@ defmodule Rpg.Presentation.Tui.App do
 
     prompt = Controller.input_prompt(controller)
 
-    [[{[:bold, :underline], Controller.title(controller)}]] ++
-      Enum.map(Controller.body_lines(controller), &[{[], &1}]) ++
+    body =
+      Enum.zip_with(Controller.body_lines(controller), Controller.body_colors(controller), &[{color_style(&2), &1}])
+
+    tail =
       if(options != [], do: [[] | option_rows], else: []) ++
-      if(prompt, do: [[], [{[:bold], prompt}]], else: []) ++
-      if(controller.message != "", do: [[], [{[:bold, {:fg, "#ff5f5f"}], controller.message}]], else: [])
+        if(prompt, do: [[], [{[:bold], prompt}]], else: []) ++
+        if(controller.message != "", do: [[], [{[:bold, {:fg, "#ff5f5f"}], controller.message}]], else: [])
+
+    [[{[:bold, :underline], Controller.title(controller)}]] ++ fit_body(body, rows - 1 - length(tail)) ++ tail
   end
 
+  # Long bodies (the equipment screen on a small terminal) are cut so the options always stay visible.
+  defp fit_body(body, room) when length(body) <= room, do: body
+  defp fit_body(body, room), do: Enum.take(body, max(0, room - 1)) ++ [[{[], "…"}]]
+
+  defp color_style(name) do
+    case Render.color_hex(name) do
+      nil -> []
+      hex -> [{:fg, hex}]
+    end
+  end
+
+  # Drops the trailing blank spans and trims the last visible one.
   defp trim_trailing(spans) do
-    case List.last(spans) do
-      {style, text} -> List.replace_at(spans, -1, {style, String.trim_trailing(text)})
-      nil -> spans
+    spans
+    |> Enum.reverse()
+    |> Enum.drop_while(fn {_style, text} -> String.trim_trailing(text) == "" end)
+    |> case do
+      [{style, text} | rest] -> Enum.reverse([{style, String.trim_trailing(text)} | rest])
+      [] -> []
     end
   end
 
@@ -276,7 +335,8 @@ end
 
 defmodule Rpg.Presentation.Tui.Terminal do
   @moduledoc """
-  The thin impure shell around `Rpg.Presentation.Tui.App`: raw keyboard input, the animation timer and drawing.
+  The thin impure shell around `Rpg.Presentation.Tui.App`: raw keyboard input, the animation and auto-battle timers
+  and drawing.
 
   A reader process blocks on stdin and sends each chunk as a message; the main loop receives keys, ticks and redraws.
   Raw mode uses OTP 28's `:shell.start_interactive({:noshell, :raw})`; when it is unavailable (no TTY) the game
@@ -340,6 +400,11 @@ defmodule Rpg.Presentation.Tui.Terminal do
       :tick ->
         app |> App.tick() |> draw() |> loop()
 
+      :auto_battle ->
+        {app, running} = App.auto_battle_tick(app)
+        if running, do: schedule_auto_battle(app)
+        app |> draw() |> loop()
+
       {:keys, keys} ->
         handle_keys(app, keys)
 
@@ -378,14 +443,22 @@ defmodule Rpg.Presentation.Tui.Terminal do
     end)
   end
 
-  defp handle_keys(app, []), do: app |> draw() |> loop()
+  # Keys are ignored while an auto-battle runs, so a batch can only start one: its timer is armed once, here.
+  defp handle_keys(app, keys), do: handle_keys(app, keys, App.auto_battle_active?(app))
 
-  defp handle_keys(app, [key | rest]) do
+  defp handle_keys(app, [], was_active) do
+    if App.auto_battle_active?(app) and not was_active, do: schedule_auto_battle(app)
+    app |> draw() |> loop()
+  end
+
+  defp handle_keys(app, [key | rest], was_active) do
     case App.handle_key(app, key) do
       {app, :quit} -> app
-      {app, :continue} -> handle_keys(app, rest)
+      {app, :continue} -> handle_keys(app, rest, was_active)
     end
   end
+
+  defp schedule_auto_battle(app), do: Process.send_after(self(), :auto_battle, App.auto_battle_interval_ms(app))
 
   defp draw(app) do
     app = App.resize(app, size(:io.columns(), 100), size(:io.rows(), 30))

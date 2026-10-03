@@ -1,5 +1,5 @@
 defmodule Rpg.Application.Simulator do
-  @moduledoc "Headless balance simulator: the bot plays many runs and we aggregate how far it gets."
+  @moduledoc "Headless balance simulator: the bot plays many runs and we aggregate how often it wins and how far it gets."
 
   alias Rpg.Application.{GameEngine, GreedyBot, RunConfig}
   alias Rpg.Domain.Definitions.GameData
@@ -8,9 +8,9 @@ defmodule Rpg.Application.Simulator do
 
   defmodule RunResult do
     @moduledoc false
-    @enforce_keys [:round, :level, :death_cause]
+    @enforce_keys [:round, :level, :death_cause, :won]
     defstruct @enforce_keys
-    @type t :: %__MODULE__{round: integer(), level: integer(), death_cause: String.t()}
+    @type t :: %__MODULE__{round: integer(), level: integer(), death_cause: String.t(), won: boolean()}
   end
 
   defmodule SimulationSummary do
@@ -19,6 +19,7 @@ defmodule Rpg.Application.Simulator do
       :vocation,
       :difficulty,
       :runs,
+      :wins,
       :min_round,
       :p10_round,
       :median_round,
@@ -33,6 +34,7 @@ defmodule Rpg.Application.Simulator do
             vocation: String.t(),
             difficulty: String.t(),
             runs: integer(),
+            wins: integer(),
             min_round: integer(),
             p10_round: integer(),
             median_round: integer(),
@@ -41,13 +43,16 @@ defmodule Rpg.Application.Simulator do
             mean_level: integer(),
             top_killers: [{String.t(), integer()}]
           }
+
+    @spec win_rate_pct(t()) :: integer()
+    def win_rate_pct(%__MODULE__{wins: wins, runs: runs}), do: div(wins * 100, runs)
   end
 
   @spec play_one(GameData.t(), RunConfig.t(), integer()) :: RunResult.t()
   def play_one(%GameData{} = data, %RunConfig{} = config, seed) do
     {engine, _events} = GameEngine.new_run(data, config, seed)
     state = play(data, engine, @max_steps_per_run, seed).state
-    %RunResult{round: state.round, level: state.player.level, death_cause: state.death_cause || ""}
+    %RunResult{round: state.round, level: state.player.level, death_cause: state.death_cause || "", won: state.won}
   end
 
   defp play(_data, %GameEngine{state: %{phase: :game_over}} = engine, _steps_left, _seed), do: engine
@@ -73,6 +78,7 @@ defmodule Rpg.Application.Simulator do
 
     top_killers =
       results
+      |> Enum.reject(&(&1.death_cause == ""))
       |> Enum.frequencies_by(& &1.death_cause)
       |> Enum.sort_by(fn {cause, count} -> {-count, cause} end)
       |> Enum.take(3)
@@ -81,6 +87,7 @@ defmodule Rpg.Application.Simulator do
       vocation: vocation,
       difficulty: difficulty,
       runs: runs,
+      wins: Enum.count(results, & &1.won),
       min_round: List.first(rounds),
       p10_round: percentile(rounds, 10),
       median_round: percentile(rounds, 50),

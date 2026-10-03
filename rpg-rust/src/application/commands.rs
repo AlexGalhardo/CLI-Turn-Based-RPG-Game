@@ -34,6 +34,10 @@ pub enum Command {
 	BuyStockItem {
 		index: i64,
 	},
+	/// Victory phase: close the won run (history + Hall of Fame).
+	EndRun,
+	/// Victory phase: keep playing endlessly after beating the final boss.
+	ContinueRun,
 }
 
 impl Command {
@@ -78,6 +82,8 @@ mod tests {
 			Command::Equip { uid: 5 },
 			Command::Unequip { slot: Slot::Ring },
 			Command::BuyStockItem { index: 1 },
+			Command::EndRun,
+			Command::ContinueRun,
 		];
 		for command in all {
 			let text = serde_json::to_string(&command_to_json(&command)).unwrap();
@@ -90,6 +96,8 @@ mod tests {
 	fn json_shapes_match_the_golden_files() {
 		assert_eq!(command_to_json(&Command::use_potion("x")), json!({"type": "potion", "potionId": "x"}));
 		assert_eq!(command_to_json(&Command::NextFight), json!({"type": "next_fight"}));
+		assert_eq!(command_to_json(&Command::EndRun), json!({"type": "end_run"}));
+		assert_eq!(command_to_json(&Command::ContinueRun), json!({"type": "continue_run"}));
 		assert_eq!(command_to_json(&Command::BuyStockItem { index: 2 }), json!({"type": "buy_stock_item", "index": 2}));
 	}
 

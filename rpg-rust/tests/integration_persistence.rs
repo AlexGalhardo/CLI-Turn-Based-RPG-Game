@@ -38,14 +38,16 @@ fn new_session_autosaves_at_merchant() {
 	.unwrap();
 	assert_eq!(events[0].kind(), "run_started");
 	let save = read(&dir.path().join("save.json"));
-	assert_eq!(save["schemaVersion"], 1);
+	assert_eq!(save["schemaVersion"], 2);
+	assert_eq!(save["run"]["config"]["autoEquip"], false);
+	assert_eq!(save["run"]["won"], false);
 	assert_eq!(save["implementation"], "rust");
 	assert_eq!(save["gameVersion"], "9.9.9");
 	assert_eq!(save["session"]["runId"], session.info.run_id.as_str());
 	assert_eq!(save["session"]["runId"], "20260927T120010Z-5");
 	assert_eq!(save["run"]["phase"], "merchant");
 	let text = fs::read_to_string(dir.path().join("save.json")).unwrap();
-	assert!(text.starts_with("{\n\t\"schemaVersion\": 1,"), "tab-indented like the reference");
+	assert!(text.starts_with("{\n\t\"schemaVersion\": 2,"), "tab-indented like the reference");
 	session.step(&Command::buy_potion("health_potion", 1)).unwrap();
 	let save = read(&dir.path().join("save.json"));
 	assert_eq!(save["run"]["player"]["potions"]["health_potion"], 6);
@@ -66,6 +68,9 @@ fn quit_mid_battle_resumes_from_last_merchant() {
 	)
 	.unwrap();
 	session.step(&Command::NextFight).unwrap();
+	let monster = session.state_mut().monster.as_mut().unwrap();
+	monster.hp = 1_000_000;
+	monster.max_hp = 1_000_000;
 	session.step(&Command::Attack).unwrap();
 	assert_eq!(session.state().phase, Phase::Battle);
 	session.save_and_quit().unwrap();
@@ -176,12 +181,25 @@ fn settings_round_trip() {
 	let dir = TempDir::new();
 	let repo = SettingsRepository::new(dir.path());
 	assert_eq!(repo.load().unwrap(), Settings::default());
-	repo.save(&Settings { locale: Some("pt-BR".into()) }).unwrap();
-	assert_eq!(repo.load().unwrap(), Settings { locale: Some("pt-BR".into()) });
+	let custom = Settings { locale: Some("pt-BR".into()), auto_equip: true, battle_speed: 2 };
+	repo.save(&custom).unwrap();
+	assert_eq!(repo.load().unwrap(), custom);
+	let saved: serde_json::Value =
+		serde_json::from_str(&fs::read_to_string(dir.path().join("settings.json")).unwrap()).unwrap();
+	assert_eq!(saved, serde_json::json!({"schemaVersion": 2, "locale": "pt-BR", "autoEquip": true, "battleSpeed": 2}));
 	repo.save(&Settings::default()).unwrap();
 	assert_eq!(repo.load().unwrap(), Settings::default());
 	fs::write(dir.path().join("settings.json"), r#"{"schemaVersion": 1, "locale": "fr"}"#).unwrap();
 	assert_eq!(repo.load().unwrap(), Settings::default());
+	fs::write(dir.path().join("settings.json"), r#"{"schemaVersion": 1, "locale": "en"}"#).unwrap();
+	assert_eq!(repo.load().unwrap(), Settings { locale: Some("en".into()), ..Settings::default() });
+	fs::write(dir.path().join("settings.json"), r#"{"schemaVersion": 2, "autoEquip": true, "battleSpeed": 7}"#)
+		.unwrap();
+	assert_eq!(repo.load().unwrap(), Settings { locale: None, auto_equip: true, battle_speed: 1 });
+	fs::write(dir.path().join("settings.json"), r#"{"schemaVersion": 2, "battleSpeed": 1}"#).unwrap();
+	assert!(repo.load().is_err());
+	fs::write(dir.path().join("settings.json"), r#"{"schemaVersion": 2, "autoEquip": false}"#).unwrap();
+	assert!(repo.load().is_err());
 }
 
 #[test]
@@ -197,12 +215,24 @@ fn profile_round_trip_and_hall_of_fame_order() {
 			round: index % 5,
 			level: index,
 			ended_at: format!("2026-01-{:02}T00:00:00Z", index + 1),
+			won: false,
 		});
 	}
 	let hall = &service.profile.hall_of_fame;
 	assert_eq!(hall.len(), 10);
 	assert_eq!(hall[..3].iter().map(|entry| entry.round).collect::<Vec<_>>(), [4, 4, 3]);
 	assert!(hall[0].level > hall[1].level);
+	service.record_finished_run(HallOfFameEntry {
+		run_id: "winner".into(),
+		name: "W".into(),
+		vocation: "mage".into(),
+		difficulty: "easy".into(),
+		round: 1,
+		level: 1,
+		ended_at: "2026-02-01T00:00:00Z".into(),
+		won: true,
+	});
+	assert_eq!(service.profile.hall_of_fame[0].run_id, "winner");
 	service.profile.bestiary.insert("rat".into(), BestiaryEntry { kills: 4, first_killed_at: "x".into() });
 	let dir = TempDir::new();
 	let repo = FileProfileRepository::new(dir.path());
@@ -257,6 +287,7 @@ fn achievements_progress_by_type() {
 	state.player.gold = 1_000_000;
 	state.player.level = 200;
 	state.round = 500;
+	state.won = true;
 	state.stats.items_dropped.insert("legendary".into(), 50);
 	for spell in ["brutal_strike", "fierce_berserk", "annihilation", "wound_cleansing"] {
 		state.player.spell_uses.insert(spell.into(), 1000);

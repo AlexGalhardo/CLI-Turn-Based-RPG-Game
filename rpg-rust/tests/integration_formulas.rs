@@ -71,7 +71,7 @@ fn boss_ignores_position_scaling() {
 	let data = common::data();
 	let normal = data.balance.difficulty("normal");
 	let info = round_info(10, &data.balance, data.tier_count());
-	assert_eq!(scaling(&info, &data.balance, normal).hp_pct_product, 100 * 100 * 100);
+	assert_eq!(scaling(&info, &data.balance, normal).hp_pct_product, normal.hp_pct * 100 * 100);
 }
 
 #[test]

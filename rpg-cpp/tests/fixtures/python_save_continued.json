@@ -1,116 +1,428 @@
 {
-	"steps": 204,
-	"round": 30,
-	"level": 9,
-	"gold": 56,
-	"rngState": 953959770,
-	"deathCause": "the_old_widow",
+	"steps": 708,
+	"round": 100,
+	"level": 69,
+	"gold": 224242,
+	"rngState": 2590957874,
+	"deathCause": "",
+	"won": true,
 	"stats": {
-		"damageDealt": 7596,
-		"damageTaken": 3596,
-		"healingDone": 2936,
-		"highestHit": 138,
-		"normalAttacks": 135,
-		"crits": 2,
-		"dodges": 0,
-		"parries": 5,
-		"defends": 12,
-		"goldLooted": 1501,
-		"goldSpent": 1700,
-		"goldEarned": 155,
-		"itemsSold": 4,
-		"bossesKilled": 2,
+		"damageDealt": 283943,
+		"damageTaken": 32422,
+		"healingDone": 30445,
+		"highestHit": 3830,
+		"normalAttacks": 0,
+		"crits": 22,
+		"dodges": 20,
+		"parries": 36,
+		"defends": 46,
+		"goldLooted": 166560,
+		"goldSpent": 14350,
+		"goldEarned": 71932,
+		"itemsSold": 50,
+		"itemsAutoEquipped": 31,
+		"bossesKilled": 10,
+		"elitesKilled": 20,
 		"spellsCast": {
-			"divine_caldera": 6,
-			"divine_missile": 4,
-			"ethereal_spear": 48
+			"divine_caldera": 271,
+			"divine_healing": 57,
+			"divine_missile": 8,
+			"ethereal_spear": 4
 		},
 		"potionsUsed": {
-			"health_potion": 12,
-			"mana_potion": 8,
-			"strong_health_potion": 12
+			"great_mana_potion": 13,
+			"mana_potion": 12,
+			"strong_mana_potion": 17,
+			"ultimate_mana_potion": 33
 		},
 		"potionsBought": {
-			"health_potion": 7,
-			"mana_potion": 3,
-			"strong_health_potion": 12
+			"great_health_potion": 3,
+			"great_mana_potion": 13,
+			"health_potion": 2,
+			"mana_potion": 11,
+			"strong_health_potion": 4,
+			"strong_mana_potion": 21,
+			"ultimate_health_potion": 4,
+			"ultimate_mana_potion": 33
+		},
+		"potionsDropped": {
+			"great_health_potion": 1,
+			"health_potion": 1,
+			"mana_potion": 1,
+			"strong_mana_potion": 3
 		},
 		"itemsDropped": {
-			"common": 3,
-			"epic": 1,
-			"rare": 5
+			"common": 15,
+			"legendary": 20,
+			"mythic": 3,
+			"rare": 19
 		},
 		"kills": {
 			"amazon": 1,
+			"banshee": 1,
 			"bear": 1,
+			"blightwalker": 1,
+			"branchy_crawler": 2,
 			"bug": 1,
-			"cave_rat": 1,
+			"burster_spectre": 1,
+			"carniphila": 2,
+			"cave_rat": 3,
+			"courage_leech": 1,
+			"crystal_spider": 1,
+			"cyclops": 1,
+			"dark_torturer": 2,
 			"deer": 1,
-			"dwarf": 1,
-			"elf_arcanist": 1,
+			"demodras": 1,
+			"demon": 1,
+			"destroyer": 1,
+			"dharalion": 1,
+			"dragon": 1,
+			"dragon_lord": 1,
+			"draken_elite": 1,
+			"dwarf": 2,
+			"dwarf_geomancer": 2,
+			"dworc_voodoomaster": 3,
+			"earth_elemental": 2,
+			"energy_elemental": 1,
+			"ferumbras": 1,
+			"fire_elemental": 1,
+			"frost_giant": 3,
+			"ghastly_dragon": 2,
+			"ghazbaran": 1,
+			"ghost": 2,
+			"ghoul": 1,
 			"goblin": 1,
-			"hunter": 3,
-			"minotaur_guard": 3,
+			"grimeleech": 1,
+			"guzzlemaw": 3,
+			"hand_of_cursed_fate": 1,
+			"hazardous_phantom": 2,
+			"hellfire_fighter": 1,
+			"hellflayer": 1,
+			"hellspawn": 1,
+			"hunter": 1,
+			"infernal_demon": 1,
+			"infernal_phantom": 1,
+			"lich": 1,
+			"lost_soul": 3,
+			"many_faces": 1,
+			"medusa": 1,
+			"minotaur_guard": 1,
+			"morgaroth": 1,
 			"munster": 1,
+			"nightmare": 3,
 			"orc": 1,
 			"orc_berserker": 1,
-			"orc_spearman": 1,
-			"orc_warrior": 1,
-			"poison_spider": 1,
-			"rat": 2,
+			"orc_shaman": 2,
+			"orc_warlord": 1,
+			"orshabaal": 1,
+			"rotten_golem": 1,
 			"rotworm": 1,
+			"scarab": 1,
+			"serpent_spawn": 1,
+			"sight_of_surrender": 1,
+			"silencer": 1,
 			"snake": 1,
+			"spectre": 1,
+			"spider": 1,
 			"tarantula": 1,
 			"the_horned_fox": 1,
-			"valkyrie": 1,
-			"wolf": 2
+			"the_old_widow": 1,
+			"troll": 1,
+			"undead_dragon": 2,
+			"valkyrie": 2,
+			"vexclaw": 1,
+			"warlock": 1,
+			"water_elemental": 1,
+			"zulazza_the_corruptor": 1
 		},
-		"statusesApplied": {},
+		"statusesApplied": {
+			"stun": 29
+		},
 		"droppedItems": [
+			{
+				"itemId": "crossbow",
+				"rarity": "common",
+				"round": 2
+			},
+			{
+				"itemId": "leather_boots",
+				"rarity": "legendary",
+				"round": 3
+			},
 			{
 				"itemId": "spear",
 				"rarity": "common",
-				"round": 1
-			},
-			{
-				"itemId": "leather_helmet",
-				"rarity": "rare",
 				"round": 4
 			},
 			{
-				"itemId": "scarf",
-				"rarity": "rare",
-				"round": 9
-			},
-			{
-				"itemId": "wooden_shield",
-				"rarity": "epic",
-				"round": 10
+				"itemId": "leather_legs",
+				"rarity": "common",
+				"round": 5
 			},
 			{
 				"itemId": "crossbow",
 				"rarity": "rare",
+				"round": 8
+			},
+			{
+				"itemId": "leather_boots",
+				"rarity": "legendary",
 				"round": 10
 			},
 			{
-				"itemId": "wooden_shield",
+				"itemId": "leather_legs",
+				"rarity": "legendary",
+				"round": 10
+			},
+			{
+				"itemId": "hunting_spear",
 				"rarity": "common",
-				"round": 12
+				"round": 11
 			},
 			{
-				"itemId": "leather_armor",
-				"rarity": "rare",
-				"round": 20
+				"itemId": "dwarven_shield",
+				"rarity": "common",
+				"round": 14
 			},
 			{
-				"itemId": "club_ring",
+				"itemId": "scarf",
 				"rarity": "rare",
-				"round": 20
+				"round": 16
+			},
+			{
+				"itemId": "hunting_spear",
+				"rarity": "rare",
+				"round": 17
 			},
 			{
 				"itemId": "elvish_bow",
 				"rarity": "common",
+				"round": 18
+			},
+			{
+				"itemId": "chain_helmet",
+				"rarity": "mythic",
+				"round": 20
+			},
+			{
+				"itemId": "dwarven_shield",
+				"rarity": "mythic",
+				"round": 20
+			},
+			{
+				"itemId": "garlic_necklace",
+				"rarity": "rare",
+				"round": 21
+			},
+			{
+				"itemId": "chain_armor",
+				"rarity": "rare",
+				"round": 22
+			},
+			{
+				"itemId": "chain_legs",
+				"rarity": "rare",
+				"round": 23
+			},
+			{
+				"itemId": "brass_armor",
+				"rarity": "rare",
 				"round": 24
+			},
+			{
+				"itemId": "brass_legs",
+				"rarity": "common",
+				"round": 27
+			},
+			{
+				"itemId": "royal_spear",
+				"rarity": "legendary",
+				"round": 30
+			},
+			{
+				"itemId": "garlic_necklace",
+				"rarity": "legendary",
+				"round": 30
+			},
+			{
+				"itemId": "brass_armor",
+				"rarity": "common",
+				"round": 31
+			},
+			{
+				"itemId": "modified_crossbow",
+				"rarity": "rare",
+				"round": 32
+			},
+			{
+				"itemId": "royal_spear",
+				"rarity": "rare",
+				"round": 36
+			},
+			{
+				"itemId": "steel_helmet",
+				"rarity": "rare",
+				"round": 38
+			},
+			{
+				"itemId": "brass_armor",
+				"rarity": "legendary",
+				"round": 40
+			},
+			{
+				"itemId": "dragon_necklace",
+				"rarity": "legendary",
+				"round": 40
+			},
+			{
+				"itemId": "modified_crossbow",
+				"rarity": "common",
+				"round": 42
+			},
+			{
+				"itemId": "steel_boots",
+				"rarity": "rare",
+				"round": 44
+			},
+			{
+				"itemId": "plate_legs",
+				"rarity": "legendary",
+				"round": 45
+			},
+			{
+				"itemId": "crusader_helmet",
+				"rarity": "rare",
+				"round": 46
+			},
+			{
+				"itemId": "warrior_helmet",
+				"rarity": "legendary",
+				"round": 49
+			},
+			{
+				"itemId": "plate_armor",
+				"rarity": "mythic",
+				"round": 50
+			},
+			{
+				"itemId": "tower_shield",
+				"rarity": "legendary",
+				"round": 50
+			},
+			{
+				"itemId": "crystal_crossbow",
+				"rarity": "common",
+				"round": 54
+			},
+			{
+				"itemId": "demon_shield",
+				"rarity": "legendary",
+				"round": 60
+			},
+			{
+				"itemId": "silkweaver_bow",
+				"rarity": "legendary",
+				"round": 60
+			},
+			{
+				"itemId": "ring_of_healing",
+				"rarity": "common",
+				"round": 61
+			},
+			{
+				"itemId": "time_ring",
+				"rarity": "rare",
+				"round": 68
+			},
+			{
+				"itemId": "crown_armor",
+				"rarity": "legendary",
+				"round": 70
+			},
+			{
+				"itemId": "glacier_amulet",
+				"rarity": "legendary",
+				"round": 70
+			},
+			{
+				"itemId": "umbral_bow",
+				"rarity": "rare",
+				"round": 72
+			},
+			{
+				"itemId": "umbral_bow",
+				"rarity": "rare",
+				"round": 74
+			},
+			{
+				"itemId": "dragon_scale_mail",
+				"rarity": "rare",
+				"round": 76
+			},
+			{
+				"itemId": "dragon_scale_legs",
+				"rarity": "legendary",
+				"round": 80
+			},
+			{
+				"itemId": "golden_legs",
+				"rarity": "legendary",
+				"round": 80
+			},
+			{
+				"itemId": "magic_plate_armor",
+				"rarity": "common",
+				"round": 82
+			},
+			{
+				"itemId": "falcon_greaves",
+				"rarity": "rare",
+				"round": 86
+			},
+			{
+				"itemId": "void_boots",
+				"rarity": "common",
+				"round": 87
+			},
+			{
+				"itemId": "umbral_bow",
+				"rarity": "common",
+				"round": 89
+			},
+			{
+				"itemId": "umbral_master_bow",
+				"rarity": "legendary",
+				"round": 90
+			},
+			{
+				"itemId": "might_ring",
+				"rarity": "legendary",
+				"round": 90
+			},
+			{
+				"itemId": "soulbastion",
+				"rarity": "rare",
+				"round": 95
+			},
+			{
+				"itemId": "blessed_shield",
+				"rarity": "rare",
+				"round": 96
+			},
+			{
+				"itemId": "blessed_shield",
+				"rarity": "common",
+				"round": 99
+			},
+			{
+				"itemId": "falcon_coif",
+				"rarity": "legendary",
+				"round": 100
+			},
+			{
+				"itemId": "umbral_master_crossbow",
+				"rarity": "legendary",
+				"round": 100
 			}
 		]
 	}

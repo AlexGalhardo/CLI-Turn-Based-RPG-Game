@@ -15,7 +15,9 @@ from rpg.application.commands import (
 	BuyStockItem,
 	Cast,
 	Command,
+	ContinueRun,
 	Defend,
+	EndRun,
 	Equip,
 	NextFight,
 	SellItem,
@@ -107,6 +109,39 @@ def bot_until_death(data: GameData) -> CommandSource:
 	return source
 
 
+def battle_script(commands: list[Command]) -> CommandSource:
+	"""Plays `commands` in battle, starting a new fight (`next_fight`) whenever the previous one is over."""
+	queue = list(commands)
+
+	def source(engine: GameEngine, _: int) -> Command | None:
+		phase = engine.state.phase
+		if not queue or phase is Phase.GAME_OVER:
+			return None
+		if phase is Phase.MERCHANT:
+			return NextFight()
+		return queue.pop(0)
+
+	return source
+
+
+def bot_victory_then_continue(data: GameData, extra_rounds: int) -> CommandSource:
+	"""The bot wins the run; in the victory phase it probes invalid commands, continues and plays a few more rounds."""
+	bot = GreedyBot(data)
+	at_victory: list[Command] = [Attack(), NextFight(), ContinueRun()]
+
+	def source(engine: GameEngine, _: int) -> Command | None:
+		state = engine.state
+		if state.phase is Phase.GAME_OVER:
+			return None
+		if state.phase is Phase.VICTORY:
+			return at_victory.pop(0)
+		if state.won and state.phase is Phase.MERCHANT and state.round >= data.balance.final_round + extra_rounds:
+			return None
+		return bot.choose(state)
+
+	return source
+
+
 def scenarios(data: GameData) -> list[Scenario]:
 	result = [
 		Scenario(
@@ -121,12 +156,16 @@ def scenarios(data: GameData) -> list[Scenario]:
 					BuyPotion("mana_potion", 99),
 					BuyStockItem(0),
 					SellItem(12345),
+					SellItem(1),
 					Equip(12345),
 					Unequip(Slot.RING),
 					Unequip(Slot.WEAPON),
 					Equip(1),
 					Attack(),
+					EndRun(),
+					ContinueRun(),
 					NextFight(),
+					EndRun(),
 					BuyPotion("health_potion", 1),
 					Cast("flame_strike"),
 					Defend(),
@@ -142,9 +181,8 @@ def scenarios(data: GameData) -> list[Scenario]:
 			"mage-spells",
 			2026,
 			RunConfig("Mia", "mage", "easy"),
-			scripted(
+			battle_script(
 				[
-					NextFight(),
 					Cast("flame_strike"),
 					Cast("energy_strike"),
 					Cast("intense_healing"),
@@ -153,6 +191,9 @@ def scenarios(data: GameData) -> list[Scenario]:
 					Attack(),
 					Attack(),
 					Attack(),
+					Cast("intense_healing"),
+					Defend(),
+					Cast("flame_strike"),
 				]
 			),
 		),
@@ -167,6 +208,15 @@ def scenarios(data: GameData) -> list[Scenario]:
 					bot_until_death(data),
 				)
 			)
+	# Seed chosen so the bot beats the final boss: covers elites, auto-equip, the victory phase and continue_run.
+	result.append(
+		Scenario(
+			"bot-victory-continue-archer-easy",
+			2002,
+			RunConfig("Victor", "archer", "easy", auto_equip=True),
+			bot_victory_then_continue(data, extra_rounds=3),
+		)
+	)
 	return result
 
 

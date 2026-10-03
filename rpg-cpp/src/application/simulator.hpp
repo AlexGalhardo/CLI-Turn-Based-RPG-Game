@@ -16,6 +16,7 @@ struct RunResult {
 	std::int64_t round = 0;
 	std::int64_t level = 0;
 	std::string death_cause;
+	bool won = false;
 };
 
 // Aggregated simulated runs. top_killers holds (creature id, deaths), most deadly first.
@@ -23,6 +24,7 @@ struct SimulationSummary {
 	std::string vocation;
 	std::string difficulty;
 	std::int64_t runs = 0;
+	std::int64_t wins = 0;
 	std::int64_t min_round = 0;
 	std::int64_t p10_round = 0;
 	std::int64_t median_round = 0;
@@ -30,13 +32,17 @@ struct SimulationSummary {
 	std::int64_t max_round = 0;
 	std::int64_t mean_level = 0;
 	std::vector<std::pair<std::string, std::int64_t>> top_killers;
+
+	// floor(wins * 100 / runs).
+	[[nodiscard]] std::int64_t win_rate_pct() const { return wins * 100 / runs; }
 };
 
-// The bot plays a run until death. Errors are "invalid run config: ..." or a run that never ends.
+// The bot plays a run until it ends (death, or end_run after the final boss). Errors are "invalid run config: ..." or a
+// run that never ends.
 std::expected<RunResult, std::string> play_one(
     const domain::GameData& data, const RunConfig& config, std::uint64_t seed);
 
-// Runs `runs` games with consecutive seeds and aggregates how far the bot gets.
+// Runs `runs` games with consecutive seeds and aggregates how often the bot wins and how far it gets.
 std::expected<SimulationSummary, std::string> simulate(const domain::GameData& data, const std::string& vocation,
     const std::string& difficulty, std::int64_t runs, std::uint64_t base_seed);
 

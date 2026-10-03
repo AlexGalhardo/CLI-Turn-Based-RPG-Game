@@ -33,13 +33,14 @@ def make_controller(data: GameData, shared_dir: Path, tmp_path: Path, lang: str 
 	return Controller(services, seed=7, locale_override=lang)
 
 
-def start_run(controller: Controller, name: str = "Zed", vocation_key: str = "1") -> None:
+def start_run(controller: Controller, name: str = "Zed", vocation_key: str = "1", auto_equip_key: str = "2") -> None:
 	controller.press("2")
 	controller.press("2")
 	for character in name:
 		controller.press(character)
 	controller.press("enter")
 	controller.press(vocation_key)
+	controller.press(auto_equip_key)
 
 
 def test_name_validation_and_editing(data: GameData, shared_dir: Path, tmp_path: Path) -> None:
@@ -73,10 +74,14 @@ def test_title_without_save_has_no_continue(data: GameData, shared_dir: Path, tm
 def test_language_switch_from_title(data: GameData, shared_dir: Path, tmp_path: Path) -> None:
 	controller = make_controller(data, shared_dir, tmp_path)
 	controller.press("6")
+	assert view_of(controller) is View.SETTINGS
+	controller.press("1")
 	assert view_of(controller) is View.LANGUAGE
 	controller.press("2")
-	assert view_of(controller) is View.TITLE
+	assert view_of(controller) is View.SETTINGS
 	assert controller.locale == "pt-BR"
+	controller.press("0")
+	assert view_of(controller) is View.TITLE
 	assert controller.title() == "CLI Turn-Based RPG"
 	assert any(option.label == "Sair" for option in controller.options())
 
@@ -98,6 +103,9 @@ def test_merchant_menus(data: GameData, shared_dir: Path, tmp_path: Path) -> Non
 	assert any("Hand Axe" in label for label in labels)
 	assert not any("Bow" in label for label in labels)
 	controller.press("1")
+	assert view_of(controller) is View.COMPARE
+	controller.press("1")
+	assert view_of(controller) is View.EQUIPMENT
 	assert player.equipment[next(iter(player.equipment))].uid in {900, 1}
 	controller.press("0")
 	controller.press("2")

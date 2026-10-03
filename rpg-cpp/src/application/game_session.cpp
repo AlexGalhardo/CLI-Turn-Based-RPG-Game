@@ -48,7 +48,7 @@ std::vector<domain::AchievementDef> GameSession::after_step(const std::vector<Ev
 	bool profile_changed = !unlocked.empty() || std::ranges::any_of(events,
 	                                                [](const Event& event) { return event.type == "monster_killed"; });
 
-	if (state().phase == domain::Phase::merchant) {
+	if (state().phase == domain::Phase::merchant || state().phase == domain::Phase::victory) {
 		snapshot_ = state();
 		snapshot_rng_ = engine.rng_state();
 		write_save();
@@ -113,12 +113,13 @@ void GameSession::finish() {
 	    .level = run.player.level,
 	    .magic_level = run.player.magic_level,
 	    .death_cause = run.death_cause.value_or(""),
+	    .won = run.won,
 	    .stats = run.stats,
 	};
 	context_.repositories.history->add(record);
 	context_.repositories.saves->remove();
-	profile.record_finished_run(HallOfFameEntry{
-	    record.run_id, record.name, record.vocation, record.difficulty, record.round, record.level, record.ended_at});
+	profile.record_finished_run(HallOfFameEntry{record.run_id, record.name, record.vocation, record.difficulty,
+	    record.round, record.level, record.ended_at, record.won});
 	finished_record = std::move(record);
 }
 

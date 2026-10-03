@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <set>
 #include <string>
+#include <string_view>
+#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
@@ -71,11 +73,50 @@ TEST_CASE("cross references are valid", "[integration][game_data]") {
 	}
 }
 
+TEST_CASE("the M8 balance tables", "[integration][game_data]") {
+	const auto& data = rpg::testing::test_data();
+	const domain::Balance& balance = data.balance;
+	std::vector<std::string> rarity_ids;
+	std::vector<std::int64_t> rarity_stats;
+	for (const auto& rarity : balance.rarities) {
+		rarity_ids.push_back(rarity.id);
+		rarity_stats.push_back(rarity.stat_pct);
+	}
+	REQUIRE(rarity_ids == std::vector<std::string>{"common", "rare", "legendary", "mythic"});
+	REQUIRE(rarity_stats == std::vector<std::int64_t>{100, 150, 200, 300});
+	std::vector<std::int64_t> effects;
+	for (const auto& level : balance.spell_levels) {
+		effects.push_back(level.effect_pct);
+	}
+	REQUIRE(effects == std::vector<std::int64_t>{100, 150, 200});
+	REQUIRE(balance.rarity_weights.size() == 1);
+	REQUIRE(balance.rarity_weights.contains("merchant"));
+	for (const auto& enemy_class : balance.enemy_classes) {
+		for (const auto& [rarity, weight] : enemy_class.rarity_weights) {
+			REQUIRE(std::ranges::contains(rarity_ids, rarity));
+		}
+	}
+	REQUIRE(balance.enemy_class("elite").stat_pct > balance.enemy_class("normal").stat_pct);
+	REQUIRE(balance.item_score_weights.size() == domain::kStats.size());
+	for (const std::string_view stat : domain::kStats) {
+		REQUIRE(balance.item_score_weights.contains(stat));
+	}
+	REQUIRE(data.boss_of_tier(data.tier_count() - 1).id == "ferumbras");
+	REQUIRE(balance.final_round == balance.rounds_per_tier * data.tier_count());
+	std::vector<std::string> modes;
+	for (const auto& mode : balance.auto_battle.modes) {
+		modes.push_back(mode.id);
+	}
+	REQUIRE(modes == std::vector<std::string>{"melee", "spells", "balanced"});
+}
+
 TEST_CASE("lookup errors", "[integration][game_data]") {
 	const auto& data = rpg::testing::test_data();
 	REQUIRE_THROWS_AS(data.spell("avada_kedavra"), domain::UnknownIdError);
 	REQUIRE_THROWS_AS(data.balance.difficulty("nightmare"), domain::UnknownIdError);
-	REQUIRE_THROWS_AS(data.balance.rarity("mythic"), domain::UnknownIdError);
+	REQUIRE_THROWS_AS(data.balance.rarity("epic"), domain::UnknownIdError);
+	REQUIRE_THROWS_AS(data.balance.enemy_class("champion"), domain::UnknownIdError);
+	REQUIRE_THROWS_AS(data.balance.auto_battle.mode("berserk"), domain::UnknownIdError);
 	REQUIRE_THROWS_AS(data.creature("rat").attack("laser"), domain::UnknownIdError);
 }
 

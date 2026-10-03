@@ -53,6 +53,9 @@ TEST_CASE("the simulator summarises runs", "[integration][simulator]") {
 	const auto summary = application::simulate(data, "warrior", "normal", 3, 10);
 	REQUIRE(summary.has_value());
 	REQUIRE(summary->runs == 3);
+	REQUIRE(summary->wins >= 0);
+	REQUIRE(summary->wins <= 3);
+	REQUIRE(summary->win_rate_pct() == summary->wins * 100 / 3);
 	REQUIRE(1 <= summary->min_round);
 	REQUIRE(summary->min_round <= summary->median_round);
 	REQUIRE(summary->median_round <= summary->max_round);
@@ -69,17 +72,26 @@ TEST_CASE("the simulator summarises runs", "[integration][simulator]") {
 
 TEST_CASE("the report is an aligned table", "[integration][simulator]") {
 	const auto& data = rpg::testing::test_data();
-	const application::SimulationSummary summary{"mage", "hard", 2, 3, 3, 4, 5, 5, 2, {{"rat", 2}}};
+	const application::SimulationSummary summary{"mage", "hard", 2, 1, 3, 3, 4, 5, 5, 2, {{"rat", 2}}};
 	const std::string report = presentation::render_report(std::vector{summary}, data);
-	REQUIRE(report == "vocation  difficulty  runs  min  p10  median  p90  max  avg lvl  top killers\n"
-	                  "--------  ----------  ----  ---  ---  ------  ---  ---  -------  -----------\n"
-	                  "mage      hard        2     3    3    4       5    5    2        Rat (2)");
+	REQUIRE(report == "vocation  difficulty  runs  wins  win %  min  p10  median  p90  max  avg lvl  top killers\n"
+	                  "--------  ----------  ----  ----  -----  ---  ---  ------  ---  ---  -------  -----------\n"
+	                  "mage      hard        2     1     50%    3    3    4       5    5    2        Rat (2)");
+}
+
+TEST_CASE("the simulator counts won runs", "[integration][simulator]") {
+	const auto& data = rpg::testing::test_data();
+	const auto summary = application::simulate(data, "archer", "easy", 2, 2002);
+	REQUIRE(summary.has_value());
+	REQUIRE(summary->wins >= 1);
+	REQUIRE(summary->max_round == data.balance.final_round);
 }
 
 TEST_CASE("main runs the simulator and prints the report", "[integration][cli]") {
 	const auto result = run_main({"--simulate", "1", "--vocation", "mage", "--difficulty", "hard", "--seed", "5"});
 	REQUIRE(result.code == 0);
 	REQUIRE_THAT(result.out, ContainsSubstring("median"));
+	REQUIRE_THAT(result.out, ContainsSubstring("win %"));
 	REQUIRE_THAT(result.out, ContainsSubstring("mage"));
 	const auto all = run_main({"--simulate", "1", "--seed", "0"});
 	REQUIRE(all.code == 0);

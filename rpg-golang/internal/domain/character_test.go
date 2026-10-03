@@ -23,12 +23,12 @@ func TestItemStats(t *testing.T) {
 	item := domain.ItemInstance{UID: 1, ItemID: "test_helmet", Rarity: "legendary", Affixes: []domain.AffixRoll{{Stat: domain.StatMaxHp, Value: 7}}}
 	stats := domain.ItemStats(item, data)
 
-	if stats[domain.StatArmor] != 15 || stats[domain.StatMaxHp] != 82 {
+	if stats[domain.StatArmor] != 20 || stats[domain.StatMaxHp] != 107 {
 		t.Fatalf("legendary stats wrong: %v", stats)
 	}
 
-	if domain.ItemValue(item, data) != 1000 {
-		t.Fatal("legendary value must be 1000%")
+	if domain.ItemValue(item, data) != 600 {
+		t.Fatal("legendary value must be 600%")
 	}
 }
 
@@ -78,9 +78,19 @@ func TestGameDataLookups(t *testing.T) {
 		t.Fatal("unknown difficulty must fail")
 	}
 
-	if _, err := data.Balance.Rarity("mythic"); err == nil {
+	if _, err := data.Balance.Rarity("epic"); err == nil {
 		t.Fatal("unknown rarity must fail")
 	}
+
+	if _, err := data.Balance.EnemyClass("champion"); err == nil {
+		t.Fatal("unknown enemy class must fail")
+	}
+
+	if _, err := data.Balance.AutoBattle.Mode("berserk"); err == nil {
+		t.Fatal("unknown auto-battle mode must fail")
+	}
+
+	expectUnknown("enemy class", func() { data.Balance.MustEnemyClass("champion") })
 
 	if _, err := data.Creature("rat").Attack("laser"); err == nil {
 		t.Fatal("unknown attack must fail")

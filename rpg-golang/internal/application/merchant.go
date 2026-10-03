@@ -42,14 +42,13 @@ func NewMerchant(data *domain.GameData, rng *domain.Rng, state *RunState) *Merch
 // Enter generates the rotating stock for the tier of the next round.
 func (m *Merchant) Enter() []Event {
 	state := m.state
-	difficulty := m.data.Balance.MustDifficulty(state.Config.DifficultyID)
 	vocation := m.data.Vocation(state.Player.VocationID)
 	tier := domain.RoundInfoFor(state.Round+1, &m.data.Balance, m.data.TierCount()).Tier
 	state.MerchantStock = []domain.ItemInstance{}
 
 	for range m.data.Balance.MerchantStockSize {
 		item, ok := GenerateItem(m.data, m.rng, ItemRequest{
-			Vocation: vocation, Tier: tier, Table: "merchant", Difficulty: difficulty, UID: state.NextItemUID,
+			Vocation: vocation, Tier: tier, Weights: m.data.Balance.RarityWeights["merchant"], UID: state.NextItemUID,
 		})
 		if ok {
 			state.TakeItemUID()
@@ -137,6 +136,10 @@ func (m *Merchant) equip(uid int) []Event {
 		return []Event{ErrorEvent(ErrCannotEquip)}
 	}
 
+	if domain.RequiredLevel(item, m.data) > player.Level {
+		return []Event{ErrorEvent(ErrLevelTooLow)}
+	}
+
 	events := []Event{}
 	player.Bag = slices.Delete(player.Bag, index, index+1)
 
@@ -195,7 +198,12 @@ func (m *Merchant) buyStock(index int) []Event {
 	state.MerchantStock = slices.Delete(state.MerchantStock, index, index+1)
 	state.Player.Bag = append(state.Player.Bag, item)
 
-	return []Event{NewEvent("item_bought", map[string]any{"uid": item.UID, "itemId": item.ItemID, "gold": price})}
+	events := []Event{NewEvent("item_bought", map[string]any{"uid": item.UID, "itemId": item.ItemID, "gold": price})}
+	if state.Config.AutoEquip {
+		events = append(events, AutoEquip(state, m.data)...)
+	}
+
+	return events
 }
 
 func (m *Merchant) clampResources() {

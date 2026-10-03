@@ -2,13 +2,16 @@
  * Framework-independent UI state machine: which screen is shown, its options and what each key does.
  * Port of rpg-python/src/rpg/presentation/controller.py — the Ink app only renders this controller.
  */
+import { AUTO_BATTLE_MODES, type AutoBattleMode, AutoBattlePolicy } from "../application/auto-battle";
 import {
 	Attack,
 	BuyPotion,
 	BuyStockItem,
 	Cast,
 	type Command,
+	ContinueRun,
 	Defend,
+	EndRun,
 	Equip,
 	NextFight,
 	SellItem,
@@ -21,51 +24,71 @@ import { availablePotions, stockPrice } from "../application/merchant";
 import type { Clock } from "../application/ports";
 import { ProfileService } from "../application/profile";
 import { RunConfig } from "../application/run-state";
-import { buildSheet, itemValue } from "../domain/character";
+import { buildSheet, equipmentScore, itemScore, itemStats, itemValue, requiredLevel } from "../domain/character";
 import type { GameData } from "../domain/definitions";
 import type { ItemInstance } from "../domain/entities";
-import { ELEMENTS, type Element, SLOTS } from "../domain/enums";
+import { ELEMENTS, type Element, EQUIPMENT_SLOT_ORDER, SLOTS, type Slot, STATS } from "../domain/enums";
 import { manaForMagicLevel, pct, roundInfo, spellLevelForUses, xpForLevel } from "../domain/formulas";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, Translator } from "../infrastructure/i18n";
-import type { SettingsRepository } from "../infrastructure/repositories";
+import { BATTLE_SPEEDS, type Settings, type SettingsRepository } from "../infrastructure/repositories";
 import { EventFormatter } from "./event-text";
-import { listKey } from "./render";
+import { deltaStyle, formatDelta, listKey, STYLE_DIM, STYLE_GAIN, STYLE_LOSS, STYLE_WARNING } from "./render";
 
 const MAX_LOG_LINES = 50;
 const MAX_NAME_LENGTH = 16;
 const MAX_QUANTITY_DIGITS = 2;
 export const PAGE_SIZE = 10;
+/** Auto-battle pace (docs/tui.md): one turn every 600 ms at 1x, 300 ms at 2x; instant with --no-anim. */
+export const AUTO_BATTLE_BASE_MS = 600;
+/** Safety net: a fight that somehow never ends hands control back to the player. */
+export const MAX_AUTO_BATTLE_TURNS = 10_000;
 
 export type View =
 	| "language"
 	| "title"
+	| "settings"
 	| "difficulty"
 	| "name"
 	| "vocation"
+	| "auto_equip"
 	| "merchant"
 	| "buy_potions"
 	| "quantity"
 	| "sell"
 	| "equipment"
+	| "compare"
+	| "equipped_slot"
 	| "stock"
 	| "character"
 	| "battle"
 	| "spells"
 	| "potions"
+	| "auto_battle"
+	| "victory"
 	| "game_over"
 	| "hall_of_fame"
 	| "bestiary"
 	| "achievements";
 
-const BATTLE_VIEWS: ReadonlySet<View> = new Set<View>(["battle", "spells", "potions"]);
+const BATTLE_VIEWS: ReadonlySet<View> = new Set<View>(["battle", "spells", "potions", "auto_battle"]);
 const TEXT_INPUT_VIEWS: ReadonlySet<View> = new Set<View>(["name", "quantity"]);
 export const PAGED_VIEWS: ReadonlySet<View> = new Set<View>(["hall_of_fame", "bestiary", "achievements", "character"]);
+const STYLED_VIEWS: ReadonlySet<View> = new Set<View>(["equipment", "compare", "equipped_slot"]);
 
 export interface MenuOption {
 	readonly key: string;
 	readonly label: string;
 	readonly color: string | null;
+	readonly detail: string;
+	readonly detailColor: string | null;
 }
+
+export interface BodyLine {
+	readonly text: string;
+	readonly color: string | null;
+}
+
+const bodyLine = (text: string, color: string | null = null): BodyLine => ({ text, color });
 
 export interface Services {
 	readonly data: GameData;
@@ -81,6 +104,7 @@ export interface MonsterView {
 	readonly hp: number;
 	readonly maxHp: number;
 	readonly isBoss: boolean;
+	readonly enemyClass: string;
 	readonly element: Element;
 	readonly details: string;
 }
@@ -99,7 +123,13 @@ export interface PlayerView {
 type Action = () => void;
 type MenuEntry = readonly [MenuOption, Action];
 
-const option = (key: string, label: string, color: string | null = null): MenuOption => ({ key, label, color });
+const option = (
+	key: string,
+	label: string,
+	color: string | null = null,
+	detail = "",
+	detailColor: string | null = null,
+): MenuOption => ({ key, label, color, detail, detailColor });
 
 export function randomSeed(): number {
 	return crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
@@ -121,12 +151,18 @@ export class Controller {
 	animationCues: string[] = [];
 	page = 0;
 	locale: string;
+	settings: Settings;
 	#translator: Translator;
 	#formatter: EventFormatter;
 	#languageReturn: View = "title";
 	#difficulty = "normal";
 	#name = "";
+	#vocation = "";
 	#potionId = "";
+	#compareUid = 0;
+	#slot: Slot = "weapon";
+	#autoBattle: AutoBattlePolicy | null = null;
+	#autoTurns = 0;
 	readonly #data: GameData;
 	readonly #seed: number | null;
 	readonly #seedSource: () => number;
@@ -139,6 +175,7 @@ export class Controller {
 		this.#seed = options.seed ?? null;
 		this.#seedSource = options.seedSource ?? randomSeed;
 		const settings = services.settings.load();
+		this.settings = settings;
 		const override = options.localeOverride ?? null;
 		this.locale = override ?? settings.locale ?? DEFAULT_LOCALE;
 		this.#translator = new Translator(this.locale);
@@ -166,12 +203,16 @@ export class Controller {
 				return this.t("language.title");
 			case "title":
 				return this.t("app.title");
+			case "settings":
+				return this.t("settings.title");
 			case "difficulty":
 				return this.t("new_run.difficulty");
 			case "name":
 				return this.t("new_run.name");
 			case "vocation":
 				return this.t("new_run.vocation");
+			case "auto_equip":
+				return this.t("new_run.auto_equip");
 			case "merchant": {
 				const round = this.session?.state.round ?? 0;
 				return round === 0 ? this.t("merchant.title_start") : this.t("merchant.title", { round });
@@ -184,6 +225,10 @@ export class Controller {
 				return this.t("merchant.sell_items");
 			case "equipment":
 				return this.t("merchant.equipment");
+			case "compare":
+				return this.compareTitle();
+			case "equipped_slot":
+				return this.t(`slot.${this.#slot}`);
 			case "stock":
 				return this.t("merchant.stock");
 			case "character":
@@ -194,8 +239,12 @@ export class Controller {
 				return this.t("battle.spells");
 			case "potions":
 				return this.t("battle.potions");
+			case "auto_battle":
+				return this.t("auto_battle.title");
+			case "victory":
+				return this.t("victory.title");
 			case "game_over":
-				return this.t("gameover.title");
+				return this.t(this.session?.state.won === true ? "gameover.title_won" : "gameover.title");
 			case "hall_of_fame":
 				return this.t("menu.hall_of_fame");
 			case "bestiary":
@@ -211,12 +260,18 @@ export class Controller {
 
 	/** Informative lines shown above the options (paged for long lists). */
 	bodyLines(): string[] {
-		const lines = this.body();
+		const lines = STYLED_VIEWS.has(this.view) ? this.styledBody().map((line) => line.text) : this.body();
 		if (!PAGED_VIEWS.has(this.view) || lines.length <= PAGE_SIZE) return lines;
 		const pages = Math.ceil(lines.length / PAGE_SIZE);
 		this.page = Math.min(this.page, pages - 1);
 		const start = this.page * PAGE_SIZE;
 		return [...lines.slice(start, start + PAGE_SIZE), "", this.t("menu.page", { page: this.page + 1, pages })];
+	}
+
+	/** Colour of each line of `bodyLines()` (semantic styles from render.ts or rarity ids). */
+	bodyColors(): Array<string | null> {
+		if (STYLED_VIEWS.has(this.view)) return this.styledBody().map((line) => line.color);
+		return this.bodyLines().map(() => null);
 	}
 
 	inputPrompt(): string | null {
@@ -258,6 +313,7 @@ export class Controller {
 			hp: monster.hp,
 			maxHp: monster.maxHp,
 			isBoss: monster.isBoss,
+			enemyClass: monster.enemyClass,
 			element: main?.element ?? "physical",
 			details,
 		};
@@ -287,6 +343,7 @@ export class Controller {
 	// ── input ─────────────────────────────────────────────────────────────────
 
 	press(rawKey: string): void {
+		if (this.autoBattleActive) return;
 		this.message = "";
 		if (TEXT_INPUT_VIEWS.has(this.view)) {
 			this.textInput(rawKey);
@@ -303,6 +360,46 @@ export class Controller {
 				return;
 			}
 		}
+	}
+
+	// ── auto-battle (docs/game-design.md §13, docs/tui.md) ──────────────────────
+
+	get autoBattleActive(): boolean {
+		return this.#autoBattle !== null;
+	}
+
+	autoBattleIntervalMs(): number {
+		return Math.floor(AUTO_BATTLE_BASE_MS / this.settings.battleSpeed);
+	}
+
+	/** Plays one auto-battle turn. Returns true while the fight goes on (the renderer's timer keeps ticking). */
+	autoBattleStep(): boolean {
+		const policy = this.#autoBattle;
+		const session = this.session;
+		if (policy === null || session === null || session.state.phase !== "battle") {
+			this.#autoBattle = null;
+			return false;
+		}
+		this.#autoTurns += 1;
+		this.step(policy.choose(session.state));
+		if (session.state.phase !== "battle" || this.#autoTurns >= MAX_AUTO_BATTLE_TURNS) this.#autoBattle = null;
+		return this.autoBattleActive;
+	}
+
+	/** Instant mode (--no-anim): plays the whole fight at once. */
+	runAutoBattle(): void {
+		while (this.autoBattleStep()) {
+			// each call plays one turn
+		}
+	}
+
+	private startAutoBattle(mode: AutoBattleMode): Action {
+		return () => {
+			this.#autoTurns = 0;
+			this.#autoBattle = new AutoBattlePolicy(this.#data, mode);
+			this.view = "battle";
+			this.pushLog(this.t("auto_battle.started", { mode: this.t(`auto_battle.${mode}`) }));
+		};
 	}
 
 	private textInput(key: string): void {
@@ -348,6 +445,8 @@ export class Controller {
 				]);
 			case "title":
 				return this.titleMenu();
+			case "settings":
+				return this.settingsMenu();
 			case "difficulty":
 				return [
 					...this.#data.balance.difficulties.map(
@@ -374,6 +473,8 @@ export class Controller {
 					),
 					this.back("difficulty"),
 				];
+			case "auto_equip":
+				return this.autoEquipMenu();
 			case "merchant":
 				return this.merchantMenu();
 			case "buy_potions":
@@ -382,6 +483,10 @@ export class Controller {
 				return [...this.sellMenu(), this.back("merchant")];
 			case "equipment":
 				return [...this.equipmentMenu(), this.back("merchant")];
+			case "compare":
+				return [[option("1", this.t("equipment.equip")), () => this.equipCompared()], this.back("equipment")];
+			case "equipped_slot":
+				return [[option("1", this.t("equipment.unequip")), () => this.unequipSlot()], this.back("equipment")];
 			case "stock":
 				return [...this.stockMenu(), this.back("merchant")];
 			case "character":
@@ -392,7 +497,23 @@ export class Controller {
 					[option("2", this.t("battle.spells")), this.go("spells")],
 					[option("3", this.t("battle.potions")), this.go("potions")],
 					[option("4", this.t("battle.defend")), () => this.step(Defend())],
+					[option("5", this.t("battle.auto")), this.go("auto_battle")],
 					[option("q", this.t("battle.save_quit")), () => this.saveAndQuit()],
+				];
+			case "auto_battle":
+				return [
+					...AUTO_BATTLE_MODES.map(
+						(mode, i): MenuEntry => [
+							option(String(i + 1), this.t(`auto_battle.${mode}`)),
+							this.startAutoBattle(mode),
+						],
+					),
+					this.back("battle"),
+				];
+			case "victory":
+				return [
+					[option("1", this.t("victory.end_run")), () => this.step(EndRun())],
+					[option("2", this.t("victory.continue")), () => this.step(ContinueRun())],
 				];
 			case "spells":
 				return [...this.spellMenu(), this.back("battle")];
@@ -434,10 +555,58 @@ export class Controller {
 			[option("3", this.t("menu.hall_of_fame")), this.go("hall_of_fame")],
 			[option("4", this.t("menu.bestiary")), this.go("bestiary")],
 			[option("5", this.t("menu.achievements")), this.go("achievements")],
-			[option("6", this.t("menu.language")), () => this.openLanguage()],
+			[option("6", this.t("menu.settings")), this.go("settings")],
 			[option("0", this.t("menu.quit")), () => this.quit()],
 		);
 		return menu;
+	}
+
+	private onOff(enabled: boolean): string {
+		return this.t(enabled ? "settings.on" : "settings.off");
+	}
+
+	private settingsMenu(): MenuEntry[] {
+		const settings = this.settings;
+		return [
+			[
+				option("1", this.t("settings.language", { language: this.t(`language.${this.locale}`) })),
+				() => this.openLanguage(),
+			],
+			[
+				option("2", this.t("settings.auto_equip", { state: this.onOff(settings.autoEquip) })),
+				() => this.saveSettings({ ...this.settings, autoEquip: !this.settings.autoEquip }),
+			],
+			[
+				option("3", this.t("settings.battle_speed", { speed: settings.battleSpeed })),
+				() => this.cycleBattleSpeed(),
+			],
+			this.back("title"),
+		];
+	}
+
+	private saveSettings(settings: Settings): void {
+		this.settings = settings;
+		this.services.settings.save(settings);
+	}
+
+	private cycleBattleSpeed(): void {
+		const index = Math.max(0, BATTLE_SPEEDS.indexOf(this.settings.battleSpeed));
+		const speed = BATTLE_SPEEDS[(index + 1) % BATTLE_SPEEDS.length] ?? this.settings.battleSpeed;
+		this.saveSettings({ ...this.settings, battleSpeed: speed });
+	}
+
+	private autoEquipMenu(): MenuEntry[] {
+		const defaultMark = this.t("new_run.default");
+		const menu: MenuEntry[] = [];
+		for (const [key, enabled] of [
+			["1", true],
+			["2", false],
+		] as const) {
+			let label = this.t(enabled ? "new_run.auto_equip_on" : "new_run.auto_equip_off");
+			if (enabled === this.settings.autoEquip) label = `${label} ${defaultMark}`;
+			menu.push([option(key, label), () => this.startRun(enabled)]);
+		}
+		return [...menu, this.back("vocation")];
 	}
 
 	private merchantMenu(): MenuEntry[] {
@@ -488,24 +657,80 @@ export class Controller {
 		);
 	}
 
-	private equipmentMenu(): MenuEntry[] {
+	private usableBag(): ItemInstance[] {
 		const player = this.requireSession().state.player;
 		const vocation = this.#data.vocation(player.vocationId);
-		const entries: Array<readonly [string, string, Command]> = [];
-		for (const item of player.bag) {
-			if (canUse(this.#data.item(item.itemId), vocation)) {
-				entries.push([this.itemLabel("merchant.equip_option", item), item.rarity, Equip(item.uid)]);
-			}
+		return player.bag.filter((item) => canUse(this.#data.item(item.itemId), vocation));
+	}
+
+	/** Score of `item` minus the score of what is equipped in its slot (0 for an empty slot). */
+	private scoreDelta(item: ItemInstance): number {
+		const equipped = this.requireSession().state.player.equipment.get(this.#data.item(item.itemId).slot);
+		return itemScore(item, this.#data) - (equipped === undefined ? 0 : itemScore(equipped, this.#data));
+	}
+
+	/** Usable bag items first (keys 1..n, as in docs/tui.md), then the equipped slots. */
+	private equipmentMenu(): MenuEntry[] {
+		const player = this.requireSession().state.player;
+		const entries: Array<readonly [MenuOption, Action]> = [];
+		for (const item of this.usableBag()) {
+			const definition = this.#data.item(item.itemId);
+			const level = requiredLevel(item, this.#data);
+			let label = this.t("equipment.bag_option", {
+				name: definition.name,
+				rarity: this.t(`rarity.${item.rarity}`),
+				slot: this.t(`slot.${definition.slot}`),
+				level,
+				score: itemScore(item, this.#data),
+			});
+			const tooHigh = level > player.level;
+			if (tooHigh) label = `${label} · ${this.t("equipment.requires_level", { level })}`;
+			const delta = this.scoreDelta(item);
+			entries.push([
+				option("", label, tooHigh ? STYLE_DIM : item.rarity, formatDelta(delta), deltaStyle(delta)),
+				this.openCompare(item.uid),
+			]);
 		}
-		for (const slot of SLOTS) {
+		for (const slot of EQUIPMENT_SLOT_ORDER) {
 			const equipped = player.equipment.get(slot);
 			if (equipped !== undefined) {
-				entries.push([this.itemLabel("merchant.unequip_option", equipped), equipped.rarity, Unequip(slot)]);
+				const label = this.t("equipment.slot_option", {
+					slot: this.t(`slot.${slot}`),
+					name: this.#data.item(equipped.itemId).name,
+					rarity: this.t(`rarity.${equipped.rarity}`),
+				});
+				entries.push([option("", label, equipped.rarity), this.openSlot(slot)]);
 			}
 		}
-		return entries.map(
-			([label, color, command], i): MenuEntry => [option(listKey(i), label, color), this.command(command)],
-		);
+		return entries.map(([entry, action], index): MenuEntry => [{ ...entry, key: listKey(index) }, action]);
+	}
+
+	private openCompare(uid: number): Action {
+		return () => {
+			this.#compareUid = uid;
+			this.view = "compare";
+		};
+	}
+
+	private openSlot(slot: Slot): Action {
+		return () => {
+			this.#slot = slot;
+			this.view = "equipped_slot";
+		};
+	}
+
+	private comparedItem(): ItemInstance | null {
+		return this.requireSession().state.player.bag.find((item) => item.uid === this.#compareUid) ?? null;
+	}
+
+	private equipCompared(): void {
+		this.step(Equip(this.#compareUid));
+		this.view = "equipment";
+	}
+
+	private unequipSlot(): void {
+		this.step(Unequip(this.#slot));
+		this.view = "equipment";
 	}
 
 	private stockMenu(): MenuEntry[] {
@@ -559,12 +784,12 @@ export class Controller {
 
 	private chooseLanguage(locale: string): void {
 		this.setLocale(locale);
-		this.services.settings.save({ locale });
+		this.saveSettings({ ...this.settings, locale });
 		this.view = this.#languageReturn;
 	}
 
 	private openLanguage(): void {
-		this.#languageReturn = "title";
+		this.#languageReturn = "settings";
 		this.view = "language";
 	}
 
@@ -584,10 +809,15 @@ export class Controller {
 	}
 
 	private chooseVocation(vocationId: string): void {
+		this.#vocation = vocationId;
+		this.view = "auto_equip";
+	}
+
+	private startRun(autoEquip: boolean): void {
 		const seed = this.#seed ?? this.#seedSource();
 		const [session, events] = GameSession.start(
 			this.#data,
-			new RunConfig(this.#name, vocationId, this.#difficulty),
+			new RunConfig(this.#name, this.#vocation, this.#difficulty, autoEquip),
 			seed,
 			{
 				repositories: this.services.repositories,
@@ -611,7 +841,7 @@ export class Controller {
 		this.session = session;
 		this.log.length = 0;
 		this.pushLog(this.t("menu.welcome_back", { name: session.state.player.name, round: session.state.round }));
-		this.view = "merchant";
+		this.view = session.state.phase === "victory" ? "victory" : "merchant";
 	}
 
 	private askQuantity(potionId: string): void {
@@ -641,7 +871,8 @@ export class Controller {
 		const phase = session.state.phase;
 		if (phase === "battle") this.view = "battle";
 		else if (phase === "game_over") this.view = "game_over";
-		else if (BATTLE_VIEWS.has(this.view)) this.view = "merchant";
+		else if (phase === "victory") this.view = "victory";
+		else if (BATTLE_VIEWS.has(this.view) || this.view === "victory") this.view = "merchant";
 	}
 
 	private pushLog(line: string): void {
@@ -681,6 +912,8 @@ export class Controller {
 				return this.characterSheet();
 			case "game_over":
 				return this.gameOverSummary();
+			case "victory":
+				return this.victorySummary();
 			case "hall_of_fame":
 				return this.hallOfFame();
 			case "bestiary":
@@ -762,30 +995,171 @@ export class Controller {
 		return lines;
 	}
 
+	private runStatsLine(): string {
+		const state = this.requireSession().state;
+		return this.t("gameover.stats", {
+			level: state.player.level,
+			damage: state.stats.damageDealt,
+			kills: state.stats.kills.total(),
+			elites: state.stats.elitesKilled,
+			bosses: state.stats.bossesKilled,
+		});
+	}
+
 	private gameOverSummary(): string[] {
 		const state = this.requireSession().state;
-		const monster = state.deathCause ? this.#data.creature(state.deathCause).name : "?";
+		const params = {
+			name: state.player.name,
+			vocation: this.t(`vocation.${state.player.vocationId}`),
+			round: state.round,
+		};
+		let summary: string;
+		if (state.deathCause) {
+			summary = this.t("gameover.summary", { ...params, monster: this.#data.creature(state.deathCause).name });
+		} else if (state.won) {
+			summary = this.t("gameover.won_summary", params);
+		} else {
+			summary = this.t("gameover.summary", { ...params, monster: "?" });
+		}
+		return [summary, this.runStatsLine()];
+	}
+
+	private victorySummary(): string[] {
+		const state = this.requireSession().state;
+		const boss = this.#data.bossOfTier(roundInfo(state.round, this.#data.balance, this.#data.tierCount).tier);
 		return [
-			this.t("gameover.summary", {
+			this.t("victory.summary", {
 				name: state.player.name,
 				vocation: this.t(`vocation.${state.player.vocationId}`),
+				monster: boss.name,
 				round: state.round,
-				monster,
 			}),
-			this.t("gameover.stats", {
-				level: state.player.level,
-				damage: state.stats.damageDealt,
-				kills: state.stats.kills.total(),
-				bosses: state.stats.bossesKilled,
-			}),
+			this.runStatsLine(),
+			"",
+			this.t("victory.choice"),
 		];
+	}
+
+	// ── equipment screens (docs/tui.md "Equipment screen") ────────────────────
+
+	private styledBody(): BodyLine[] {
+		if (this.view === "equipment") return this.equipmentBody();
+		if (this.view === "compare") return this.compareBody();
+		return this.slotBody();
+	}
+
+	private equipmentBody(): BodyLine[] {
+		const player = this.requireSession().state.player;
+		const lines = [bodyLine(this.t("equipment.equipped_header", { score: equipmentScore(player, this.#data) }))];
+		for (const slot of EQUIPMENT_SLOT_ORDER) {
+			const slotName = this.t(`slot.${slot}`);
+			const item = player.equipment.get(slot);
+			if (item === undefined) {
+				lines.push(bodyLine(this.t("equipment.slot_empty", { slot: slotName }), STYLE_WARNING));
+				continue;
+			}
+			const text = this.t("equipment.slot_line", {
+				slot: slotName,
+				name: this.#data.item(item.itemId).name,
+				rarity: this.t(`rarity.${item.rarity}`),
+				level: requiredLevel(item, this.#data),
+				score: itemScore(item, this.#data),
+			});
+			lines.push(bodyLine(text, item.rarity));
+		}
+		lines.push(bodyLine(""), bodyLine(this.t("equipment.bag_header")));
+		if (this.usableBag().length === 0) lines.push(bodyLine(this.t("equipment.bag_empty")));
+		return lines;
+	}
+
+	private compareTitle(): string {
+		const item = this.comparedItem();
+		if (item === null) return this.t("merchant.equipment");
+		const player = this.requireSession().state.player;
+		const slot = this.#data.item(item.itemId).slot;
+		const current = player.equipment.get(slot);
+		return this.t("equipment.compare_title", {
+			slot: this.t(`slot.${slot}`),
+			current: current === undefined ? this.t("equipment.empty") : this.#data.item(current.itemId).name,
+			new: this.#data.item(item.itemId).name,
+		});
+	}
+
+	private affixList(item: ItemInstance | undefined): string {
+		if (item === undefined) return "";
+		return item.affixes
+			.map((affix) => this.t("equipment.affix", { value: affix.value, stat: this.t(`stat.${affix.stat}`) }))
+			.join(", ");
+	}
+
+	private compareBody(): BodyLine[] {
+		const item = this.comparedItem();
+		if (item === null) return [];
+		const player = this.requireSession().state.player;
+		const current = player.equipment.get(this.#data.item(item.itemId).slot);
+		const newStats = itemStats(item, this.#data);
+		const oldStats = current === undefined ? new Map<string, number>() : itemStats(current, this.#data);
+		const lines: BodyLine[] = [];
+		for (const stat of STATS) {
+			if (!newStats.has(stat) && !oldStats.has(stat)) continue;
+			const before = oldStats.get(stat) ?? 0;
+			const after = newStats.get(stat) ?? 0;
+			const text = this.t("equipment.stat_delta", {
+				stat: this.t(`stat.${stat}`),
+				current: before,
+				new: after,
+				delta: formatDelta(after - before),
+			});
+			lines.push(bodyLine(text, deltaStyle(after - before)));
+		}
+		const gained = this.affixList(item);
+		const lost = this.affixList(current);
+		if (gained) lines.push(bodyLine(this.t("equipment.affixes_gained", { affixes: gained }), STYLE_GAIN));
+		if (lost) lines.push(bodyLine(this.t("equipment.affixes_lost", { affixes: lost }), STYLE_LOSS));
+		const oldScore = current === undefined ? 0 : itemScore(current, this.#data);
+		const newScore = itemScore(item, this.#data);
+		const score = this.t("equipment.score_delta", {
+			current: oldScore,
+			new: newScore,
+			delta: formatDelta(newScore - oldScore),
+		});
+		lines.push(bodyLine(score, deltaStyle(newScore - oldScore)));
+		const level = requiredLevel(item, this.#data);
+		if (level > player.level) {
+			lines.push(bodyLine(this.t("equipment.level_needed", { level, current: player.level }), STYLE_LOSS));
+		}
+		return lines;
+	}
+
+	private slotBody(): BodyLine[] {
+		const item = this.requireSession().state.player.equipment.get(this.#slot);
+		if (item === undefined) return [bodyLine(this.t("equipment.empty"), STYLE_WARNING)];
+		const lines = [
+			bodyLine(
+				this.t("equipment.item_title", {
+					name: this.#data.item(item.itemId).name,
+					rarity: this.t(`rarity.${item.rarity}`),
+					level: requiredLevel(item, this.#data),
+					score: itemScore(item, this.#data),
+				}),
+				item.rarity,
+			),
+		];
+		const stats = itemStats(item, this.#data);
+		for (const stat of STATS) {
+			const value = stats.get(stat);
+			if (value !== undefined) {
+				lines.push(bodyLine(this.t("character.stat_line", { stat: this.t(`stat.${stat}`), value })));
+			}
+		}
+		return lines;
 	}
 
 	private hallOfFame(): string[] {
 		const hall = this.profile().profile.hallOfFame;
 		if (hall.length === 0) return [this.t("hall.empty")];
 		return hall.map((entry, index) =>
-			this.t("hall.entry", {
+			this.t(entry.won ? "hall.entry_won" : "hall.entry", {
 				position: index + 1,
 				name: entry.name,
 				vocation: this.t(`vocation.${entry.vocation}`),

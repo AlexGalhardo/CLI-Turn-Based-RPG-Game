@@ -51,8 +51,17 @@ struct BuyStockItem {
 	bool operator==(const BuyStockItem&) const = default;
 };
 
-using Command =
-    std::variant<Attack, Cast, UsePotion, Defend, NextFight, BuyPotion, SellItem, Equip, Unequip, BuyStockItem>;
+// Victory phase: close the won run (history + Hall of Fame).
+struct EndRun {
+	bool operator==(const EndRun&) const = default;
+};
+// Victory phase: keep playing endlessly after beating the final boss.
+struct ContinueRun {
+	bool operator==(const ContinueRun&) const = default;
+};
+
+using Command = std::variant<Attack, Cast, UsePotion, Defend, NextFight, BuyPotion, SellItem, Equip, Unequip,
+    BuyStockItem, EndRun, ContinueRun>;
 
 // Whether the command belongs to the battle phase.
 bool is_battle(const Command& command);

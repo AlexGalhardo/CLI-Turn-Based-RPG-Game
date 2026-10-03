@@ -6,7 +6,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use serde::{Deserialize, Serialize};
 
-use crate::domain::enums::{Element, Resource, Slot, SpellKind, Stat, StatusKind};
+use crate::domain::enums::{Element, EnemyClass, Resource, Slot, SpellKind, Stat, StatusKind};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -175,7 +175,6 @@ pub struct DifficultyDef {
 	pub damage_pct: i64,
 	pub gold_pct: i64,
 	pub xp_pct: i64,
-	pub non_common_weight_pct: i64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -186,6 +185,63 @@ pub struct RarityDef {
 	pub value_pct: i64,
 	pub affix_min: i64,
 	pub affix_max: i64,
+}
+
+/// A row of `balance.enemyClasses`: multipliers, combat chances and drop table (docs/game-design.md §3).
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EnemyClassDef {
+	pub stat_pct: i64,
+	pub reward_pct: i64,
+	pub dodge: i64,
+	pub parry: i64,
+	pub crit: i64,
+	pub heal: i64,
+	pub drop_chance_pct: i64,
+	pub drops: i64,
+	pub potion_drop_pct: i64,
+	pub rarity_weights: BTreeMap<String, i64>,
+}
+
+/// `balance.enemyClasses`: one row per [`EnemyClass`].
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct EnemyClasses {
+	pub normal: EnemyClassDef,
+	pub elite: EnemyClassDef,
+	pub boss: EnemyClassDef,
+}
+
+impl EnemyClasses {
+	pub fn get(&self, enemy_class: EnemyClass) -> &EnemyClassDef {
+		match enemy_class {
+			EnemyClass::Normal => &self.normal,
+			EnemyClass::Elite => &self.elite,
+			EnemyClass::Boss => &self.boss,
+		}
+	}
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AutoBattleModeDef {
+	pub offense: String,
+	pub support_every: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AutoBattleDef {
+	pub heal_below_pct: i64,
+	pub mana_below_pct: i64,
+	pub emergency_heal_below_pct: i64,
+	/// Looked up by id only, never iterated for a decision.
+	pub modes: BTreeMap<String, AutoBattleModeDef>,
+}
+
+impl AutoBattleDef {
+	pub fn mode(&self, mode_id: &str) -> &AutoBattleModeDef {
+		self.modes.get(mode_id).unwrap_or_else(|| unknown_id(mode_id))
+	}
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -228,9 +284,14 @@ pub struct Balance {
 	pub cycle_stat_pct: i64,
 	pub cycle_reward_pct: i64,
 	pub position_pct: i64,
+	pub final_round: i64,
+	pub elite_chance_pct: i64,
 	pub difficulties: Vec<DifficultyDef>,
+	pub enemy_classes: EnemyClasses,
 	pub crit_multiplier_pct: i64,
 	pub defend_damage_pct: i64,
+	pub parry_reflect_pct: i64,
+	pub monster_heal_pct: i64,
 	pub boss_telegraph_every: i64,
 	pub boss_charge_damage_pct: i64,
 	pub caps: Caps,
@@ -239,13 +300,14 @@ pub struct Balance {
 	pub starting_gold: i64,
 	pub starting_potions: Vec<StartingPotion>,
 	pub bag_capacity: i64,
-	pub drop_chance_pct: i64,
-	pub boss_drops: i64,
+	pub item_level_per_tier: i64,
+	pub item_score_weights: BTreeMap<Stat, i64>,
 	pub rarities: Vec<RarityDef>,
 	pub rarity_weights: BTreeMap<String, BTreeMap<String, i64>>,
 	pub merchant_stock_size: i64,
 	pub merchant_markup_pct: i64,
 	pub spell_status_damage_pct: i64,
+	pub auto_battle: AutoBattleDef,
 }
 
 impl Balance {
@@ -255,6 +317,10 @@ impl Balance {
 
 	pub fn difficulty(&self, difficulty_id: &str) -> &DifficultyDef {
 		self.find_difficulty(difficulty_id).unwrap_or_else(|| unknown_id(difficulty_id))
+	}
+
+	pub fn enemy_class(&self, enemy_class: EnemyClass) -> &EnemyClassDef {
+		self.enemy_classes.get(enemy_class)
 	}
 
 	pub fn find_rarity(&self, rarity_id: &str) -> Option<&RarityDef> {

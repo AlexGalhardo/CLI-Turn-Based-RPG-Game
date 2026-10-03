@@ -1,13 +1,13 @@
 {
-	"schemaVersion": 1,
-	"gameVersion": "1.0.0",
+	"schemaVersion": 2,
+	"gameVersion": "1.4.0",
 	"implementation": "python",
-	"savedAt": "2026-09-27T12:20:40Z",
-	"rngState": 4050111629,
+	"savedAt": "2026-09-27T12:12:50Z",
+	"rngState": 3249181268,
 	"session": {
 		"runId": "20260927T120010Z-2024",
 		"startedAt": "2026-09-27T12:00:10Z",
-		"playTimeSeconds": 1220,
+		"playTimeSeconds": 750,
 		"sessions": 1
 	},
 	"run": {
@@ -15,93 +15,74 @@
 		"config": {
 			"name": "Ana",
 			"vocation": "archer",
-			"difficulty": "hard"
+			"difficulty": "hard",
+			"autoEquip": true
 		},
 		"player": {
 			"name": "Ana",
 			"vocationId": "archer",
-			"hp": 179,
-			"mp": 33,
-			"gold": 49,
+			"hp": 159,
+			"mp": 21,
+			"gold": 234,
 			"level": 6,
-			"xp": 1556,
+			"xp": 1851,
 			"magicLevel": 4,
-			"manaSpent": 920,
+			"manaSpent": 890,
 			"potions": {
-				"health_potion": 6,
-				"mana_potion": 0
+				"health_potion": 7,
+				"mana_potion": 7
 			},
 			"equipment": {
-				"amulet": {
-					"uid": 31,
-					"itemId": "scarf",
-					"rarity": "rare",
+				"boots": {
+					"uid": 12,
+					"itemId": "leather_boots",
+					"rarity": "legendary",
 					"tier": 0,
 					"affixes": [
 						{
-							"stat": "protPhysical",
-							"value": 3
-						}
-					]
-				},
-				"helmet": {
-					"uid": 15,
-					"itemId": "leather_helmet",
-					"rarity": "rare",
-					"tier": 0,
-					"affixes": [
+							"stat": "maxHp",
+							"value": 15
+						},
 						{
-							"stat": "protHoly",
+							"stat": "dodge",
 							"value": 2
 						}
 					]
 				},
-				"shield": {
-					"uid": 35,
-					"itemId": "wooden_shield",
-					"rarity": "epic",
+				"legs": {
+					"uid": 38,
+					"itemId": "leather_legs",
+					"rarity": "legendary",
 					"tier": 0,
 					"affixes": [
 						{
-							"stat": "protPhysical",
+							"stat": "hpRegen",
 							"value": 3
 						},
 						{
-							"stat": "mpRegen",
-							"value": 2
-						},
-						{
-							"stat": "protFire",
-							"value": 2
+							"stat": "protEnergy",
+							"value": 3
 						}
 					]
 				},
 				"weapon": {
-					"uid": 36,
+					"uid": 30,
 					"itemId": "crossbow",
 					"rarity": "rare",
 					"tier": 0,
 					"affixes": [
 						{
 							"stat": "manaLeech",
-							"value": 2
+							"value": 1
 						}
 					]
 				}
 			},
-			"bag": [
-				{
-					"uid": 43,
-					"itemId": "wooden_shield",
-					"rarity": "common",
-					"tier": 1,
-					"affixes": []
-				}
-			],
+			"bag": [],
 			"spellUses": {
-				"divine_caldera": 6,
-				"divine_missile": 4,
-				"ethereal_spear": 10
+				"divine_caldera": 8,
+				"divine_missile": 2,
+				"ethereal_spear": 4
 			},
 			"statuses": [],
 			"stunCooldown": 0,
@@ -113,119 +94,123 @@
 		"monster": null,
 		"merchantStock": [
 			{
-				"uid": 44,
-				"itemId": "chain_helmet",
-				"rarity": "rare",
-				"tier": 1,
-				"affixes": [
-					{
-						"stat": "spellPower",
-						"value": 6
-					}
-				]
-			},
-			{
-				"uid": 45,
-				"itemId": "leather_helmet",
-				"rarity": "rare",
-				"tier": 1,
-				"affixes": [
-					{
-						"stat": "spellPower",
-						"value": 4
-					},
-					{
-						"stat": "protFire",
-						"value": 3
-					}
-				]
-			},
-			{
 				"uid": 46,
-				"itemId": "hunting_spear",
+				"itemId": "bow",
+				"rarity": "rare",
+				"tier": 1,
+				"affixes": [
+					{
+						"stat": "physicalDamage",
+						"value": 4
+					}
+				]
+			},
+			{
+				"uid": 47,
+				"itemId": "club_ring",
+				"rarity": "common",
+				"tier": 1,
+				"affixes": []
+			},
+			{
+				"uid": 48,
+				"itemId": "leather_boots",
 				"rarity": "common",
 				"tier": 1,
 				"affixes": []
 			}
 		],
-		"nextItemUid": 47,
+		"nextItemUid": 49,
 		"deathCause": null,
+		"won": false,
 		"stats": {
-			"damageDealt": 2021,
-			"damageTaken": 629,
-			"healingDone": 500,
-			"highestHit": 138,
-			"normalAttacks": 30,
+			"damageDealt": 1146,
+			"damageTaken": 64,
+			"healingDone": 0,
+			"highestHit": 146,
+			"normalAttacks": 0,
 			"crits": 1,
-			"dodges": 0,
+			"dodges": 1,
 			"parries": 0,
-			"defends": 4,
-			"goldLooted": 339,
-			"goldSpent": 450,
-			"goldEarned": 60,
-			"itemsSold": 2,
+			"defends": 0,
+			"goldLooted": 450,
+			"goldSpent": 600,
+			"goldEarned": 284,
+			"itemsSold": 6,
+			"itemsAutoEquipped": 4,
 			"bossesKilled": 1,
+			"elitesKilled": 2,
 			"spellsCast": {
-				"divine_caldera": 6,
-				"divine_missile": 4,
-				"ethereal_spear": 10
+				"divine_caldera": 7,
+				"divine_missile": 2,
+				"ethereal_spear": 4
 			},
 			"potionsUsed": {
-				"health_potion": 5,
 				"mana_potion": 8
 			},
 			"potionsBought": {
-				"health_potion": 6,
-				"mana_potion": 3
+				"health_potion": 2,
+				"mana_potion": 10
 			},
+			"potionsDropped": {},
 			"itemsDropped": {
-				"common": 2,
-				"epic": 1,
-				"rare": 3
+				"common": 4,
+				"legendary": 3,
+				"rare": 1
 			},
 			"kills": {
-				"amazon": 1,
 				"bug": 1,
-				"cave_rat": 1,
+				"cave_rat": 3,
 				"deer": 1,
 				"dwarf": 1,
 				"goblin": 1,
 				"munster": 1,
-				"rat": 2,
 				"snake": 1,
-				"wolf": 2
+				"spider": 1,
+				"troll": 1,
+				"valkyrie": 1
 			},
 			"statusesApplied": {},
 			"droppedItems": [
 				{
-					"itemId": "spear",
+					"itemId": "crossbow",
 					"rarity": "common",
-					"round": 1
+					"round": 2
 				},
 				{
-					"itemId": "leather_helmet",
-					"rarity": "rare",
+					"itemId": "leather_boots",
+					"rarity": "legendary",
+					"round": 3
+				},
+				{
+					"itemId": "spear",
+					"rarity": "common",
 					"round": 4
 				},
 				{
-					"itemId": "scarf",
-					"rarity": "rare",
-					"round": 9
-				},
-				{
-					"itemId": "wooden_shield",
-					"rarity": "epic",
-					"round": 10
+					"itemId": "leather_legs",
+					"rarity": "common",
+					"round": 5
 				},
 				{
 					"itemId": "crossbow",
 					"rarity": "rare",
+					"round": 8
+				},
+				{
+					"itemId": "leather_boots",
+					"rarity": "legendary",
 					"round": 10
 				},
 				{
-					"itemId": "wooden_shield",
+					"itemId": "leather_legs",
+					"rarity": "legendary",
+					"round": 10
+				},
+				{
+					"itemId": "hunting_spear",
 					"rarity": "common",
-					"round": 12
+					"round": 11
 				}
 			]
 		}

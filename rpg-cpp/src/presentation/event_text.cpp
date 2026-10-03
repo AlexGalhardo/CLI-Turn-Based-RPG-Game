@@ -40,6 +40,8 @@ std::string event_key(const application::Event& event) {
 		variant = "_charged";
 	} else if (event.type == "round_started" && event.flag("isBoss")) {
 		variant = "_boss";
+	} else if (event.type == "round_started" && event.text("enemyClass") == "elite") {
+		variant = "_elite";
 	} else if (!event.text("target").empty()) {
 		variant = "_" + event.text("target");
 	}

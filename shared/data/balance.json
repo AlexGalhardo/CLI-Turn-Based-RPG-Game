@@ -4,34 +4,82 @@
 	"cycleStatPct": 60,
 	"cycleRewardPct": 50,
 	"positionPct": 4,
+	"finalRound": 100,
+	"eliteChancePct": 20,
 	"difficulties": [
 		{
 			"id": "easy",
-			"hpPct": 80,
-			"damagePct": 80,
+			"hpPct": 25,
+			"damagePct": 25,
 			"goldPct": 100,
-			"xpPct": 100,
-			"nonCommonWeightPct": 100
+			"xpPct": 100
 		},
 		{
 			"id": "normal",
-			"hpPct": 100,
-			"damagePct": 100,
+			"hpPct": 30,
+			"damagePct": 30,
 			"goldPct": 100,
-			"xpPct": 100,
-			"nonCommonWeightPct": 100
+			"xpPct": 100
 		},
 		{
 			"id": "hard",
-			"hpPct": 125,
-			"damagePct": 125,
+			"hpPct": 36,
+			"damagePct": 36,
 			"goldPct": 125,
-			"xpPct": 125,
-			"nonCommonWeightPct": 150
+			"xpPct": 125
 		}
 	],
+	"enemyClasses": {
+		"normal": {
+			"statPct": 100,
+			"rewardPct": 100,
+			"dodge": 10,
+			"parry": 10,
+			"crit": 10,
+			"heal": 10,
+			"dropChancePct": 30,
+			"drops": 1,
+			"potionDropPct": 0,
+			"rarityWeights": {
+				"common": 90,
+				"rare": 10
+			}
+		},
+		"elite": {
+			"statPct": 300,
+			"rewardPct": 300,
+			"dodge": 20,
+			"parry": 20,
+			"crit": 20,
+			"heal": 20,
+			"dropChancePct": 100,
+			"drops": 1,
+			"potionDropPct": 33,
+			"rarityWeights": {
+				"rare": 80,
+				"legendary": 20
+			}
+		},
+		"boss": {
+			"statPct": 100,
+			"rewardPct": 100,
+			"dodge": 30,
+			"parry": 30,
+			"crit": 30,
+			"heal": 30,
+			"dropChancePct": 100,
+			"drops": 2,
+			"potionDropPct": 0,
+			"rarityWeights": {
+				"legendary": 80,
+				"mythic": 20
+			}
+		}
+	},
 	"critMultiplierPct": 150,
 	"defendDamagePct": 50,
+	"parryReflectPct": 20,
+	"monsterHealPct": 20,
 	"bossTelegraphEvery": 3,
 	"bossChargeDamagePct": 250,
 	"caps": {
@@ -55,13 +103,13 @@
 		{
 			"level": 2,
 			"uses": 20,
-			"effectPct": 125,
+			"effectPct": 150,
 			"manaPct": 90
 		},
 		{
 			"level": 3,
 			"uses": 50,
-			"effectPct": 150,
+			"effectPct": 200,
 			"manaPct": 80
 		}
 	],
@@ -77,8 +125,30 @@
 		}
 	],
 	"bagCapacity": 20,
-	"dropChancePct": 30,
-	"bossDrops": 2,
+	"itemLevelPerTier": 4,
+	"itemScoreWeights": {
+		"attack": 10,
+		"armor": 6,
+		"maxHp": 1,
+		"maxMp": 1,
+		"hpRegen": 15,
+		"mpRegen": 15,
+		"critChance": 12,
+		"critDamage": 3,
+		"spellPower": 6,
+		"physicalDamage": 6,
+		"dodge": 12,
+		"parry": 12,
+		"lifeLeech": 10,
+		"manaLeech": 10,
+		"protPhysical": 4,
+		"protFire": 4,
+		"protIce": 4,
+		"protEnergy": 4,
+		"protEarth": 4,
+		"protHoly": 4,
+		"protDeath": 4
+	},
 	"rarities": [
 		{
 			"id": "common",
@@ -89,47 +159,54 @@
 		},
 		{
 			"id": "rare",
-			"statPct": 115,
+			"statPct": 150,
 			"valuePct": 250,
 			"affixMin": 1,
-			"affixMax": 2
-		},
-		{
-			"id": "epic",
-			"statPct": 130,
-			"valuePct": 500,
-			"affixMin": 3,
-			"affixMax": 3
+			"affixMax": 1
 		},
 		{
 			"id": "legendary",
-			"statPct": 150,
-			"valuePct": 1000,
-			"affixMin": 4,
-			"affixMax": 4
+			"statPct": 200,
+			"valuePct": 600,
+			"affixMin": 2,
+			"affixMax": 2
+		},
+		{
+			"id": "mythic",
+			"statPct": 300,
+			"valuePct": 1500,
+			"affixMin": 2,
+			"affixMax": 2
 		}
 	],
 	"rarityWeights": {
-		"monster": {
-			"common": 70,
-			"rare": 22,
-			"epic": 7,
-			"legendary": 1
-		},
-		"boss": {
-			"common": 0,
-			"rare": 50,
-			"epic": 35,
-			"legendary": 15
-		},
 		"merchant": {
 			"common": 60,
 			"rare": 35,
-			"epic": 5,
-			"legendary": 0
+			"legendary": 5,
+			"mythic": 0
 		}
 	},
 	"merchantStockSize": 3,
 	"merchantMarkupPct": 300,
-	"spellStatusDamagePct": 25
+	"spellStatusDamagePct": 25,
+	"autoBattle": {
+		"healBelowPct": 50,
+		"manaBelowPct": 30,
+		"emergencyHealBelowPct": 25,
+		"modes": {
+			"melee": {
+				"offense": "attack",
+				"supportEvery": 5
+			},
+			"spells": {
+				"offense": "spell",
+				"supportEvery": 5
+			},
+			"balanced": {
+				"offense": "spell",
+				"supportEvery": 2
+			}
+		}
+	}
 }

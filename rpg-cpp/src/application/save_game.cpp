@@ -127,6 +127,7 @@ ordered_json to_json(const RunRecord& record) {
 	    {"level", record.level},
 	    {"magicLevel", record.magic_level},
 	    {"deathCause", record.death_cause},
+	    {"won", record.won},
 	    {"stats", to_json(record.stats)},
 	};
 }
@@ -150,6 +151,7 @@ RunRecord run_record_from_json(const json& document) {
 	    .level = document.at("level").get<std::int64_t>(),
 	    .magic_level = document.value("magicLevel", std::int64_t{1}),
 	    .death_cause = document.value("deathCause", std::string{}),
+	    .won = document.value("won", false),
 	    .stats = run_statistics_from_json(document.at("stats")),
 	};
 }

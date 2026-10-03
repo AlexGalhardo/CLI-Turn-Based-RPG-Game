@@ -61,4 +61,5 @@ const (
 	ErrBagFull         = "bag_full"
 	ErrCannotEquip     = "cannot_equip"
 	ErrInvalidItem     = "invalid_item"
+	ErrLevelTooLow     = "level_too_low"
 )

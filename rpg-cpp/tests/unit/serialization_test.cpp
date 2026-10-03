@@ -16,7 +16,8 @@ TEST_CASE("every command round-trips through JSON", "[unit][serialization]") {
 	const application::Command command = GENERATE(as<application::Command>{}, application::Attack{},
 	    application::Cast{"brutal_strike"}, application::UsePotion{"health_potion"}, application::Defend{},
 	    application::NextFight{}, application::BuyPotion{"mana_potion", 3}, application::SellItem{4},
-	    application::Equip{5}, application::Unequip{"ring"}, application::BuyStockItem{1});
+	    application::Equip{5}, application::Unequip{"ring"}, application::BuyStockItem{1}, application::EndRun{},
+	    application::ContinueRun{});
 	const json document = json::parse(application::command_to_json(command).dump());
 	REQUIRE(application::command_from_json(document) == command);
 }
@@ -40,7 +41,7 @@ TEST_CASE("the run state round-trips through JSON", "[unit][serialization]") {
 		engine.step(application::Attack{});
 	}
 	auto& state = engine.state;
-	state.player.bag.push_back(domain::ItemInstance{90, "sword", "epic", 2, {domain::AffixRoll{"dodge", 3}}});
+	state.player.bag.push_back(domain::ItemInstance{90, "sword", "mythic", 2, {domain::AffixRoll{"dodge", 3}}});
 	state.player.statuses.push_back({"burn", 2, 4});
 	if (state.monster.has_value()) {
 		state.monster->statuses.push_back({"stun", 1, 0});

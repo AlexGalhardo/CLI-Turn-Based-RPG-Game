@@ -22,6 +22,7 @@ export const ErrorCode = {
 	BAG_FULL: "bag_full",
 	CANNOT_EQUIP: "cannot_equip",
 	INVALID_ITEM: "invalid_item",
+	LEVEL_TOO_LOW: "level_too_low",
 	UNKNOWN_COMMAND: "unknown_command",
 } as const;
 

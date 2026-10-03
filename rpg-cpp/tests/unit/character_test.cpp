@@ -1,4 +1,7 @@
 #include <algorithm>
+#include <string>
+#include <tuple>
+#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
@@ -13,8 +16,44 @@ using Catch::Matchers::ContainsSubstring;
 TEST_CASE("item stats apply rarity and affixes; value applies the rarity", "[unit][character]") {
 	const GameData data = rpg::testing::with_test_items(rpg::testing::test_data());
 	const ItemInstance item{1, "test_helmet", "legendary", 0, {AffixRoll{"maxHp", 7}}};
-	REQUIRE(item_stats(item, data) == StatTotals{{"armor", 15}, {"maxHp", 82}});
-	REQUIRE(item_value(item, data) == 1000);
+	REQUIRE(item_stats(item, data) == StatTotals{{"armor", 20}, {"maxHp", 107}});
+	REQUIRE(item_value(item, data) == 600);
+}
+
+TEST_CASE("rarities scale base stats and affix counts", "[unit][character]") {
+	const GameData data = rpg::testing::with_test_items(rpg::testing::test_data());
+	const std::vector<std::tuple<std::string, std::int64_t, std::int64_t>> cases{
+	    {"common", 20, 0}, {"rare", 30, 1}, {"legendary", 40, 2}, {"mythic", 60, 2}};
+	for (const auto& [rarity, attack, affixes] : cases) {
+		CAPTURE(rarity);
+		REQUIRE(item_stats(ItemInstance{1, "test_axe", rarity, 0, {}}, data) == StatTotals{{"attack", attack}});
+		const RarityDef& definition = data.balance.rarity(rarity);
+		REQUIRE(definition.affix_min == affixes);
+		REQUIRE(definition.affix_max == affixes);
+	}
+}
+
+TEST_CASE("the item score weights the final stats", "[unit][character]") {
+	const GameData data = rpg::testing::with_test_items(rpg::testing::test_data());
+	const auto& weights = data.balance.item_score_weights;
+	const ItemInstance common{1, "test_helmet", "common", 0, {}};
+	REQUIRE(item_score(common, data) == 10 * weights.at("armor") + 50 * weights.at("maxHp"));
+	std::vector<std::int64_t> scores;
+	for (const std::string rarity : {"common", "rare", "legendary"}) {
+		scores.push_back(item_score(ItemInstance{1, "test_helmet", rarity, 0, {}}, data));
+	}
+	REQUIRE(std::ranges::is_sorted(scores));
+	REQUIRE(scores[0] < scores[1]);
+	REQUIRE(scores[1] < scores[2]);
+	const ItemInstance with_affix{1, "test_helmet", "common", 0, {AffixRoll{"dodge", 2}}};
+	REQUIRE(item_score(with_affix, data) == item_score(common, data) + 2 * weights.at("dodge"));
+}
+
+TEST_CASE("the required level grows with the item tier", "[unit][character]") {
+	const GameData& data = rpg::testing::test_data();
+	const std::int64_t per_tier = data.balance.item_level_per_tier;
+	REQUIRE(required_level(ItemInstance{1, "sword", "common", 0, {}}, data) == 1);
+	REQUIRE(required_level(ItemInstance{1, "sword", "common", 3, {}}, data) == 1 + 3 * per_tier);
 }
 
 TEST_CASE("the sheet combines vocation, level and equipment with caps", "[unit][character]") {

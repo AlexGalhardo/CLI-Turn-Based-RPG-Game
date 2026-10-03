@@ -16,7 +16,8 @@ Schema in `shared/schemas/` and CI validates them (`bun run check:shared` at the
 
 | File | Content |
 |---|---|
-| `balance.json` | Global knobs: difficulties, tiers, scaling, crit, defend, caps, drop chances, rarity tables, spell levels, magic level curve, merchant, starting kit |
+| `balance.json` | Global knobs: difficulties, tiers, scaling, final round, enemy classes, crit, defend, parry reflect, monster heal, caps, rarities, merchant rarity table, item level and score, spell levels, magic level curve, merchant, starting kit, auto-battle |
+| `balance-targets.json` | Win-rate targets of the balance gate (`bun run balance:check`); not read by the game |
 | `vocations.json` | Warrior, Archer, Mage: start HP/MP, per-level gains, regen, melee range, spells, starter weapon, equippable weapon types |
 | `spells.json` | Attack and healing spells: vocation, incantation, element, mana, min/max, perLevel, perMagicLevel, level3Bonus |
 | `monsters.json` | ≥ 100 monsters: tier, family (art), HP, XP, gold range, attacks (element, min/max, weight, status), resistances |
@@ -27,6 +28,24 @@ Schema in `shared/schemas/` and CI validates them (`bun run check:shared` at the
 | `statuses.json` | burn, poison, electrify, bleed, freeze, curse, stun |
 | `achievements.json` | Achievement ids with condition `type` and `value` |
 | `families.json` | Monster families → art file names |
+
+### `balance.json` — ARPG keys (1.4.0)
+
+| Key | Meaning |
+|---|---|
+| `finalRound` | Round of the final boss; beating it wins the run (100) |
+| `eliteChancePct` | Chance that a non-boss monster spawns as an elite (20) |
+| `enemyClasses.{normal,elite,boss}` | `statPct` (HP and damage), `rewardPct` (XP and gold), `dodge`, `parry`, `crit`, `heal` (% chances), `dropChancePct` → `drops` items rolled with `rarityWeights`, `potionDropPct` |
+| `parryReflectPct` | Share of a parried hit reflected to the attacker, both ways (20) |
+| `monsterHealPct` | Share of max HP a monster heals when its `heal` chance hits (20) |
+| `rarities` | `common`, `rare`, `legendary`, `mythic`: `statPct` (100/150/200/300), `valuePct`, `affixMin`/`affixMax` |
+| `rarityWeights.merchant` | Rarity table of the merchant stock (drops use the enemy class tables) |
+| `itemLevelPerTier` | `requiredLevel = 1 + itemTier * itemLevelPerTier` |
+| `itemScoreWeights` | One integer weight per stat key; item score = Σ stat × weight |
+| `autoBattle` | `healBelowPct`, `manaBelowPct`, `emergencyHealBelowPct` and `modes.{melee,spells,balanced}` with `offense` (`attack`/`spell`) and `supportEvery` |
+
+Difficulty multipliers (`difficulties[].hpPct`, `damagePct`, `goldPct`, `xpPct`) are tuned by the balance gate; rarity
+weights no longer depend on the difficulty.
 
 ### Example — monster
 

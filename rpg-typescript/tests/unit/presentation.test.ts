@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { NextFight } from "../../src/application/commands";
 import type { Event } from "../../src/application/events";
+import { MonsterInstance } from "../../src/domain/entities";
 import { ArtLibrary, frameFor, parseArt } from "../../src/infrastructure/art";
 import { Translator } from "../../src/infrastructure/i18n";
 import { FileProfileRepository, SettingsRepository } from "../../src/infrastructure/repositories";
@@ -14,13 +15,16 @@ import { DATA, makeServices, newEngine, tempDir } from "../helpers";
 
 const viewOf = (controller: Controller): View => controller.view;
 
-function startRun(controller: Controller, name = "Zed", vocationKey = "1"): void {
+function startRun(controller: Controller, name = "Zed", vocationKey = "1", autoEquipKey = "2"): void {
 	controller.press("2");
 	controller.press("2");
 	for (const character of name) controller.press(character);
 	controller.press("enter");
 	controller.press(vocationKey);
+	controller.press(autoEquipKey);
 }
+
+const rat = (): MonsterInstance => new MonsterInstance("rat", false, "normal", 10, 10, 1, 1, 1, []);
 
 describe("event text", () => {
 	const formatter = new EventFormatter(DATA, new Translator());
@@ -46,8 +50,40 @@ describe("event text", () => {
 		],
 		[{ type: "item_sold", uid: 3, itemId: "sword", gold: 25 }, "You sold Sword for 25 gold."],
 		[{ type: "error", code: "not_enough_mana" }, "Not enough mana."],
+		[{ type: "error", code: "level_too_low" }, "Your level is too low for that item."],
+		[
+			{
+				type: "round_started",
+				round: 3,
+				tier: 0,
+				cycle: 0,
+				monsterId: "rat",
+				isBoss: false,
+				enemyClass: "elite",
+				hp: 90,
+			},
+			"Round 3: an ELITE Rat appears! (90 HP)",
+		],
+		[
+			{ type: "monster_attacked", attackId: "bite", damage: 9, element: "physical", charged: false, crit: true },
+			"CRITICAL! Rat hits you for 9 physical damage.",
+		],
+		[{ type: "monster_dodged" }, "Rat dodges your attack!"],
+		[{ type: "monster_parried", reflected: 4 }, "Rat parries your attack: you take 4 damage!"],
+		[{ type: "monster_healed", amount: 12 }, "Rat heals 12 HP."],
+		[{ type: "attack_parried", attackId: "bite", reflected: 3 }, "You parry the attack and reflect 3 damage!"],
+		[
+			{ type: "item_auto_equipped", uid: 5, itemId: "sword", slot: "weapon", score: 60 },
+			"Auto-equipped Sword (score 60).",
+		],
+		[{ type: "item_auto_sold", uid: 6, itemId: "bow", gold: 30 }, "Sold Bow for 30 gold (auto-sell)."],
+		[{ type: "potion_dropped", potionId: "mana_potion" }, "Loot: Mana Potion!"],
+		[{ type: "run_won", round: 100 }, "VICTORY! You defeated the final boss on round 100!"],
+		[{ type: "run_ended", won: true }, "Your victory is recorded in the Hall of Fame."],
 	])("%j", (evt, expected) => {
-		expect(formatter.format(evt, newEngine().state)).toBe(expected);
+		const state = newEngine().state;
+		state.monster = rat();
+		expect(formatter.format(evt, state)).toBe(expected);
 	});
 
 	test("unknown ids, uid lookups and monster from state", () => {
@@ -108,8 +144,14 @@ describe("controller", () => {
 		expect(controller.options().some((o) => o.label === "Sair")).toBe(true);
 		expect(new SettingsRepository(dir).load().locale).toBe("pt-BR");
 		controller.press("6");
+		expect(viewOf(controller)).toBe("settings");
 		controller.press("1");
+		expect(viewOf(controller)).toBe("language");
+		controller.press("1");
+		expect(viewOf(controller)).toBe("settings");
 		expect(controller.locale).toBe("en");
+		controller.press("0");
+		expect(viewOf(controller)).toBe("title");
 	});
 
 	test("merchant menus", () => {
@@ -129,6 +171,10 @@ describe("controller", () => {
 		expect(labels.some((l) => l.includes("Hand Axe"))).toBe(true);
 		expect(labels.some((l) => l.includes("Bow"))).toBe(false);
 		controller.press("1");
+		expect(viewOf(controller)).toBe("compare");
+		controller.press("1");
+		expect(viewOf(controller)).toBe("equipment");
+		expect([900, 1]).toContain(player.equipment.get("weapon")?.uid ?? 0);
 		controller.press("0");
 		controller.press("2");
 		controller.press(controller.options()[0]?.key ?? "0");
@@ -259,6 +305,7 @@ describe("render, art and cli", () => {
 					vocation: "mage",
 					difficulty: "hard",
 					runs: 1,
+					wins: 0,
 					minRound: 3,
 					p10Round: 3,
 					medianRound: 3,
@@ -271,6 +318,7 @@ describe("render, art and cli", () => {
 			DATA,
 		);
 		expect(report).toContain("median");
+		expect(report).toContain("0%");
 		expect(report).toContain("Rat (1)");
 	});
 });

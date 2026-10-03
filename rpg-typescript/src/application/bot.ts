@@ -3,12 +3,23 @@
  * Its decisions are part of the golden "bot full run" files: it mirrors the Python GreedyBot exactly,
  * including tie-breakers (max by `(value, id)`).
  */
-import { buildSheet, itemStats } from "../domain/character";
+import { buildSheet, itemScore, requiredLevel } from "../domain/character";
 import type { GameData, PotionDef, SpellDef } from "../domain/definitions";
-import type { ItemInstance, MonsterInstance } from "../domain/entities";
+import type { MonsterInstance } from "../domain/entities";
 import type { Resource, SpellKind } from "../domain/enums";
 import { pct, spellLevelForUses } from "../domain/formulas";
-import { Attack, BuyPotion, Cast, type Command, Defend, Equip, NextFight, SellItem, UsePotion } from "./commands";
+import {
+	Attack,
+	BuyPotion,
+	Cast,
+	type Command,
+	Defend,
+	EndRun,
+	Equip,
+	NextFight,
+	SellItem,
+	UsePotion,
+} from "./commands";
 import { canUse } from "./loot";
 import { availablePotions } from "./merchant";
 import type { RunState } from "./run-state";
@@ -16,12 +27,6 @@ import type { RunState } from "./run-state";
 const HEAL_THRESHOLD_PCT = 45;
 const MANA_POTION_THRESHOLD_PCT = 25;
 const MAX_POTION_STOCK = 20;
-
-export function itemScore(item: ItemInstance, data: GameData): number {
-	let score = 0;
-	for (const value of itemStats(item, data).values()) score += value;
-	return score;
-}
 
 /** Python's `max(items, key=...)` with tuple keys `(number, id)`: first maximum wins on full ties. */
 function maxBy<T>(items: readonly T[], key: (item: T) => readonly [number, string]): T | undefined {
@@ -45,7 +50,9 @@ export class GreedyBot {
 	constructor(private readonly data: GameData) {}
 
 	choose(state: RunState): Command {
-		return state.phase === "battle" ? this.battle(state) : this.merchant(state);
+		if (state.phase === "battle") return this.battle(state);
+		if (state.phase === "victory") return EndRun();
+		return this.merchant(state);
 	}
 
 	// ── battle ────────────────────────────────────────────────────────────────
@@ -112,7 +119,7 @@ export class GreedyBot {
 		const vocation = this.data.vocation(player.vocationId);
 		for (const item of [...player.bag].sort((a, b) => a.uid - b.uid)) {
 			const definition = this.data.item(item.itemId);
-			if (!canUse(definition, vocation)) continue;
+			if (!canUse(definition, vocation) || requiredLevel(item, this.data) > player.level) continue;
 			const current = player.equipment.get(definition.slot);
 			if (current === undefined || itemScore(item, this.data) > itemScore(current, this.data)) {
 				return Equip(item.uid);

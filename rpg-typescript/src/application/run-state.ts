@@ -1,6 +1,15 @@
 import { type ItemInstance, itemFromJson, itemToJson, MonsterInstance, Player } from "../domain/entities";
 import { PHASES, type Phase, parseEnum } from "../domain/enums";
-import { field, type JsonObject, type JsonValue, jsonInt, jsonList, jsonObj, jsonStr } from "../domain/json-types";
+import {
+	field,
+	type JsonObject,
+	type JsonValue,
+	jsonBool,
+	jsonInt,
+	jsonList,
+	jsonObj,
+	jsonStr,
+} from "../domain/json-types";
 import { RunStatistics } from "./statistics";
 
 export class RunConfig {
@@ -8,10 +17,16 @@ export class RunConfig {
 		readonly name: string,
 		readonly vocationId: string,
 		readonly difficultyId: string,
+		readonly autoEquip = false,
 	) {}
 
 	toJson(): JsonObject {
-		return { name: this.name, vocation: this.vocationId, difficulty: this.difficultyId };
+		return {
+			name: this.name,
+			vocation: this.vocationId,
+			difficulty: this.difficultyId,
+			autoEquip: this.autoEquip,
+		};
 	}
 
 	static fromJson(raw: JsonValue): RunConfig {
@@ -20,6 +35,7 @@ export class RunConfig {
 			jsonStr(field(data, "name")),
 			jsonStr(field(data, "vocation")),
 			jsonStr(field(data, "difficulty")),
+			jsonBool(field(data, "autoEquip")),
 		);
 	}
 }
@@ -33,6 +49,7 @@ export class RunState {
 	merchantStock: ItemInstance[] = [];
 	nextItemUid = 1;
 	deathCause: string | null = null;
+	won = false;
 	stats = new RunStatistics();
 
 	constructor(
@@ -59,6 +76,7 @@ export class RunState {
 			merchantStock: this.merchantStock.map(itemToJson),
 			nextItemUid: this.nextItemUid,
 			deathCause: this.deathCause,
+			won: this.won,
 			stats: this.stats.toJson(),
 		};
 	}
@@ -79,6 +97,7 @@ export class RunState {
 		state.nextItemUid = jsonInt(field(data, "nextItemUid"));
 		const deathCause = field(data, "deathCause");
 		state.deathCause = deathCause === null ? null : jsonStr(deathCause);
+		state.won = jsonBool(field(data, "won"));
 		state.stats = RunStatistics.fromJson(field(data, "stats"));
 		return state;
 	}

@@ -4,6 +4,7 @@
 #include <format>
 #include <stdexcept>
 
+#include "application/auto_equip.hpp"
 #include "application/battle.hpp"
 #include "application/loot.hpp"
 #include "application/merchant.hpp"
@@ -67,6 +68,7 @@ std::expected<std::pair<GameEngine, std::vector<Event>>, std::string> GameEngine
 	    .merchant_stock = {},
 	    .next_item_uid = 1,
 	    .death_cause = std::nullopt,
+	    .won = false,
 	    .stats = {},
 	};
 	for (const domain::PotionStack& stack : data.balance.starting_potions) {
@@ -104,6 +106,12 @@ std::vector<Event> GameEngine::dispatch(const Command& command) {
 		}
 		return battle_turn(command);
 	}
+	if (std::holds_alternative<EndRun>(command) || std::holds_alternative<ContinueRun>(command)) {
+		if (phase != domain::Phase::victory) {
+			return single(error_event(error_code::invalid_phase));
+		}
+		return std::holds_alternative<EndRun>(command) ? end_run() : continue_run();
+	}
 	if (phase != domain::Phase::merchant) {
 		return single(error_event(error_code::invalid_phase));
 	}
@@ -121,9 +129,10 @@ std::vector<Event> GameEngine::next_fight() {
 	state.phase = domain::Phase::battle;
 	state.turn = 1;
 	state.merchant_stock.clear();
-	return single(Event{"round_started",
-	    {{"round", state.round}, {"tier", info.tier}, {"cycle", info.cycle}, {"monsterId", state.monster->creature_id},
-	        {"isBoss", state.monster->is_boss}, {"hp", state.monster->hp}}});
+	return single(
+	    Event{"round_started", {{"round", state.round}, {"tier", info.tier}, {"cycle", info.cycle},
+	                               {"monsterId", state.monster->creature_id}, {"isBoss", state.monster->is_boss},
+	                               {"enemyClass", state.monster->enemy_class}, {"hp", state.monster->hp}}});
 }
 
 std::vector<Event> GameEngine::battle_turn(const Command& command) {
@@ -151,14 +160,17 @@ std::vector<Event> GameEngine::victory() {
 	}
 	domain::Player& player = state.player;
 	const domain::MonsterInstance monster = *state.monster;
-	std::vector<Event> events =
-	    single(Event{"monster_killed", {{"monsterId", monster.creature_id}, {"isBoss", monster.is_boss}}});
+	std::vector<Event> events = single(Event{"monster_killed",
+	    {{"monsterId", monster.creature_id}, {"isBoss", monster.is_boss}, {"enemyClass", monster.enemy_class}}});
 	append(events, Progression(*data_).gain_experience(player, monster.xp));
 
 	const std::int64_t gold = rng_.roll(monster.gold_min, monster.gold_max);
 	player.gold += gold;
 	events.push_back(Event{"gold_looted", {{"amount", gold}}});
-	append(events, drops(monster.is_boss));
+	append(events, drops(monster));
+	if (state.config.auto_equip) {
+		append(events, auto_equip(state, *data_));
+	}
 
 	player.statuses.clear();
 	player.stun_cooldown = 0;
@@ -167,52 +179,82 @@ std::vector<Event> GameEngine::victory() {
 	player.hp = std::min(player.hp, sheet.max_hp);
 	player.mp = std::min(player.mp, sheet.max_mp);
 	state.monster.reset();
-	state.phase = domain::Phase::merchant;
 	state.turn = 0;
+	if (state.round == data_->balance.final_round) {
+		state.won = true;
+		state.phase = domain::Phase::victory;
+		events.push_back(Event{"run_won", {{"round", state.round}}});
+		return events;
+	}
+	state.phase = domain::Phase::merchant;
 	append(events, Merchant(*data_, rng_, state).enter());
 	return events;
 }
 
-std::vector<Event> GameEngine::drops(bool is_boss) {
-	const domain::Balance& balance = data_->balance;
-	std::int64_t count = 0;
-	std::string table;
-	if (is_boss) {
-		count = balance.boss_drops;
-		table = "boss";
-	} else if (rng_.chance(balance.drop_chance_pct)) {
-		count = 1;
-		table = "monster";
-	} else {
-		return {};
-	}
-
-	ItemRequest request{
-	    .vocation = &data_->vocation(state.player.vocation_id),
-	    .tier = domain::round_info(state.round, balance, data_->tier_count()).tier,
-	    .table = table,
-	    .difficulty = &balance.difficulty(state.config.difficulty_id),
-	    .uid = 0,
-	};
+// One rule for the three classes: chance(100) and chance(0) consume nothing (docs/game-design.md §8).
+std::vector<Event> GameEngine::drops(const domain::MonsterInstance& monster) {
+	const domain::EnemyClassDef& row = data_->balance.enemy_class(monster.enemy_class);
 	std::vector<Event> events;
-	for (std::int64_t i = 0; i < count; ++i) {
-		request.uid = state.next_item_uid;
-		auto item = generate_item(*data_, rng_, request);
-		if (!item.has_value()) {
-			continue;
+	if (rng_.chance(row.drop_chance_pct)) {
+		for (std::int64_t i = 0; i < row.drops; ++i) {
+			append(events, drop_item(row));
 		}
-		state.take_item_uid();
-		events.push_back(
-		    Event{"item_dropped", {{"uid", item->uid}, {"itemId", item->item_id}, {"rarity", item->rarity}}});
-		if (std::cmp_greater_equal(state.player.bag.size(), balance.bag_capacity)) {
-			const std::int64_t value = domain::item_value(*item, *data_);
-			state.player.gold += value;
-			events.push_back(Event{"item_auto_sold", {{"uid", item->uid}, {"itemId", item->item_id}, {"gold", value}}});
-		} else {
-			state.player.bag.push_back(std::move(*item));
-		}
+	}
+	if (rng_.chance(row.potion_drop_pct)) {
+		append(events, drop_potion());
 	}
 	return events;
+}
+
+std::vector<Event> GameEngine::drop_item(const domain::EnemyClassDef& row) {
+	const domain::Balance& balance = data_->balance;
+	const ItemRequest request{
+	    .vocation = &data_->vocation(state.player.vocation_id),
+	    .tier = domain::round_info(state.round, balance, data_->tier_count()).tier,
+	    .weights = &row.rarity_weights,
+	    .uid = state.next_item_uid,
+	};
+	auto item = generate_item(*data_, rng_, request);
+	if (!item.has_value()) {
+		return {};
+	}
+	state.take_item_uid();
+	std::vector<Event> events =
+	    single(Event{"item_dropped", {{"uid", item->uid}, {"itemId", item->item_id}, {"rarity", item->rarity}}});
+	if (std::cmp_greater_equal(state.player.bag.size(), balance.bag_capacity)) {
+		const std::int64_t value = domain::item_value(*item, *data_);
+		state.player.gold += value;
+		events.push_back(Event{"item_auto_sold", {{"uid", item->uid}, {"itemId", item->item_id}, {"gold", value}}});
+	} else {
+		state.player.bag.push_back(std::move(*item));
+	}
+	return events;
+}
+
+std::vector<Event> GameEngine::drop_potion() {
+	std::vector<const domain::PotionDef*> unlocked;
+	for (const domain::PotionDef& potion : data_->potions) {
+		if (potion.unlock_round <= state.round) {
+			unlocked.push_back(&potion);
+		}
+	}
+	if (unlocked.empty()) {
+		return {};
+	}
+	const domain::PotionDef& potion = *rng_.pick(unlocked);
+	state.player.potions[potion.id] = state.player.potion_count(potion.id) + 1;
+	return single(Event{"potion_dropped", {{"potionId", potion.id}}});
+}
+
+std::vector<Event> GameEngine::end_run() {
+	state.phase = domain::Phase::game_over;
+	state.death_cause.reset();
+	return single(Event{"run_ended", {{"won", state.won}}});
+}
+
+std::vector<Event> GameEngine::continue_run() {
+	state.phase = domain::Phase::merchant;
+	return Merchant(*data_, rng_, state).enter();
 }
 
 std::vector<Event> GameEngine::defeat() {

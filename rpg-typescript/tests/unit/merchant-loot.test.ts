@@ -1,9 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { BuyPotion, BuyStockItem, Equip, NextFight, SellItem, Unequip } from "../../src/application/commands";
-import { canUse, generateItem, rarityWeights } from "../../src/application/loot";
+import { canUse, generateItem, rollRarity } from "../../src/application/loot";
 import { availablePotions, stockPrice } from "../../src/application/merchant";
-import { buildSheet, itemValue } from "../../src/domain/character";
+import { buildSheet, itemScore, itemStats, itemValue, requiredLevel } from "../../src/domain/character";
 import type { AffixDef, GameData } from "../../src/domain/definitions";
+import type { ItemInstance } from "../../src/domain/entities";
 import { Rng } from "../../src/domain/rng";
 import { DATA, newEngine, withTestItems } from "../helpers";
 
@@ -96,45 +97,130 @@ describe("merchant", () => {
 	});
 });
 
+const instance = (
+	uid: number,
+	itemId: string,
+	rarity: string,
+	tier: number,
+	affixes: ItemInstance["affixes"] = [],
+) => ({
+	uid,
+	itemId,
+	rarity,
+	tier,
+	affixes,
+});
+
 describe("loot", () => {
 	test("generation is deterministic with unique affix stats", () => {
 		const data = lootData(DATA);
 		const vocation = data.vocation("warrior");
-		const difficulty = data.balance.difficulty("normal");
+		const weights = data.balance.enemyClass("boss").rarityWeights;
 		const make = () =>
-			Array.from({ length: 20 }, (_, uid) =>
-				generateItem(data, new Rng(5), { vocation, tier: 0, table: "boss", difficulty, uid }),
-			);
+			Array.from({ length: 20 }, (_, uid) => generateItem(data, new Rng(5), { vocation, tier: 0, weights, uid }));
 		expect(make()).toEqual(make());
 		const rng = new Rng(11);
 		for (let uid = 0; uid < 200; uid++) {
-			const item = generateItem(data, rng, { vocation, tier: 1, table: "boss", difficulty, uid });
+			const item = generateItem(data, rng, { vocation, tier: 1, weights, uid });
 			if (item === null) throw new Error("no item");
-			expect(item.rarity).not.toBe("common");
+			expect(["legendary", "mythic"]).toContain(item.rarity);
 			const stats = item.affixes.map((affix) => affix.stat);
 			expect(new Set(stats).size).toBe(stats.length);
 			expect(canUse(data.item(item.itemId), vocation)).toBe(true);
 		}
 	});
 
-	test("no candidates consumes nothing; HARD boosts non-common weights", () => {
+	test("no candidates consumes nothing", () => {
 		const rng = new Rng(3);
-		const difficulty = DATA.balance.difficulty("normal");
+		const weights = DATA.balance.enemyClass("normal").rarityWeights;
 		const result = generateItem(DATA.with({ items: [] }), rng, {
 			vocation: DATA.vocation("mage"),
 			tier: 9,
-			table: "monster",
-			difficulty,
+			weights,
 			uid: 1,
 		});
 		expect(result).toBeNull();
 		expect(rng.state).toBe(3);
-		const normal = rarityWeights(DATA, "monster", difficulty);
-		const hard = rarityWeights(DATA, "monster", DATA.balance.difficulty("hard"));
-		expect(hard[0]).toBe(normal[0] ?? -1);
-		hard.slice(1).forEach((weight, i) => {
-			expect(weight).toBeGreaterThanOrEqual(normal[i + 1] ?? 0);
+	});
+
+	test("roll rarity skips zero weights and single options", () => {
+		const rng = new Rng(1);
+		expect(rollRarity(DATA, rng, { rare: 5 }).id).toBe("rare");
+		expect(rollRarity(DATA, rng, { common: 0, mythic: 3 }).id).toBe("mythic");
+		expect(rng.state).toBe(1);
+		const rolled = new Set(Array.from({ length: 40 }, () => rollRarity(DATA, rng, { common: 1, legendary: 1 }).id));
+		expect(rolled).toEqual(new Set(["common", "legendary"]));
+		expect(rng.state).not.toBe(1);
+		expect(() => rollRarity(DATA, rng, { common: 0 })).toThrow("positive");
+	});
+
+	for (const [rarity, attack, affixes] of [
+		["common", 20, 0],
+		["rare", 30, 1],
+		["legendary", 40, 2],
+		["mythic", 60, 2],
+	] as const) {
+		test(`${rarity} scales base stats and affix counts`, () => {
+			const data = withTestItems(DATA);
+			expect(Object.fromEntries(itemStats(instance(1, "test_axe", rarity, 0), data))).toEqual({ attack });
+			const definition = data.balance.rarity(rarity);
+			expect([definition.affixMin, definition.affixMax]).toEqual([affixes, affixes]);
 		});
-		expect(rarityWeights(DATA, "unknown_table", difficulty)).toEqual([0, 0, 0, 0]);
+	}
+
+	test("item stats apply rarity and affixes", () => {
+		const data = withTestItems(DATA);
+		const item = instance(1, "test_helmet", "legendary", 0, [{ stat: "maxHp", value: 7 }]);
+		expect(Object.fromEntries(itemStats(item, data))).toEqual({ armor: 20, maxHp: 107 });
+		expect(itemValue(item, data)).toBe(600);
+	});
+
+	test("item score weights final stats", () => {
+		const data = withTestItems(DATA);
+		const weights = data.balance.itemScoreWeights;
+		const weight = (stat: Parameters<typeof weights.get>[0]): number => weights.get(stat) ?? 0;
+		const common = instance(1, "test_helmet", "common", 0);
+		expect(itemScore(common, data)).toBe(10 * weight("armor") + 50 * weight("maxHp"));
+		const scores = ["common", "rare", "legendary"].map((r) => itemScore(instance(1, "test_helmet", r, 0), data));
+		expect(scores).toEqual([...scores].sort((a, b) => a - b));
+		expect(new Set(scores).size).toBe(3);
+		const withAffix = instance(1, "test_helmet", "common", 0, [{ stat: "dodge", value: 2 }]);
+		expect(itemScore(withAffix, data)).toBe(itemScore(common, data) + 2 * weight("dodge"));
+	});
+
+	test("required level grows with the item tier", () => {
+		const perTier = DATA.balance.itemLevelPerTier;
+		expect(requiredLevel(instance(1, "sword", "common", 0), DATA)).toBe(1);
+		expect(requiredLevel(instance(1, "sword", "common", 3), DATA)).toBe(1 + 3 * perTier);
+	});
+
+	test("equip rejects items above the player level", () => {
+		const data = withTestItems(DATA);
+		const engine = newEngine("warrior", "normal", 42, data);
+		const player = engine.state.player;
+		const axe = instance(60, "test_axe", "common", 5);
+		player.bag.push(axe);
+		const rngState = engine.rngState;
+		expect(engine.step(Equip(60))).toEqual([{ type: "error", code: "level_too_low" }]);
+		expect(player.bag).toContain(axe);
+		expect(engine.rngState).toBe(rngState);
+		player.level = requiredLevel(axe, data);
+		expect(engine.step(Equip(60)).at(-1)).toEqual({
+			type: "item_equipped",
+			uid: 60,
+			itemId: "test_axe",
+			slot: "weapon",
+		});
+	});
+
+	test("selling an equipped uid is rejected", () => {
+		const engine = newEngine();
+		const player = engine.state.player;
+		const weapon = player.equipment.get("weapon");
+		if (weapon === undefined) throw new Error("no weapon");
+		const gold = player.gold;
+		expect(engine.step(SellItem(weapon.uid))).toEqual([{ type: "error", code: "invalid_item" }]);
+		expect(player.equipment.get("weapon")).toBe(weapon);
+		expect(player.gold).toBe(gold);
 	});
 });

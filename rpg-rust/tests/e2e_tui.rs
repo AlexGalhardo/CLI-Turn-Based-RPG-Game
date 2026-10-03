@@ -17,6 +17,7 @@ use rpg::application::merchant::available_potions;
 use rpg::assets::SharedFs;
 use rpg::domain::enums::Phase;
 use rpg::infrastructure::art::ArtLibrary;
+use rpg::infrastructure::repositories::{Settings, SettingsRepository};
 use rpg::presentation::controller::{Controller, View};
 use rpg::presentation::render::list_key;
 use rpg::presentation::tui::app::{App, key_name, option_style, screen_text};
@@ -95,6 +96,8 @@ fn first_launch_language_then_new_run_flow() {
 	ui.press(&["enter"]);
 	assert_eq!(ui.view(), View::Vocation);
 	ui.press(&["3"]);
+	assert_eq!(ui.view(), View::AutoEquip);
+	ui.press(&["2"]);
 	assert_eq!(ui.view(), View::Merchant);
 	let text = ui.screen();
 	assert!(text.contains("Ana"));
@@ -112,7 +115,7 @@ fn battle_merchant_save_quit_and_continue() {
 	assert!(ui.screen().contains(&format!("v{} · Rust", rpg::version::VERSION)));
 	ui.press(&["2", "2"]);
 	ui.type_text("Bo");
-	ui.press(&["enter", "1"]);
+	ui.press(&["enter", "1", "2"]);
 	assert_eq!(ui.view(), View::Merchant);
 	ui.press(&["1"]);
 	assert_eq!(ui.view(), View::BuyPotions);
@@ -128,6 +131,9 @@ fn battle_merchant_save_quit_and_continue() {
 	assert!(battle.contains("HP"));
 	assert!(battle.contains("Round 1"));
 	assert!(battle.contains("Seed 42"));
+	let monster = ui.app.controller.session.as_mut().unwrap().state_mut().monster.as_mut().unwrap();
+	monster.hp = 1_000_000;
+	monster.max_hp = 1_000_000;
 	ui.press(&["1", "2"]);
 	assert_eq!(ui.view(), View::Spells);
 	ui.press(&[&list_key(0), "3"]);
@@ -151,18 +157,26 @@ fn full_run_until_game_over() {
 	let mut ui = Harness::new(dir.path(), Some("en"));
 	ui.press(&["2", "3"]);
 	ui.type_text("Hero");
-	ui.press(&["enter", "1"]);
+	ui.press(&["enter", "1", "2"]);
+	let mut jumped = false;
 	for _ in 0..5000 {
 		let state = ui.controller().session.as_ref().expect("a run").state();
 		if state.phase == Phase::GameOver {
 			break;
+		}
+		if !jumped && state.phase == Phase::Merchant && state.stats.total_kills() > 0 {
+			// After the first kill, skip ahead so the run ends quickly (each fight costs many key presses).
+			ui.app.controller.session.as_mut().unwrap().state_mut().round = 95;
+			jumped = true;
+			continue;
 		}
 		let keys = keys_for(&bot.choose(state), ui.controller());
 		let keys: Vec<&str> = keys.iter().map(String::as_str).collect();
 		ui.press(&keys);
 	}
 	assert_eq!(ui.view(), View::GameOver);
-	assert!(ui.screen().contains("GAME OVER"));
+	let won = ui.controller().session.as_ref().unwrap().state().won;
+	assert!(ui.screen().contains(if won { "RUN COMPLETE" } else { "GAME OVER" }));
 	ui.press(&["2", "3"]);
 	assert!(ui.screen().contains("Hero"));
 	ui.press(&["0", "5"]);
@@ -182,7 +196,8 @@ fn keys_for(command: &Command, controller: &Controller) -> Vec<String> {
 	let data = controller.services().data.as_ref();
 	let index_of = |items: Vec<String>, wanted: &str| items.iter().position(|item| item == wanted).unwrap();
 	match command {
-		Command::Attack => vec!["1".into()],
+		// Attack in battle; "End run" on the Victory screen.
+		Command::Attack | Command::EndRun => vec!["1".into()],
 		Command::Defend => vec!["4".into()],
 		Command::Cast { spell_id } => {
 			let spells = data.vocation(&state.player.vocation_id).spells.clone();
@@ -219,10 +234,10 @@ fn keys_for(command: &Command, controller: &Controller) -> Vec<String> {
 				.map(|item| item.uid)
 				.collect();
 			let index = usable.iter().position(|candidate| candidate == uid).unwrap();
-			vec!["3".into(), list_key(index), "0".into()]
+			vec!["3".into(), list_key(index), "1".into(), "0".into()]
 		}
 		Command::BuyStockItem { index } => vec!["4".into(), list_key(*index as usize), "0".into()],
-		Command::Unequip { .. } => panic!("the bot never unequips"),
+		Command::Unequip { .. } | Command::ContinueRun => panic!("the bot never sends {command:?}"),
 	}
 }
 
@@ -241,7 +256,7 @@ fn paged_views_hide_the_combat_log_and_use_two_columns() {
 	let mut ui = Harness::new(dir.path(), Some("en"));
 	ui.press(&["2", "2"]);
 	ui.type_text("Cy");
-	ui.press(&["enter", "2"]);
+	ui.press(&["enter", "2", "2"]);
 	let merchant = ui.screen();
 	let row = merchant.lines().find(|line| line.contains("[1]")).unwrap();
 	assert!(row.contains("[2]"), "merchant options use two columns: {row}");
@@ -265,7 +280,7 @@ fn keys_ctrl_c_release_events_and_animation_ticks() {
 	assert_ne!(ui.screen(), title_frame, "the title art animates");
 	ui.press(&["2", "2"]);
 	ui.type_text("Di");
-	ui.press(&["enter", "1", "0"]);
+	ui.press(&["enter", "1", "2", "0"]);
 	for _ in 0..20 {
 		ui.press(&["4"]);
 		ui.app.on_tick();
@@ -275,4 +290,73 @@ fn keys_ctrl_c_release_events_and_animation_ticks() {
 	assert_eq!(key_name(&KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)), None);
 	assert_eq!(option_style(Some("fire")), option_style(Some("red")));
 	assert_ne!(option_style(Some("legendary")), option_style(None));
+	assert_eq!(option_style(Some("gain")), option_style(Some("green")));
+}
+
+/// Every fight is played by the auto-battle (instant without animation) until the run ends.
+#[test]
+fn full_run_with_auto_battle() {
+	let dir = TempDir::new();
+	let mut ui = Harness::new(dir.path(), Some("en"));
+	ui.press(&["2", "1"]);
+	ui.type_text("Auto");
+	ui.press(&["enter", "2", "1"]);
+	assert!(ui.controller().session.as_ref().unwrap().state().config.auto_equip);
+	let modes = ["1", "2", "3"];
+	for fight in 0..5000 {
+		let phase = ui.controller().session.as_ref().unwrap().state().phase;
+		if phase == Phase::GameOver {
+			break;
+		}
+		if phase == Phase::Victory {
+			assert!(ui.screen().contains("VICTORY"));
+			ui.press(&["1"]);
+			continue;
+		}
+		ui.press(&["0", "5", modes[fight % modes.len()]]);
+		assert!(!ui.controller().auto_battle_active());
+	}
+	assert_eq!(ui.view(), View::GameOver);
+	assert!(ui.controller().session.as_ref().unwrap().state().round >= 1);
+	assert_eq!(fs::read_dir(dir.path().join("history")).unwrap().count(), 1);
+}
+
+#[test]
+fn auto_battle_is_paced_by_a_timer() {
+	let dir = TempDir::new();
+	let settings = Settings { locale: Some("en".into()), battle_speed: 2, ..Settings::default() };
+	SettingsRepository::new(dir.path()).save(&settings).unwrap();
+	let mut ui = Harness::sized(dir.path(), None, SIZE, true);
+	assert_eq!(ui.app.auto_battle_interval(), None);
+	ui.press(&["2", "1"]);
+	ui.type_text("Tim");
+	ui.press(&["enter", "1", "2", "0"]);
+	assert_eq!(ui.view(), View::Battle);
+	let state = ui.app.controller.session.as_mut().unwrap().state_mut();
+	let monster = state.monster.as_mut().unwrap();
+	monster.hp = 1_000_000;
+	monster.max_hp = 1_000_000;
+	state.player.hp = 1_000_000;
+	ui.press(&["5", "1"]);
+	assert!(ui.controller().auto_battle_active());
+	assert_eq!(ui.controller().auto_battle_interval_ms(), 300);
+	assert_eq!(ui.app.auto_battle_interval(), Some(std::time::Duration::from_millis(300)));
+	assert!(ui.screen().contains("Auto-battle (Weapon focus): the fight plays itself."));
+	let turn = ui.controller().session.as_ref().unwrap().state().turn;
+	for _ in 0..3 {
+		ui.app.on_auto_battle_tick();
+		ui.screen();
+	}
+	assert!(ui.controller().session.as_ref().unwrap().state().turn > turn);
+	ui.press(&["4"]);
+	assert_eq!(ui.view(), View::Battle, "keys are ignored while the fight plays itself");
+	ui.app.controller.session.as_mut().unwrap().state_mut().monster.as_mut().unwrap().hp = 1;
+	for _ in 0..20 {
+		if !ui.controller().auto_battle_active() {
+			break;
+		}
+		ui.app.on_auto_battle_tick();
+	}
+	assert!(!ui.controller().auto_battle_active());
+	assert_ne!(ui.view(), View::Battle);
 }

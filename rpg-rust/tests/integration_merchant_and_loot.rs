@@ -8,11 +8,12 @@ use std::rc::Rc;
 use common::{new_engine, warrior, with_test_items};
 use rpg::application::commands::Command;
 use rpg::application::events::{ErrorCode, Event};
-use rpg::application::loot::{can_use, generate_item, rarity_weights};
+use rpg::application::loot::{can_use, generate_item, roll_rarity};
 use rpg::application::merchant::{available_potions, stock_price};
-use rpg::domain::character::{build_sheet, item_stats, item_value};
+use rpg::domain::character::{build_sheet, item_score, item_stats, item_value, required_level};
 use rpg::domain::definitions::{AffixDef, GameData};
 use rpg::domain::entities::{AffixRoll, ItemInstance};
+use rpg::domain::enums::EnemyClass;
 use rpg::domain::enums::{Slot, Stat};
 use rpg::domain::rng::Rng;
 
@@ -147,15 +148,15 @@ fn generate_item_is_deterministic_and_unique_affixes() {
 	let base = common::data();
 	let data = loot_data(&base);
 	let vocation = data.vocation("warrior");
-	let normal = data.balance.difficulty("normal");
-	let generate = |uid| generate_item(&data, &mut Rng::new(5), vocation, 0, "boss", normal, uid);
+	let weights = &data.balance.enemy_class(EnemyClass::Boss).rarity_weights;
+	let generate = |uid| generate_item(&data, &mut Rng::new(5), vocation, 0, weights, uid);
 	let first: Vec<_> = (0..20).map(generate).collect();
 	let second: Vec<_> = (0..20).map(generate).collect();
 	assert_eq!(first, second);
 	let mut rng = Rng::new(11);
 	for uid in 0..200 {
-		let item = generate_item(&data, &mut rng, vocation, 1, "boss", normal, uid).expect("an item");
-		assert_ne!(item.rarity, "common");
+		let item = generate_item(&data, &mut rng, vocation, 1, weights, uid).expect("an item");
+		assert!(["legendary", "mythic"].contains(&item.rarity.as_str()), "{}", item.rarity);
 		let mut stats: Vec<Stat> = item.affixes.iter().map(|affix| affix.stat).collect();
 		let count = stats.len();
 		stats.sort();
@@ -169,22 +170,98 @@ fn generate_item_is_deterministic_and_unique_affixes() {
 fn generate_item_without_candidates_consumes_nothing() {
 	let data = common::data();
 	let mut rng = Rng::new(3);
-	let normal = data.balance.difficulty("normal");
+	let weights = &data.balance.enemy_class(EnemyClass::Normal).rarity_weights;
 	let mut content = data.content();
 	content.items = Vec::new();
 	let empty = GameData::new(content);
-	let result = generate_item(&empty, &mut rng, data.vocation("mage"), 9, "monster", normal, 1);
+	let result = generate_item(&empty, &mut rng, data.vocation("mage"), 9, weights, 1);
 	assert_eq!(result, None);
 	assert_eq!(rng.state(), 3);
 }
 
+fn table(weights: &[(&str, i64)]) -> BTreeMap<String, i64> {
+	weights.iter().map(|(rarity, weight)| ((*rarity).to_owned(), *weight)).collect()
+}
+
 #[test]
-fn hard_difficulty_boosts_non_common_weights() {
+fn roll_rarity_skips_zero_weights_and_single_options() {
 	let data = common::data();
-	let normal = rarity_weights(&data, "monster", data.balance.difficulty("normal"));
-	let hard = rarity_weights(&data, "monster", data.balance.difficulty("hard"));
-	assert_eq!(hard[0], normal[0]);
-	assert!(hard[1..].iter().zip(&normal[1..]).all(|(h, n)| h >= n));
+	let mut rng = Rng::new(1);
+	assert_eq!(roll_rarity(&data, &mut rng, &table(&[("rare", 5)])).id, "rare");
+	assert_eq!(roll_rarity(&data, &mut rng, &table(&[("common", 0), ("mythic", 3)])).id, "mythic");
+	assert_eq!(rng.state(), 1);
+	let rolled: std::collections::BTreeSet<String> =
+		(0..40).map(|_| roll_rarity(&data, &mut rng, &table(&[("common", 1), ("legendary", 1)])).id.clone()).collect();
+	assert_eq!(rolled, ["common".to_owned(), "legendary".to_owned()].into());
+	assert_ne!(rng.state(), 1);
+	let panic = std::panic::catch_unwind(|| {
+		roll_rarity(&common::data(), &mut Rng::new(1), &table(&[("common", 0)]));
+	});
+	assert!(panic.is_err());
+}
+
+#[test]
+fn rarities_scale_base_stats_and_affix_counts() {
+	let base = common::data();
+	let data = with_test_items(&base);
+	for (rarity, attack, affixes) in [("common", 20, 0), ("rare", 30, 1), ("legendary", 40, 2), ("mythic", 60, 2)] {
+		let stats = item_stats(&ItemInstance::new(1, "test_axe", rarity, 0), &data);
+		assert_eq!(stats, BTreeMap::from([(Stat::Attack, attack)]), "{rarity}");
+		let definition = data.balance.rarity(rarity);
+		assert_eq!((definition.affix_min, definition.affix_max), (affixes, affixes), "{rarity}");
+	}
+}
+
+#[test]
+fn item_score_weights_final_stats() {
+	let base = common::data();
+	let data = with_test_items(&base);
+	let weights = &data.balance.item_score_weights;
+	let common_helmet = ItemInstance::new(1, "test_helmet", "common", 0);
+	assert_eq!(item_score(&common_helmet, &data), 10 * weights[&Stat::Armor] + 50 * weights[&Stat::MaxHp]);
+	let scores: Vec<i64> = ["common", "rare", "legendary"]
+		.iter()
+		.map(|rarity| item_score(&ItemInstance::new(1, "test_helmet", rarity, 0), &data))
+		.collect();
+	assert!(scores.windows(2).all(|pair| pair[0] < pair[1]), "{scores:?}");
+	let mut with_affix = common_helmet.clone();
+	with_affix.affixes = vec![AffixRoll { stat: Stat::Dodge, value: 2 }];
+	assert_eq!(item_score(&with_affix, &data), item_score(&common_helmet, &data) + 2 * weights[&Stat::Dodge]);
+}
+
+#[test]
+fn required_level_grows_with_the_item_tier() {
+	let data = common::data();
+	let per_tier = data.balance.item_level_per_tier;
+	assert_eq!(required_level(&ItemInstance::new(1, "sword", "common", 0), &data), 1);
+	assert_eq!(required_level(&ItemInstance::new(1, "sword", "common", 3), &data), 1 + 3 * per_tier);
+}
+
+#[test]
+fn equip_rejects_items_above_the_player_level() {
+	let base = common::data();
+	let data = with_test_items(&base);
+	let mut engine = warrior(&data);
+	let axe = ItemInstance::new(60, "test_axe", "common", 5);
+	engine.state_mut().player.bag.push(axe.clone());
+	let rng_state = engine.rng_state();
+	assert_eq!(engine.step(&Command::Equip { uid: 60 }), error(ErrorCode::LevelTooLow));
+	assert!(engine.state().player.bag.contains(&axe));
+	assert_eq!(engine.rng_state(), rng_state);
+	engine.state_mut().player.level = required_level(&axe, &data);
+	let events = engine.step(&Command::Equip { uid: 60 });
+	assert_eq!(events.last(), Some(&Event::ItemEquipped { uid: 60, item_id: "test_axe".into(), slot: Slot::Weapon }));
+}
+
+#[test]
+fn selling_an_equipped_uid_is_rejected() {
+	let data = common::data();
+	let mut engine = warrior(&data);
+	let weapon = engine.state().player.equipment[&Slot::Weapon].clone();
+	let gold = engine.state().player.gold;
+	assert_eq!(engine.step(&Command::SellItem { uid: weapon.uid }), error(ErrorCode::InvalidItem));
+	assert_eq!(engine.state().player.equipment[&Slot::Weapon], weapon);
+	assert_eq!(engine.state().player.gold, gold);
 }
 
 #[test]
@@ -193,8 +270,8 @@ fn item_stats_apply_rarity_and_affixes() {
 	let data = with_test_items(&base);
 	let mut item = ItemInstance::new(1, "test_helmet", "legendary", 0);
 	item.affixes = vec![AffixRoll { stat: Stat::MaxHp, value: 7 }];
-	assert_eq!(item_stats(&item, &data), BTreeMap::from([(Stat::Armor, 15), (Stat::MaxHp, 82)]));
-	assert_eq!(item_value(&item, &data), 1000);
+	assert_eq!(item_stats(&item, &data), BTreeMap::from([(Stat::Armor, 20), (Stat::MaxHp, 107)]));
+	assert_eq!(item_value(&item, &data), 600);
 }
 
 #[test]

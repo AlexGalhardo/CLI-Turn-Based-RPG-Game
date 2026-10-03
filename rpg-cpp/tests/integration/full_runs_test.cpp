@@ -36,15 +36,15 @@ std::vector<std::vector<Event>> play_to_death(application::GameEngine& engine, c
 }
 
 application::GameEngine engine_for(std::string vocation, std::string difficulty, std::uint64_t seed) {
-	auto created = application::GameEngine::new_run(
-	    rpg::testing::test_data(), application::RunConfig{"Bot", std::move(vocation), std::move(difficulty)}, seed);
+	auto created = application::GameEngine::new_run(rpg::testing::test_data(),
+	    application::RunConfig{"Bot", std::move(vocation), std::move(difficulty), false}, seed);
 	REQUIRE(created.has_value());
 	return std::move(created->first);
 }
 
 } // namespace
 
-TEST_CASE("the bot plays until death", "[integration][full_runs]") {
+TEST_CASE("the bot plays until the run ends", "[integration][full_runs]") {
 	const std::string vocation = GENERATE("warrior", "archer", "mage");
 	const std::string difficulty = GENERATE("easy", "normal", "hard");
 	auto engine = engine_for(vocation, difficulty, 1234);
@@ -52,10 +52,29 @@ TEST_CASE("the bot plays until death", "[integration][full_runs]") {
 	const auto& state = engine.state;
 	REQUIRE(state.phase == domain::Phase::game_over);
 	REQUIRE(state.round >= 1);
-	REQUIRE_FALSE(state.death_cause.value_or("").empty());
-	REQUIRE(log.back().back().type == "player_died");
-	REQUIRE(state.stats.total_kills() == state.round - 1);
 	REQUIRE(state.stats.damage_dealt > 0);
+	if (state.won) {
+		REQUIRE(state.round == rpg::testing::test_data().balance.final_round);
+		REQUIRE_FALSE(state.death_cause.has_value());
+		REQUIRE(log[log.size() - 2].back() == Event{"run_won", {{"round", state.round}}});
+		REQUIRE(log.back() == std::vector<Event>{Event{"run_ended", {{"won", true}}}});
+		REQUIRE(state.stats.total_kills() == state.round);
+	} else {
+		REQUIRE_FALSE(state.death_cause.value_or("").empty());
+		REQUIRE(log.back().back().type == "player_died");
+		REQUIRE(state.stats.total_kills() == state.round - 1);
+	}
+}
+
+TEST_CASE("some bot runs are won", "[integration][full_runs]") {
+	const application::GreedyBot bot(rpg::testing::test_data());
+	std::int64_t won = 0;
+	for (std::uint64_t seed = 2002; seed < 2006; ++seed) {
+		auto engine = engine_for("archer", "easy", seed);
+		play_to_death(engine, bot);
+		won += engine.state.won ? 1 : 0;
+	}
+	REQUIRE(won > 0);
 }
 
 TEST_CASE("the same seed gives the same events", "[integration][full_runs]") {
@@ -63,7 +82,7 @@ TEST_CASE("the same seed gives the same events", "[integration][full_runs]") {
 	std::vector<std::vector<std::vector<Event>>> logs;
 	for (int i = 0; i < 2; ++i) {
 		auto created = application::GameEngine::new_run(
-		    rpg::testing::test_data(), application::RunConfig{"Bot", "archer", "normal"}, 777);
+		    rpg::testing::test_data(), application::RunConfig{"Bot", "archer", "normal", false}, 777);
 		REQUIRE(created.has_value());
 		auto log = play_to_death(created->first, bot);
 		log.insert(log.begin(), created->second);
@@ -104,10 +123,12 @@ TEST_CASE("restoring mid-run continues identically", "[integration][full_runs]")
 
 TEST_CASE("a new run rejects an invalid config", "[integration][full_runs]") {
 	const auto& data = rpg::testing::test_data();
-	const auto knight = application::GameEngine::new_run(data, application::RunConfig{"X", "knight", "normal"}, 1);
+	const auto knight =
+	    application::GameEngine::new_run(data, application::RunConfig{"X", "knight", "normal", false}, 1);
 	REQUIRE_FALSE(knight.has_value());
 	REQUIRE(knight.error().starts_with("invalid run config"));
-	const auto nightmare = application::GameEngine::new_run(data, application::RunConfig{"X", "mage", "nightmare"}, 1);
+	const auto nightmare =
+	    application::GameEngine::new_run(data, application::RunConfig{"X", "mage", "nightmare", false}, 1);
 	REQUIRE_FALSE(nightmare.has_value());
 	REQUIRE(nightmare.error().starts_with("invalid run config"));
 }

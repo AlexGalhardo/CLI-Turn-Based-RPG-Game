@@ -5,7 +5,7 @@
 <p align="center">
 	<a href="https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/actions/workflows/ci.yml/badge.svg?branch=main"></a>
 	<a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
-	<a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-1.3.6-green.svg"></a>
+	<a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-1.4.0-green.svg"></a>
 </p>
 
 ## About

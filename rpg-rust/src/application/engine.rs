@@ -3,6 +3,7 @@
 use std::fmt;
 use std::rc::Rc;
 
+use crate::application::auto_equip::auto_equip;
 use crate::application::battle::{Battle, BattleOutcome};
 use crate::application::commands::Command;
 use crate::application::events::{ErrorCode, Event};
@@ -12,8 +13,8 @@ use crate::application::progression::Progression;
 use crate::application::run_state::{RunConfig, RunState};
 use crate::application::spawner::spawn_monster;
 use crate::domain::character::{build_sheet, item_value};
-use crate::domain::definitions::GameData;
-use crate::domain::entities::{ItemInstance, Player};
+use crate::domain::definitions::{EnemyClassDef, GameData};
+use crate::domain::entities::{ItemInstance, MonsterInstance, Player};
 use crate::domain::enums::Phase;
 use crate::domain::formulas::round_info;
 use crate::domain::rng::Rng;
@@ -125,6 +126,12 @@ impl GameEngine {
 				}
 				Merchant::new(&self.data, &mut self.rng, &mut self.state).handle(command)
 			}
+			Command::EndRun | Command::ContinueRun => {
+				if phase != Phase::Victory {
+					return vec![Event::error(ErrorCode::InvalidPhase)];
+				}
+				if *command == Command::EndRun { self.end_run() } else { self.continue_run() }
+			}
 		}
 	}
 
@@ -139,6 +146,7 @@ impl GameEngine {
 			cycle: info.cycle,
 			monster_id: monster.creature_id.clone(),
 			is_boss: monster.is_boss,
+			enemy_class: monster.enemy_class,
 			hp: monster.hp,
 		};
 		state.monster = Some(monster);
@@ -164,14 +172,20 @@ impl GameEngine {
 
 	fn victory(&mut self) -> Vec<Event> {
 		let monster = self.state.monster.clone().expect("victory without a monster");
-		let mut events =
-			vec![Event::MonsterKilled { monster_id: monster.creature_id.clone(), is_boss: monster.is_boss }];
+		let mut events = vec![Event::MonsterKilled {
+			monster_id: monster.creature_id.clone(),
+			is_boss: monster.is_boss,
+			enemy_class: monster.enemy_class,
+		}];
 		events.extend(Progression::new(&self.data).gain_experience(&mut self.state.player, monster.xp));
 
 		let gold = self.rng.roll(monster.gold_min, monster.gold_max);
 		self.state.player.gold += gold;
 		events.push(Event::GoldLooted { amount: gold });
-		events.extend(self.drops(monster.is_boss));
+		events.extend(self.drops(&monster));
+		if self.state.config.auto_equip {
+			events.extend(auto_equip(&mut self.state, &self.data));
+		}
 
 		let player = &mut self.state.player;
 		player.statuses.clear();
@@ -181,48 +195,82 @@ impl GameEngine {
 		player.hp = player.hp.min(sheet.max_hp);
 		player.mp = player.mp.min(sheet.max_mp);
 		self.state.monster = None;
-		self.state.phase = Phase::Merchant;
 		self.state.turn = 0;
+		if self.state.round == self.data.balance.final_round {
+			self.state.won = true;
+			self.state.phase = Phase::Victory;
+			events.push(Event::RunWon { round: self.state.round });
+			return events;
+		}
+		self.state.phase = Phase::Merchant;
 		events.extend(Merchant::new(&self.data, &mut self.rng, &mut self.state).enter());
 		events
 	}
 
-	fn drops(&mut self, is_boss: bool) -> Vec<Event> {
-		let data = &*self.data;
-		let balance = &data.balance;
-		let (count, table) = if is_boss {
-			(balance.boss_drops, "boss")
-		} else if self.rng.chance(balance.drop_chance_pct) {
-			(1, "monster")
-		} else {
-			return Vec::new();
-		};
-
-		let state = &mut self.state;
-		let tier = round_info(state.round, balance, data.tier_count()).tier;
-		let difficulty = balance.difficulty(&state.config.difficulty_id);
-		let vocation = data.vocation(&state.player.vocation_id);
+	/// One rule for the three classes: chance(100) and chance(0) consume nothing (docs/game-design.md §8).
+	fn drops(&mut self, monster: &MonsterInstance) -> Vec<Event> {
+		let data = Rc::clone(&self.data);
+		let row = data.balance.enemy_class(monster.enemy_class);
 		let mut events = Vec::new();
-		for _ in 0..count {
-			let Some(item) = generate_item(data, &mut self.rng, vocation, tier, table, difficulty, state.next_item_uid)
-			else {
-				continue;
-			};
-			state.take_item_uid();
-			events.push(Event::ItemDropped {
-				uid: item.uid,
-				item_id: item.item_id.clone(),
-				rarity: item.rarity.clone(),
-			});
-			if state.player.bag.len() as i64 >= balance.bag_capacity {
-				let value = item_value(&item, data);
-				state.player.gold += value;
-				events.push(Event::ItemAutoSold { uid: item.uid, item_id: item.item_id, gold: value });
-			} else {
-				state.player.bag.push(item);
+		if self.rng.chance(row.drop_chance_pct) {
+			for _ in 0..row.drops {
+				events.extend(self.drop_item(row));
 			}
 		}
+		if self.rng.chance(row.potion_drop_pct) {
+			events.extend(self.drop_potion());
+		}
 		events
+	}
+
+	fn drop_item(&mut self, row: &EnemyClassDef) -> Vec<Event> {
+		let data = &*self.data;
+		let balance = &data.balance;
+		let state = &mut self.state;
+		let Some(item) = generate_item(
+			data,
+			&mut self.rng,
+			data.vocation(&state.player.vocation_id),
+			round_info(state.round, balance, data.tier_count()).tier,
+			&row.rarity_weights,
+			state.next_item_uid,
+		) else {
+			return Vec::new();
+		};
+		state.take_item_uid();
+		let mut events =
+			vec![Event::ItemDropped { uid: item.uid, item_id: item.item_id.clone(), rarity: item.rarity.clone() }];
+		if state.player.bag.len() as i64 >= balance.bag_capacity {
+			let value = item_value(&item, data);
+			state.player.gold += value;
+			events.push(Event::ItemAutoSold { uid: item.uid, item_id: item.item_id, gold: value });
+		} else {
+			state.player.bag.push(item);
+		}
+		events
+	}
+
+	fn drop_potion(&mut self) -> Vec<Event> {
+		let state = &mut self.state;
+		let unlocked: Vec<_> = self.data.potions.iter().filter(|potion| potion.unlock_round <= state.round).collect();
+		if unlocked.is_empty() {
+			return Vec::new();
+		}
+		let potion = *self.rng.pick(&unlocked);
+		state.player.potions.insert(potion.id.clone(), state.player.potion_count(&potion.id) + 1);
+		vec![Event::PotionDropped { potion_id: potion.id.clone() }]
+	}
+
+	fn end_run(&mut self) -> Vec<Event> {
+		let state = &mut self.state;
+		state.phase = Phase::GameOver;
+		state.death_cause = None;
+		vec![Event::RunEnded { won: state.won }]
+	}
+
+	fn continue_run(&mut self) -> Vec<Event> {
+		self.state.phase = Phase::Merchant;
+		Merchant::new(&self.data, &mut self.rng, &mut self.state).enter()
 	}
 
 	fn defeat(&mut self) -> Vec<Event> {

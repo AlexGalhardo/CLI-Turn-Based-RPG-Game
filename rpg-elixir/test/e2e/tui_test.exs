@@ -2,11 +2,24 @@ defmodule Rpg.E2e.TuiTest do
   @moduledoc "End-to-end tests: the real renderer driven by key presses (no animation, fixed seed, temp data dir)."
   use ExUnit.Case, async: true
 
-  alias Rpg.Application.Commands.{Attack, BuyPotion, BuyStockItem, Cast, Defend, Equip, NextFight, SellItem, UsePotion}
+  alias Rpg.Application.Commands.{
+    Attack,
+    BuyPotion,
+    BuyStockItem,
+    Cast,
+    Defend,
+    EndRun,
+    Equip,
+    NextFight,
+    SellItem,
+    UsePotion
+  }
+
   alias Rpg.Application.{GameSession, GreedyBot, Loot, Merchant}
   alias Rpg.Domain.Definitions.GameData
   alias Rpg.Domain.Entities.Player
   alias Rpg.Infrastructure.Art
+  alias Rpg.Infrastructure.Repositories.{Settings, SettingsRepository}
   alias Rpg.Presentation.{Controller, Render}
   alias Rpg.Presentation.Tui.App
   alias Rpg.Test.Helpers
@@ -44,6 +57,8 @@ defmodule Rpg.E2e.TuiTest do
     app = app |> press("3") |> type_text("Ana") |> press("enter")
     assert view(app) == :vocation
     app = press(app, "3")
+    assert view(app) == :auto_equip
+    app = press(app, "2")
     assert view(app) == :merchant
     text = screen(app)
     assert text =~ "Ana"
@@ -53,7 +68,7 @@ defmodule Rpg.E2e.TuiTest do
   end
 
   test "battle, merchant, save & quit and continue", %{tmp_dir: dir} do
-    app = make_app(dir) |> press(["2", "2"]) |> type_text("Bo") |> press(["enter", "1"])
+    app = make_app(dir) |> press(["2", "2"]) |> type_text("Bo") |> press(["enter", "1", "2"])
     assert view(app) == :merchant
     app = press(app, "1")
     assert view(app) == :buy_potions
@@ -67,6 +82,7 @@ defmodule Rpg.E2e.TuiTest do
     app = press(app, ["0", "0"])
     assert view(app) == :battle
     assert screen(app) =~ "HP"
+    app = update_monster(app, &%{&1 | hp: 1_000_000, max_hp: 1_000_000})
     app = press(app, "1") |> press("2")
     assert view(app) == :spells
     app = press(app, Render.list_key(0)) |> press("3")
@@ -82,10 +98,10 @@ defmodule Rpg.E2e.TuiTest do
   end
 
   test "a full run until game over through the keys", %{tmp_dir: dir} do
-    app = make_app(dir) |> press(["2", "3"]) |> type_text("Hero") |> press(["enter", "1"])
-    app = play(app, 5000)
+    app = make_app(dir) |> press(["2", "3"]) |> type_text("Hero") |> press(["enter", "1", "2"])
+    app = play(app, 5000, false)
     assert view(app) == :game_over
-    assert screen(app) =~ "GAME OVER"
+    assert screen(app) =~ if(state(app).won, do: "RUN COMPLETE", else: "GAME OVER")
     app = press(app, ["2", "3"])
     assert screen(app) =~ "Hero"
     app = press(app, ["0", "5"])
@@ -98,16 +114,33 @@ defmodule Rpg.E2e.TuiTest do
     assert length(Path.wildcard(Path.join([dir, "history", "*.json"]))) == 1
   end
 
-  defp play(app, 0), do: app
+  defp play(app, 0, _jumped), do: app
 
-  defp play(app, steps) do
-    if state(app).phase == :game_over do
-      app
-    else
-      command = GreedyBot.choose(Helpers.data(), state(app))
-      app |> press(keys_for(command, app)) |> play(steps - 1)
+  defp play(app, steps, jumped) do
+    state = state(app)
+
+    cond do
+      state.phase == :game_over ->
+        app
+
+      # After the first kill, skip ahead so the run ends quickly (each fight costs many key presses).
+      not jumped and state.phase == :merchant and state.stats.kills != %{} ->
+        app |> update_state(&%{&1 | round: 95}) |> play(steps, true)
+
+      true ->
+        command = GreedyBot.choose(Helpers.data(), state)
+        app |> press(keys_for(command, app)) |> play(steps - 1, jumped)
     end
   end
+
+  defp update_state(app, fun) do
+    session = app.controller.session
+    controller = %{app.controller | session: %{session | engine: Helpers.update_state(session.engine, fun)}}
+    %{app | controller: controller}
+  end
+
+  defp update_monster(app, fun), do: update_state(app, &%{&1 | monster: fun.(&1.monster)})
+  defp update_player(app, fun), do: update_state(app, &%{&1 | player: fun.(&1.player)})
 
   defp keys_for(command, app) do
     data = Helpers.data()
@@ -141,15 +174,18 @@ defmodule Rpg.E2e.TuiTest do
       %Equip{uid: uid} ->
         vocation = GameData.vocation(data, state.player.vocation_id)
         usable = Enum.filter(state.player.bag, &Loot.can_use(GameData.item(data, &1.item_id), vocation))
-        ["3", Render.list_key(Enum.find_index(usable, &(&1.uid == uid))), "0"]
+        ["3", Render.list_key(Enum.find_index(usable, &(&1.uid == uid))), "1", "0"]
 
       %BuyStockItem{index: index} ->
         ["4", Render.list_key(index), "0"]
+
+      %EndRun{} ->
+        ["1"]
     end
   end
 
   test "the screen fills exactly 100 x 30 with the documented panels", %{tmp_dir: dir} do
-    app = make_app(dir) |> press(["2", "2"]) |> type_text("Bo") |> press(["enter", "1", "0"])
+    app = make_app(dir) |> press(["2", "2"]) |> type_text("Bo") |> press(["enter", "1", "2", "0"])
     lines = String.split(screen(app), "\n")
     assert length(lines) == 30
     assert Enum.all?(lines, &(String.length(&1) == 100))
@@ -162,7 +198,7 @@ defmodule Rpg.E2e.TuiTest do
   end
 
   test "colours and styles are ANSI escape sequences", %{tmp_dir: dir} do
-    app = make_app(dir) |> press(["2", "2"]) |> type_text("Bo") |> press(["enter", "1", "0"])
+    app = make_app(dir) |> press(["2", "2"]) |> type_text("Bo") |> press(["enter", "1", "2", "0"])
     ansi = App.render(app)
     assert ansi =~ "\e[38;2;255;166;43m╭"
     assert ansi =~ "\e[1;38;2;95;215;255m[1] "
@@ -184,7 +220,7 @@ defmodule Rpg.E2e.TuiTest do
   end
 
   test "animation cues play once and the idle loop advances", %{tmp_dir: dir} do
-    app = make_app(dir, "en", true) |> press(["2", "2"]) |> type_text("Bo") |> press(["enter", "1", "0", "1"])
+    app = make_app(dir, "en", true) |> press(["2", "2"]) |> type_text("Bo") |> press(["enter", "1", "2", "0", "1"])
     assert app.cues != [] or state(app).phase != :battle
     ticked = App.tick(app)
     assert ticked.tick == app.tick + 1
@@ -194,11 +230,106 @@ defmodule Rpg.E2e.TuiTest do
   end
 
   test "the boss is announced on the top panel", %{tmp_dir: dir} do
-    app = make_app(dir) |> press(["2", "2"]) |> type_text("Bo") |> press(["enter", "1"])
+    app = make_app(dir) |> press(["2", "2"]) |> type_text("Bo") |> press(["enter", "1", "2"])
     session = app.controller.session
     engine = Helpers.update_state(session.engine, &%{&1 | round: 9})
     controller = %{app.controller | session: %{session | engine: engine}}
     app = press(%{app | controller: controller}, "0")
     assert screen(app) =~ "BOSS"
+  end
+
+  test "a full run with auto-battle", %{tmp_dir: dir} do
+    # Every fight is played by the auto-battle (instant without animation) until the run ends.
+    app = make_app(dir) |> press(["2", "1"]) |> type_text("Auto") |> press(["enter", "2", "1"])
+    assert state(app).config.auto_equip == true
+    app = auto_play(app, 0)
+    assert view(app) == :game_over
+    assert state(app).round >= 1
+    assert length(Path.wildcard(Path.join([dir, "history", "*.json"]))) == 1
+  end
+
+  defp auto_play(app, 5000), do: app
+
+  defp auto_play(app, fight) do
+    case state(app).phase do
+      :game_over ->
+        app
+
+      :victory ->
+        assert screen(app) =~ "VICTORY"
+        app |> press("1") |> auto_play(fight + 1)
+
+      _ ->
+        app = press(app, ["0", "5", Enum.at(["1", "2", "3"], rem(fight, 3))])
+        refute Controller.auto_battle_active?(app.controller)
+        auto_play(app, fight + 1)
+    end
+  end
+
+  test "the auto-battle is paced by a timer when animated", %{tmp_dir: dir} do
+    services = Rpg.Main.build_services(Helpers.data(), dir)
+    SettingsRepository.save(services.settings, %Settings{locale: "en", battle_speed: 2})
+    app = App.new(Controller.new(services, seed: 42), Art.library(:embedded), true)
+    app = app |> press(["2", "1"]) |> type_text("Tim") |> press(["enter", "1", "2", "0"])
+    assert view(app) == :battle
+
+    app =
+      app
+      |> update_monster(&%{&1 | hp: 1_000_000, max_hp: 1_000_000})
+      |> update_player(&%{&1 | hp: 1_000_000})
+      |> press(["5", "1"])
+
+    assert App.auto_battle_active?(app)
+    assert App.auto_battle_interval_ms(app) == 300
+    turn = state(app).turn
+    {app, true} = App.auto_battle_tick(app)
+    {app, true} = App.auto_battle_tick(app)
+    assert state(app).turn > turn
+    turn = state(app).turn
+    app = press(app, "4")
+    assert state(app).turn == turn
+    app = app |> update_monster(&%{&1 | hp: 1}) |> tick_until_done(20)
+    refute App.auto_battle_active?(app)
+    assert view(app) != :battle
+  end
+
+  defp tick_until_done(app, 0), do: app
+
+  defp tick_until_done(app, left) do
+    case App.auto_battle_tick(app) do
+      {app, true} -> tick_until_done(app, left - 1)
+      {app, false} -> app
+    end
+  end
+
+  test "the equipment screen shows score deltas and semantic colours", %{tmp_dir: dir} do
+    app = make_app(dir) |> press(["2", "2"]) |> type_text("Bo") |> press(["enter", "1", "2"])
+
+    app =
+      update_player(app, fn p ->
+        %{p | bag: [%Rpg.Domain.Entities.ItemInstance{uid: 900, item_id: "hand_axe", rarity: "rare", tier: 0}]}
+      end)
+      |> press("3")
+
+    # At the minimum size the body is cut so the options stay visible.
+    small = screen(app)
+    assert small =~ "…"
+    assert small =~ "[0] Back"
+    app = App.resize(app, 100, 45)
+    text = screen(app)
+    assert text =~ "EQUIPPED · total score"
+    assert text =~ "Shield: - empty -"
+    refute text =~ "…"
+    assert text =~ ~r/\[1\] Hand Axe \[Rare\].*  [+-]?\d+/u
+    ansi = App.render(app)
+    assert ansi =~ "\e[38;2;255;215;95mShield: - empty -"
+    assert ansi =~ "\e[38;2;30;144;255mHand Axe"
+  end
+
+  test "elites are announced on the top panel", %{tmp_dir: dir} do
+    services = Rpg.Main.build_services(Helpers.with_balance(Helpers.data(), elite_chance_pct: 100), dir)
+    app = App.new(Controller.new(services, seed: 42, locale_override: "en"), Art.library(:embedded), false)
+    app = app |> press(["2", "2"]) |> type_text("Bo") |> press(["enter", "1", "2", "0"])
+    assert screen(app) =~ "ELITE"
   end
 end

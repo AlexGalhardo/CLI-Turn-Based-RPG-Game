@@ -23,6 +23,8 @@ function report(seed: string): string {
 
 describe("simulator CLI", () => {
 	test("--seed 0 falls back to base seed 1 like the reference", () => {
-		expect(report("0")).toBe(report("1"));
+		const output = report("1");
+		expect(report("0")).toBe(output);
+		expect(output).toContain("win %");
 	});
 });

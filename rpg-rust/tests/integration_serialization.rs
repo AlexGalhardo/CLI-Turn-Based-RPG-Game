@@ -22,7 +22,7 @@ fn run_state_round_trip_through_json() {
 		engine.step(&Command::Attack);
 	}
 	let state = engine.state_mut();
-	let mut item = ItemInstance::new(90, "sword", "epic", 2);
+	let mut item = ItemInstance::new(90, "sword", "mythic", 2);
 	item.affixes = vec![AffixRoll { stat: Stat::Dodge, value: 3 }];
 	state.player.bag.push(item);
 	state.player.statuses.push(ActiveStatus::new("burn", 2, 4));
@@ -56,15 +56,15 @@ fn maps_serialise_with_sorted_keys_like_the_reference() {
 fn loads_a_save_produced_by_the_python_reference() {
 	let data = common::data();
 	let raw = json!({
-		"schemaVersion": 1,
-		"gameVersion": "1.0.0",
+		"schemaVersion": 2,
+		"gameVersion": "1.4.0",
 		"implementation": "python",
 		"savedAt": "2026-09-27T21:04:11Z",
 		"rngState": 2_891_336_453_u32,
 		"session": {"runId": "20260927T210411Z-42", "startedAt": "2026-09-27T21:04:11Z", "playTimeSeconds": 1520, "sessions": 2},
 		"run": {
 			"seed": 42,
-			"config": {"name": "Alex", "vocation": "warrior", "difficulty": "normal"},
+			"config": {"name": "Alex", "vocation": "warrior", "difficulty": "normal", "autoEquip": true},
 			"player": {
 				"name": "Alex", "vocationId": "warrior", "hp": 150, "mp": 30, "gold": 340, "level": 4, "xp": 520,
 				"magicLevel": 2, "manaSpent": 140,
@@ -83,11 +83,13 @@ fn loads_a_save_produced_by_the_python_reference() {
 			"merchantStock": [{"uid": 6, "itemId": "mace", "rarity": "common", "tier": 0, "affixes": []}],
 			"nextItemUid": 7,
 			"deathCause": null,
+			"won": false,
 			"stats": {
 				"damageDealt": 210, "damageTaken": 95, "healingDone": 40, "highestHit": 31, "normalAttacks": 12,
 				"crits": 1, "dodges": 0, "parries": 1, "defends": 0, "goldLooted": 240, "goldSpent": 0,
-				"goldEarned": 0, "itemsSold": 0, "bossesKilled": 0,
+				"goldEarned": 0, "itemsSold": 0, "itemsAutoEquipped": 1, "bossesKilled": 0, "elitesKilled": 1,
 				"spellsCast": {"brutal_strike": 7}, "potionsUsed": {"health_potion": 2}, "potionsBought": {},
+				"potionsDropped": {"health_potion": 1},
 				"itemsDropped": {"rare": 1}, "kills": {"rat": 2, "bat": 1}, "statusesApplied": {},
 				"droppedItems": [{"itemId": "hand_axe", "rarity": "rare", "round": 2}]
 			}
@@ -97,6 +99,8 @@ fn loads_a_save_produced_by_the_python_reference() {
 	assert_eq!(save.implementation, "python");
 	assert_eq!(save.session.sessions, 2);
 	assert_eq!(save.run.player.equipment[&Slot::Weapon].item_id, "sword");
+	assert!(save.run.config.auto_equip);
+	assert_eq!(save.run.stats.potions_dropped["health_potion"], 1);
 	assert_eq!(serde_json::to_value(&save).unwrap(), raw, "re-serialises to the same document");
 
 	let mut engine = GameEngine::restore(data, save.run, save.rng_state);

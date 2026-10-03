@@ -18,7 +18,8 @@ func startRun(controller *presentation.Controller, name, vocationKey string) {
 		controller.Press(string(character))
 	}
 
-	press(controller, "enter", vocationKey)
+	// "2": auto-equip off (the new-run step after the vocation).
+	press(controller, "enter", vocationKey, "2")
 }
 
 func optionKeys(controller *presentation.Controller) []string {
@@ -50,10 +51,22 @@ func TestNewController(t *testing.T) {
 		t.Fatal("the language is saved")
 	}
 
-	press(controller, "6", "1")
+	controller.Press("6")
 
-	if controller.Locale != "en" {
-		t.Fatal("language can be changed from the title")
+	if controller.View != presentation.ViewSettings {
+		t.Fatal("6 opens the settings")
+	}
+
+	press(controller, "1", "1")
+
+	if controller.Locale != "en" || controller.View != presentation.ViewSettings {
+		t.Fatal("language can be changed from the settings")
+	}
+
+	controller.Press("0")
+
+	if controller.View != presentation.ViewTitle || controller.Title() != "CLI Turn-Based RPG" {
+		t.Fatal("back to the title")
 	}
 
 	startRun(controller, "Seedy", "1")
@@ -140,7 +153,19 @@ func TestController_Merchant(t *testing.T) {
 		t.Fatalf("equipment menu = %s", labels)
 	}
 
-	press(controller, "1", "0", "2", optionKeys(controller)[0], "0", "4")
+	controller.Press("1")
+
+	if controller.View != presentation.ViewCompare {
+		t.Fatal("a bag item opens the comparison")
+	}
+
+	controller.Press("1")
+
+	if controller.View != presentation.ViewEquipment || player.Equipment[domain.SlotWeapon].UID != 900 {
+		t.Fatal("equip from the comparison returns to the equipment screen")
+	}
+
+	press(controller, "0", "2", optionKeys(controller)[0], "0", "4")
 
 	if len(controller.Options()) != len(controller.Session.State().MerchantStock)+1 {
 		t.Fatal("stock menu lists the stock")

@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from rpg.application.statistics import RunStatistics
 from rpg.domain.entities import ItemInstance, MonsterInstance, Player
 from rpg.domain.enums import Phase
-from rpg.domain.json_types import JsonObject, JsonValue, json_int, json_list, json_obj, json_str
+from rpg.domain.json_types import JsonObject, JsonValue, json_bool, json_int, json_list, json_obj, json_str
 
 
 @dataclass(frozen=True, slots=True)
@@ -11,14 +11,25 @@ class RunConfig:
 	name: str
 	vocation_id: str
 	difficulty_id: str
+	auto_equip: bool = False
 
 	def to_dict(self) -> JsonObject:
-		return {"name": self.name, "vocation": self.vocation_id, "difficulty": self.difficulty_id}
+		return {
+			"name": self.name,
+			"vocation": self.vocation_id,
+			"difficulty": self.difficulty_id,
+			"autoEquip": self.auto_equip,
+		}
 
 	@staticmethod
 	def from_dict(raw: JsonValue) -> RunConfig:
 		data = json_obj(raw)
-		return RunConfig(json_str(data["name"]), json_str(data["vocation"]), json_str(data["difficulty"]))
+		return RunConfig(
+			json_str(data["name"]),
+			json_str(data["vocation"]),
+			json_str(data["difficulty"]),
+			json_bool(data["autoEquip"]),
+		)
 
 
 @dataclass(slots=True)
@@ -35,6 +46,7 @@ class RunState:
 	merchant_stock: list[ItemInstance] = field(default_factory=list)
 	next_item_uid: int = 1
 	death_cause: str | None = None
+	won: bool = False
 	stats: RunStatistics = field(default_factory=RunStatistics)
 
 	def take_item_uid(self) -> int:
@@ -54,6 +66,7 @@ class RunState:
 			"merchantStock": [item.to_dict() for item in self.merchant_stock],
 			"nextItemUid": self.next_item_uid,
 			"deathCause": self.death_cause,
+			"won": self.won,
 			"stats": self.stats.to_dict(),
 		}
 
@@ -73,5 +86,6 @@ class RunState:
 			merchant_stock=[ItemInstance.from_dict(i) for i in json_list(data["merchantStock"])],
 			next_item_uid=json_int(data["nextItemUid"]),
 			death_cause=None if death_cause is None else json_str(death_cause),
+			won=json_bool(data["won"]),
 			stats=RunStatistics.from_dict(data["stats"]),
 		)

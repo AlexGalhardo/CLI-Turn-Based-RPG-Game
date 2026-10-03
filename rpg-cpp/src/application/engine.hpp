@@ -45,7 +45,11 @@ private:
 	std::vector<Event> next_fight();
 	std::vector<Event> battle_turn(const Command& command);
 	std::vector<Event> victory();
-	std::vector<Event> drops(bool is_boss);
+	std::vector<Event> drops(const domain::MonsterInstance& monster);
+	std::vector<Event> drop_item(const domain::EnemyClassDef& row);
+	std::vector<Event> drop_potion();
+	std::vector<Event> end_run();
+	std::vector<Event> continue_run();
 	std::vector<Event> defeat();
 };
 

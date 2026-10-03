@@ -200,6 +200,7 @@ export class MonsterInstance {
 	constructor(
 		public creatureId: string,
 		public isBoss: boolean,
+		public enemyClass: string,
 		public hp: number,
 		public maxHp: number,
 		public xp: number,
@@ -218,6 +219,7 @@ export class MonsterInstance {
 		return {
 			creatureId: this.creatureId,
 			isBoss: this.isBoss,
+			enemyClass: this.enemyClass,
 			hp: this.hp,
 			maxHp: this.maxHp,
 			xp: this.xp,
@@ -235,6 +237,7 @@ export class MonsterInstance {
 		const monster = new MonsterInstance(
 			jsonStr(field(data, "creatureId")),
 			jsonBool(field(data, "isBoss")),
+			jsonStr(field(data, "enemyClass")),
 			jsonInt(field(data, "hp")),
 			jsonInt(field(data, "maxHp")),
 			jsonInt(field(data, "xp")),

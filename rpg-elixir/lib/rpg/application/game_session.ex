@@ -112,7 +112,7 @@ defmodule Rpg.Application.GameSession do
 
     {session, profile_changed} =
       case state(session).phase do
-        :merchant ->
+        phase when phase in [:merchant, :victory] ->
           session = %{session | merchant_snapshot: {state(session), GameEngine.rng_state(session.engine)}}
           {write_save(session), profile_changed}
 
@@ -127,7 +127,7 @@ defmodule Rpg.Application.GameSession do
     {session, unlocked}
   end
 
-  @doc "Persists play time. Mid-battle quits resume from the last merchant visit."
+  @doc "Persists play time. Mid-battle quits resume from the last merchant (or victory) snapshot."
   @spec save_and_quit(t()) :: t()
   def save_and_quit(%__MODULE__{} = session) do
     if state(session).phase == :game_over, do: session, else: write_save(session)
@@ -182,6 +182,7 @@ defmodule Rpg.Application.GameSession do
       level: state.player.level,
       magic_level: state.player.magic_level,
       death_cause: state.death_cause || "",
+      won: state.won,
       stats: state.stats
     }
 
@@ -195,7 +196,8 @@ defmodule Rpg.Application.GameSession do
       difficulty: record.difficulty,
       round: record.round,
       level: record.level,
-      ended_at: record.ended_at
+      ended_at: record.ended_at,
+      won: record.won
     }
 
     %{session | profile: ProfileService.record_finished_run(session.profile, entry), finished_record: record}

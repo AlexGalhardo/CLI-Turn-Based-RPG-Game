@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+#include <cstdint>
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -20,9 +22,15 @@ public:
 	application::TimePoint now() override;
 };
 
+// The auto-battle turn paces (docs/tui.md): 1x and 2x.
+inline constexpr std::array<std::int64_t, 2> kBattleSpeeds{1, 2};
+
 // The player's preferences (settings.json). An empty optional locale means "ask on first launch".
 struct Settings {
 	std::optional<std::string> locale;
+	// Default of the auto-equip option of new runs.
+	bool auto_equip = false;
+	std::int64_t battle_speed = 1;
 
 	bool operator==(const Settings&) const = default;
 };
@@ -31,7 +39,7 @@ class SettingsRepository {
 public:
 	explicit SettingsRepository(const std::filesystem::path& data_dir) : path_(data_dir / "settings.json") {}
 
-	// An unknown locale is ignored.
+	// An unknown locale is ignored; an unknown battle speed loads as 1x. Version 1 files are migrated.
 	[[nodiscard]] Settings load() const;
 	void save(const Settings& settings) const;
 

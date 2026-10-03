@@ -1,4 +1,4 @@
-"""Derived character stats: vocation base + equipment (docs/game-design.md §4)."""
+"""Derived character stats: vocation base + equipment (docs/game-design.md §4 and §8)."""
 
 from collections import Counter
 from collections.abc import Mapping
@@ -21,6 +21,21 @@ def item_stats(item: ItemInstance, data: GameData) -> dict[Stat, int]:
 
 def item_value(item: ItemInstance, data: GameData) -> int:
 	return pct(data.item(item.item_id).value, data.balance.rarity(item.rarity).value_pct)
+
+
+def item_score(item: ItemInstance, data: GameData) -> int:
+	"""Sum of the item's final stats weighted by `balance.itemScoreWeights` (like Diablo's item power)."""
+	weights = data.balance.item_score_weights
+	return sum(value * weights.get(stat, 0) for stat, value in item_stats(item, data).items())
+
+
+def required_level(item: ItemInstance, data: GameData) -> int:
+	"""Uses the instance tier: the round tier the item was generated for (docs/game-design.md §8)."""
+	return 1 + item.tier * data.balance.item_level_per_tier
+
+
+def equipment_score(player: Player, data: GameData) -> int:
+	return sum(item_score(item, data) for item in player.equipment.values())
 
 
 @dataclass(frozen=True, slots=True)

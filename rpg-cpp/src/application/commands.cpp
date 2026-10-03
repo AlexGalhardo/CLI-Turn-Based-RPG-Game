@@ -24,6 +24,8 @@ nlohmann::json command_to_json(const Command& command) {
 	        [](const Equip& equip) { return nlohmann::json{{"type", "equip"}, {"uid", equip.uid}}; },
 	        [](const Unequip& unequip) { return nlohmann::json{{"type", "unequip"}, {"slot", unequip.slot}}; },
 	        [](const BuyStockItem& buy) { return nlohmann::json{{"type", "buy_stock_item"}, {"index", buy.index}}; },
+	        [](const EndRun&) { return nlohmann::json{{"type", "end_run"}}; },
+	        [](const ContinueRun&) { return nlohmann::json{{"type", "continue_run"}}; },
 	    },
 	    command);
 }
@@ -59,6 +61,12 @@ Command command_from_json(const nlohmann::json& document) {
 	}
 	if (type == "buy_stock_item") {
 		return BuyStockItem{document.at("index").get<std::int64_t>()};
+	}
+	if (type == "end_run") {
+		return EndRun{};
+	}
+	if (type == "continue_run") {
+		return ContinueRun{};
 	}
 	throw std::invalid_argument("unknown command type: " + type);
 }

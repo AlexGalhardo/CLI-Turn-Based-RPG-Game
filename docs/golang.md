@@ -34,9 +34,11 @@ rpg-golang/
 │   ├── assets/                     # go:embed of the synced shared/ tree (generated, git-ignored)
 │   ├── domain/                     # rng, enums, definitions, formulas, entities, character
 │   ├── application/                # engine, battle, merchant, loot, spawner, progression, statistics, run_state,
-│   │                               # save_game, profile, game_session (+ ports), bot, simulator, commands, events
-│   ├── infrastructure/             # data_loader, i18n, art, repositories (+ clock), paths
-│   ├── presentation/               # cli, event_text, render, controller (+ controller_body), simulator_report
+│   │                               # save_game, profile, game_session (+ ports), bot, simulator, commands, events,
+│   │                               # auto_equip, auto_battle (policy used by the controller, not the engine)
+│   ├── infrastructure/             # data_loader, i18n, art, repositories (+ clock), paths, migrations (schema 1 → 2)
+│   ├── presentation/               # cli, event_text, render, controller (+ controller_body, controller_equipment),
+│   │                               # simulator_report
 │   │   └── tui/app.go              # Bubble Tea model rendering the controller
 │   └── version/
 └── tools/syncshared/               # used by go generate
@@ -50,6 +52,13 @@ rpg-golang/
 - Never iterate a map to make a game decision (Go randomises map order): definitions keep slices in file order, and
   maps are only used for lookups by id. JSON maps marshal with sorted keys, which matches the reference saves.
 - Events are `map[string]any` so they compare structurally with the golden files; commands render with `ToMap()`.
-- E2E tests drive the real Bubble Tea model through `Update`/`View` (Elm architecture), including a whole run by keys.
+- E2E tests drive the real Bubble Tea model through `Update`/`View` (Elm architecture), including a whole run by keys
+  and a whole run played by auto-battles.
+- Auto-battle pacing: the model schedules `tea.Tick(AutoBattleIntervalMs)` (600 ms at 1x, 300 ms at 2x) and plays one
+  `AutoBattleStep` per tick; with `--no-anim` it calls `RunAutoBattle` and the fight resolves instantly.
+- Migrations decode older JSON documents as `map[string]any` (with `UseNumber`), upgrade them and re-encode them before
+  the typed decoding, so the application layer only reads schema 2.
+- `balance.autoBattle.modes` is a JSON object whose key order matters (menu order): the loader reads it with a token
+  decoder (`orderedObject`), like item stats.
 - Problems caused by the player become `error` events; `panic` is reserved for inconsistent data (a lookup of an id the
   data itself references), which the data tests rule out.

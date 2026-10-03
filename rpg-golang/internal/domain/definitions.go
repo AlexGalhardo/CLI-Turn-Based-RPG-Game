@@ -165,12 +165,11 @@ type AchievementDef struct {
 
 // DifficultyDef defines a difficulty.
 type DifficultyDef struct {
-	ID                 string
-	HPPct              int
-	DamagePct          int
-	GoldPct            int
-	XPPct              int
-	NonCommonWeightPct int
+	ID        string
+	HPPct     int
+	DamagePct int
+	GoldPct   int
+	XPPct     int
 }
 
 // RarityDef defines an item rarity.
@@ -180,6 +179,47 @@ type RarityDef struct {
 	ValuePct int
 	AffixMin int
 	AffixMax int
+}
+
+// EnemyClassDef is a row of balance.enemyClasses: multipliers, combat chances and drop table (docs/game-design.md §3).
+type EnemyClassDef struct {
+	ID            string
+	StatPct       int
+	RewardPct     int
+	Dodge         int
+	Parry         int
+	Crit          int
+	Heal          int
+	DropChancePct int
+	Drops         int
+	PotionDropPct int
+	RarityWeights map[string]int
+}
+
+// AutoBattleModeDef is one auto-battle mode (docs/game-design.md §13).
+type AutoBattleModeDef struct {
+	ID           string
+	Offense      string
+	SupportEvery int
+}
+
+// AutoBattleDef holds the auto-battle thresholds and modes.
+type AutoBattleDef struct {
+	HealBelowPct          int
+	ManaBelowPct          int
+	EmergencyHealBelowPct int
+	Modes                 []AutoBattleModeDef
+}
+
+// Mode finds an auto-battle mode by id.
+func (a *AutoBattleDef) Mode(id string) (AutoBattleModeDef, error) {
+	for _, mode := range a.Modes {
+		if mode.ID == id {
+			return mode, nil
+		}
+	}
+
+	return AutoBattleModeDef{}, UnknownIDError{ID: id}
 }
 
 // SpellLevelDef defines a spell level threshold.
@@ -211,9 +251,14 @@ type Balance struct {
 	CycleStatPct         int
 	CycleRewardPct       int
 	PositionPct          int
+	FinalRound           int
+	EliteChancePct       int
 	Difficulties         []DifficultyDef
+	EnemyClasses         []EnemyClassDef
 	CritMultiplierPct    int
 	DefendDamagePct      int
+	ParryReflectPct      int
+	MonsterHealPct       int
 	BossTelegraphEvery   int
 	BossChargeDamagePct  int
 	Caps                 Caps
@@ -223,13 +268,14 @@ type Balance struct {
 	StartingGold         int
 	StartingPotions      []PotionStack
 	BagCapacity          int
-	DropChancePct        int
-	BossDrops            int
+	ItemLevelPerTier     int
+	ItemScoreWeights     map[Stat]int
 	Rarities             []RarityDef
 	RarityWeights        map[string]map[string]int
 	MerchantStockSize    int
 	MerchantMarkupPct    int
 	SpellStatusDamagePct int
+	AutoBattle           AutoBattleDef
 }
 
 // Difficulty finds a difficulty by id.
@@ -241,6 +287,27 @@ func (b *Balance) Difficulty(id string) (DifficultyDef, error) {
 	}
 
 	return DifficultyDef{}, UnknownIDError{ID: id}
+}
+
+// EnemyClass finds an enemy class by id.
+func (b *Balance) EnemyClass(id string) (EnemyClassDef, error) {
+	for _, enemyClass := range b.EnemyClasses {
+		if enemyClass.ID == id {
+			return enemyClass, nil
+		}
+	}
+
+	return EnemyClassDef{}, UnknownIDError{ID: id}
+}
+
+// MustEnemyClass is EnemyClass for ids produced by the engine itself.
+func (b *Balance) MustEnemyClass(id string) EnemyClassDef {
+	enemyClass, err := b.EnemyClass(id)
+	if err != nil {
+		panic(err)
+	}
+
+	return enemyClass
 }
 
 // Rarity finds a rarity by id.

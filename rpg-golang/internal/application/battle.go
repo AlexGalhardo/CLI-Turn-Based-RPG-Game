@@ -48,6 +48,10 @@ func (b *Battle) monster() *domain.MonsterInstance {
 
 func (b *Battle) sheet() domain.CharacterSheet { return domain.BuildSheet(b.player(), b.data) }
 
+func (b *Battle) enemyClass() domain.EnemyClassDef {
+	return b.data.Balance.MustEnemyClass(b.monster().EnemyClass)
+}
+
 // Validate returns an error event for an invalid command. Validation never consumes randomness.
 func (b *Battle) Validate(command Command) Event {
 	switch command.Type {
@@ -84,17 +88,15 @@ func (b *Battle) PlayTurn(command Command) ([]Event, BattleOutcome) {
 	events := []Event{}
 	b.playerAction(command, &events)
 
-	if b.monster().HP <= 0 {
-		return events, OutcomeVictory
-	}
-
 	for {
-		if b.monsterPhase(&events) {
-			return events, OutcomeVictory
+		if outcome := b.deathCheck(); outcome != OutcomeOngoing {
+			return events, outcome
 		}
 
-		if b.player().HP <= 0 {
-			return events, OutcomeDefeat
+		b.monsterPhase(&events)
+
+		if outcome := b.deathCheck(); outcome != OutcomeOngoing {
+			return events, outcome
 		}
 
 		if b.endOfTurn(&events) {
@@ -109,6 +111,19 @@ func (b *Battle) PlayTurn(command Command) ([]Event, BattleOutcome) {
 
 		events = append(events, Event{"type": "player_stunned"})
 	}
+}
+
+// deathCheck is steps 2 and 4: a parried hit can kill the attacker, so the player is checked first.
+func (b *Battle) deathCheck() BattleOutcome {
+	if b.player().HP <= 0 {
+		return OutcomeDefeat
+	}
+
+	if b.monster().HP <= 0 {
+		return OutcomeVictory
+	}
+
+	return OutcomeOngoing
 }
 
 // ── step 1: player action ─────────────────────────────────────────────────
@@ -130,12 +145,44 @@ func (b *Battle) playerAction(command Command, events *[]Event) {
 
 func (b *Battle) melee(events *[]Event) {
 	sheet := b.sheet()
+	if b.monsterDodges(events) {
+		return
+	}
+
 	base := domain.Pct(b.rng.Roll(sheet.MeleeMin, sheet.MeleeMax), 100+sheet.PhysicalDamage)
 	damage, crit := b.rollCrit(base, sheet)
+
 	damage = b.resisted(damage, sheet.WeaponElement)
+	if b.monsterParries(damage, sheet.WeaponElement, events) {
+		return
+	}
+
 	b.hitMonster(damage)
 	*events = append(*events, NewEvent("player_attacked", map[string]any{"damage": damage, "crit": crit, "element": string(sheet.WeaponElement)}))
 	b.leech(damage, sheet, events)
+}
+
+func (b *Battle) monsterDodges(events *[]Event) bool {
+	if !b.rng.Chance(b.enemyClass().Dodge) {
+		return false
+	}
+
+	*events = append(*events, Event{"type": "monster_dodged"})
+
+	return true
+}
+
+// monsterParries handles physical hits only: the monster takes nothing and reflects part of the hit (no mitigation).
+func (b *Battle) monsterParries(damage int, element domain.Element, events *[]Event) bool {
+	if element != domain.Physical || !b.rng.Chance(b.enemyClass().Parry) {
+		return false
+	}
+
+	reflected := max(1, domain.Pct(damage, b.data.Balance.ParryReflectPct))
+	b.player().HP = max(0, b.player().HP-reflected)
+	*events = append(*events, NewEvent("monster_parried", map[string]any{"reflected": reflected}))
+
+	return true
 }
 
 func (b *Battle) cast(spell *domain.SpellDef, events *[]Event) {
@@ -144,12 +191,26 @@ func (b *Battle) cast(spell *domain.SpellDef, events *[]Event) {
 	level := domain.SpellLevelForUses(player.SpellUses[spell.ID], b.data.Balance.SpellLevels)
 	cost := domain.Pct(spell.Mana, level.ManaPct)
 	player.MP -= cost
+
+	if spell.Kind == "attack" && b.monsterDodges(events) {
+		*events = append(*events, b.progression.AfterCast(player, spell, cost)...)
+
+		return
+	}
+
 	bonus := player.Level*spell.PerLevel + player.MagicLevel*spell.PerMagicLevel
 	amount := domain.Pct(domain.Pct(b.rng.Roll(spell.Min+bonus, spell.Max+bonus), level.EffectPct), 100+sheet.SpellPower)
 
 	if spell.Kind == "attack" {
 		damage, crit := b.rollCrit(amount, sheet)
 		damage = b.resisted(damage, spell.Element)
+
+		if b.monsterParries(damage, spell.Element, events) {
+			*events = append(*events, b.progression.AfterCast(player, spell, cost)...)
+
+			return
+		}
+
 		b.hitMonster(damage)
 		*events = append(*events, NewEvent("spell_cast", map[string]any{
 			"spellId": spell.ID, "damage": damage, "crit": crit, "element": string(spell.Element), "mana": cost,
@@ -233,14 +294,13 @@ func (b *Battle) leech(damage int, sheet domain.CharacterSheet, events *[]Event)
 
 // ── step 3: monster phase ─────────────────────────────────────────────────
 
-// monsterPhase returns true when the monster died from its own status ticks.
-func (b *Battle) monsterPhase(events *[]Event) bool {
+func (b *Battle) monsterPhase(events *[]Event) {
 	monster := b.monster()
 
 	b.tick(targetMonster, &monster.Statuses, events)
 
 	if monster.HP <= 0 {
-		return true
+		return
 	}
 
 	if consumeStun(&monster.Statuses) {
@@ -248,7 +308,16 @@ func (b *Battle) monsterPhase(events *[]Event) bool {
 
 		*events = append(*events, Event{"type": "monster_stunned"})
 
-		return false
+		return
+	}
+
+	// A healing monster does nothing else this turn; a boss does not advance its pattern.
+	if monster.HP < monster.MaxHP && b.rng.Chance(b.enemyClass().Heal) {
+		healed := min(domain.Pct(monster.MaxHP, b.data.Balance.MonsterHealPct), monster.MaxHP-monster.HP)
+		monster.HP += healed
+		*events = append(*events, NewEvent("monster_healed", map[string]any{"amount": healed}))
+
+		return
 	}
 
 	if monster.IsBoss {
@@ -261,13 +330,13 @@ func (b *Battle) monsterPhase(events *[]Event) bool {
 			charge := monster.Attack(chargeID)
 			*events = append(*events, NewEvent("boss_telegraph", map[string]any{"attackId": charge.ID, "element": string(charge.Element)}))
 
-			return false
+			return
 		}
 
 		if chargeID != "" && position == every {
 			b.resolveMonsterAttack(monster.Attack(chargeID), true, events)
 
-			return false
+			return
 		}
 	}
 
@@ -277,13 +346,12 @@ func (b *Battle) monsterPhase(events *[]Event) bool {
 	}
 
 	b.resolveMonsterAttack(monster.Attacks[b.rng.Weighted(weights)], false, events)
-
-	return false
 }
 
 func (b *Battle) resolveMonsterAttack(attack domain.MonsterAttack, charged bool, events *[]Event) {
 	player := b.player()
 	sheet := b.sheet()
+	balance := &b.data.Balance
 
 	if b.rng.Chance(sheet.Dodge) {
 		*events = append(*events, NewEvent("attack_dodged", map[string]any{"attackId": attack.ID}))
@@ -291,15 +359,22 @@ func (b *Battle) resolveMonsterAttack(attack domain.MonsterAttack, charged bool,
 		return
 	}
 
+	damage := b.rng.Roll(attack.Min, attack.Max)
+	if charged {
+		damage = domain.Pct(damage, balance.BossChargeDamagePct)
+	}
+
 	if attack.Element == domain.Physical && b.rng.Chance(sheet.Parry) {
-		*events = append(*events, NewEvent("attack_parried", map[string]any{"attackId": attack.ID}))
+		reflected := max(1, domain.Pct(damage, balance.ParryReflectPct))
+		b.hitMonster(reflected)
+		*events = append(*events, NewEvent("attack_parried", map[string]any{"attackId": attack.ID, "reflected": reflected}))
 
 		return
 	}
 
-	damage := b.rng.Roll(attack.Min, attack.Max)
-	if charged {
-		damage = domain.Pct(damage, b.data.Balance.BossChargeDamagePct)
+	crit := b.rng.Chance(b.enemyClass().Crit)
+	if crit {
+		damage = domain.Pct(damage, balance.CritMultiplierPct)
 	}
 
 	if attack.Element == domain.Physical {
@@ -308,13 +383,13 @@ func (b *Battle) resolveMonsterAttack(attack domain.MonsterAttack, charged bool,
 
 	damage = domain.Pct(damage, 100-sheet.Protection(attack.Element))
 	if player.Defending {
-		damage = domain.Pct(damage, b.data.Balance.DefendDamagePct)
+		damage = domain.Pct(damage, balance.DefendDamagePct)
 	}
 
 	damage = max(1, damage)
 	player.HP = max(0, player.HP-damage)
 	*events = append(*events, NewEvent("monster_attacked", map[string]any{
-		"attackId": attack.ID, "damage": damage, "element": string(attack.Element), "charged": charged,
+		"attackId": attack.ID, "damage": damage, "element": string(attack.Element), "charged": charged, "crit": crit,
 	}))
 
 	if attack.Status != nil && b.rng.Chance(attack.Status.Chance) {

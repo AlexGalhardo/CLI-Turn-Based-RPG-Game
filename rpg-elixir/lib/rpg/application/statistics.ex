@@ -24,13 +24,16 @@ defmodule Rpg.Application.RunStatistics do
     gold_spent: "goldSpent",
     gold_earned: "goldEarned",
     items_sold: "itemsSold",
-    bosses_killed: "bossesKilled"
+    items_auto_equipped: "itemsAutoEquipped",
+    bosses_killed: "bossesKilled",
+    elites_killed: "elitesKilled"
   ]
 
   @counter_fields [
     spells_cast: "spellsCast",
     potions_used: "potionsUsed",
     potions_bought: "potionsBought",
+    potions_dropped: "potionsDropped",
     items_dropped: "itemsDropped",
     kills: "kills",
     statuses_applied: "statusesApplied"
@@ -72,7 +75,10 @@ defmodule Rpg.Application.RunStatistics do
         bump(stats, :dodges, 1)
 
       "attack_parried" ->
-        bump(stats, :parries, 1)
+        stats |> bump(:parries, 1) |> bump(:damage_dealt, event["reflected"])
+
+      "monster_parried" ->
+        bump(stats, :damage_taken, event["reflected"])
 
       "status_ticked" ->
         field = if event["target"] == "player", do: :damage_taken, else: :damage_dealt
@@ -83,7 +89,8 @@ defmodule Rpg.Application.RunStatistics do
 
       "monster_killed" ->
         stats = count(stats, :kills, event["monsterId"], 1)
-        if event["isBoss"] === true, do: bump(stats, :bosses_killed, 1), else: stats
+        stats = if event["isBoss"] === true, do: bump(stats, :bosses_killed, 1), else: stats
+        if event["enemyClass"] == "elite", do: bump(stats, :elites_killed, 1), else: stats
 
       "gold_looted" ->
         bump(stats, :gold_looted, event["amount"])
@@ -100,6 +107,12 @@ defmodule Rpg.Application.RunStatistics do
 
       "item_bought" ->
         bump(stats, :gold_spent, event["gold"])
+
+      "potion_dropped" ->
+        count(stats, :potions_dropped, event["potionId"], 1)
+
+      "item_auto_equipped" ->
+        bump(stats, :items_auto_equipped, 1)
 
       sold when sold in ["item_sold", "item_auto_sold"] ->
         stats |> bump(:items_sold, 1) |> bump(:gold_earned, event["gold"])

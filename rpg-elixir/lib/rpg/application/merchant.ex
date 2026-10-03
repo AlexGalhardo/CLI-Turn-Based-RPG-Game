@@ -2,8 +2,8 @@ defmodule Rpg.Application.Merchant do
   @moduledoc "Merchant phase: potions, bag, equipment and rotating stock (docs/game-design.md §10)."
 
   alias Rpg.Application.Commands.{BuyPotion, BuyStockItem, Equip, SellItem, Unequip}
-  alias Rpg.Application.{Events, Loot, RunState}
-  alias Rpg.Domain.Definitions.{Balance, GameData}
+  alias Rpg.Application.{AutoEquip, Events, Loot, RunState}
+  alias Rpg.Domain.Definitions.GameData
   alias Rpg.Domain.Entities.{ItemInstance, Player}
   alias Rpg.Domain.{Character, Formulas, Rng}
 
@@ -24,13 +24,13 @@ defmodule Rpg.Application.Merchant do
   @doc "Generates the rotating stock for the tier of the next round."
   @spec enter(GameData.t(), Rng.t(), RunState.t()) :: {[Events.t()], RunState.t(), Rng.t()}
   def enter(%GameData{} = data, %Rng{} = rng, %RunState{} = state) do
-    difficulty = Balance.difficulty(data.balance, state.config.difficulty_id)
     vocation = GameData.vocation(data, state.player.vocation_id)
     tier = Formulas.round_info(state.round + 1, data.balance, GameData.tier_count(data)).tier
 
     {state, rng} =
       Enum.reduce(1..data.balance.merchant_stock_size//1, {%{state | merchant_stock: []}, rng}, fn _, {state, rng} ->
-        opts = [vocation: vocation, tier: tier, table: "merchant", difficulty: difficulty, uid: state.next_item_uid]
+        weights = Map.fetch!(data.balance.rarity_weights, "merchant")
+        opts = [vocation: vocation, tier: tier, weights: weights, uid: state.next_item_uid]
 
         case Loot.generate_item(data, rng, opts) do
           {nil, rng} ->
@@ -102,7 +102,8 @@ defmodule Rpg.Application.Merchant do
 
     with %ItemInstance{} = item <- find_in_bag(player, uid),
          definition = GameData.item(data, item.item_id),
-         true <- Loot.can_use(definition, GameData.vocation(data, player.vocation_id)) do
+         true <- Loot.can_use(definition, GameData.vocation(data, player.vocation_id)),
+         true <- Character.required_level(item, data) <= player.level || :level_too_low do
       slot = definition.slot
       {previous, equipment} = Map.pop(player.equipment, slot)
       bag = List.delete(player.bag, item)
@@ -123,6 +124,7 @@ defmodule Rpg.Application.Merchant do
     else
       nil -> {[Events.error("invalid_item")], state}
       false -> {[Events.error("cannot_equip")], state}
+      :level_too_low -> {[Events.error("level_too_low")], state}
     end
   end
 
@@ -160,7 +162,14 @@ defmodule Rpg.Application.Merchant do
         else
           player = %{state.player | gold: state.player.gold - price, bag: state.player.bag ++ [item]}
           state = %{state | player: player, merchant_stock: List.delete_at(state.merchant_stock, index)}
-          {[Events.event("item_bought", uid: item.uid, itemId: item.item_id, gold: price)], state}
+          bought = Events.event("item_bought", uid: item.uid, itemId: item.item_id, gold: price)
+
+          if state.config.auto_equip do
+            {more, state} = AutoEquip.auto_equip(state, data)
+            {[bought | more], state}
+          else
+            {[bought], state}
+          end
         end
     end
   end

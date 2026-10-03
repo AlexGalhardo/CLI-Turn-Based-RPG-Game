@@ -1,4 +1,4 @@
-//! Derived character stats: vocation base + equipment (docs/game-design.md §4).
+//! Derived character stats: vocation base + equipment (docs/game-design.md §4 and §8).
 
 use std::collections::BTreeMap;
 
@@ -20,6 +20,21 @@ pub fn item_stats(item: &ItemInstance, data: &GameData) -> BTreeMap<Stat, i64> {
 
 pub fn item_value(item: &ItemInstance, data: &GameData) -> i64 {
 	pct(data.item(&item.item_id).value, data.balance.rarity(&item.rarity).value_pct)
+}
+
+/// Sum of the item's final stats weighted by `balance.itemScoreWeights` (like Diablo's item power).
+pub fn item_score(item: &ItemInstance, data: &GameData) -> i64 {
+	let weights = &data.balance.item_score_weights;
+	item_stats(item, data).iter().map(|(stat, value)| value * weights.get(stat).copied().unwrap_or(0)).sum()
+}
+
+/// Uses the instance tier: the round tier the item was generated for (docs/game-design.md §8).
+pub fn required_level(item: &ItemInstance, data: &GameData) -> i64 {
+	1 + item.tier * data.balance.item_level_per_tier
+}
+
+pub fn equipment_score(player: &Player, data: &GameData) -> i64 {
+	player.equipment.values().map(|item| item_score(item, data)).sum()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

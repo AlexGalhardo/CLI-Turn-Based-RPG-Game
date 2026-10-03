@@ -17,6 +17,15 @@ StatTotals item_stats(const ItemInstance& item, const GameData& data);
 // The sell price of an item.
 std::int64_t item_value(const ItemInstance& item, const GameData& data);
 
+// Sum of the item's final stats weighted by `balance.itemScoreWeights` (like Diablo's item power).
+std::int64_t item_score(const ItemInstance& item, const GameData& data);
+
+// Uses the instance tier: the round tier the item was generated for (docs/game-design.md §8).
+std::int64_t required_level(const ItemInstance& item, const GameData& data);
+
+// The total score of the equipped items.
+std::int64_t equipment_score(const Player& player, const GameData& data);
+
 // The derived stats of the player (docs/game-design.md §4).
 struct CharacterSheet {
 	std::int64_t max_hp = 0;

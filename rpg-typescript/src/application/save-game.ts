@@ -1,9 +1,9 @@
-/** Save file and finished-run record formats, shared by the three implementations (docs/persistence.md). */
-import { field, type JsonObject, type JsonValue, jsonInt, jsonObj, jsonStr } from "../domain/json-types";
+/** Save file and finished-run record formats, shared by the six implementations (docs/persistence.md). */
+import { field, type JsonObject, type JsonValue, jsonBool, jsonInt, jsonObj, jsonStr } from "../domain/json-types";
 import { RunState } from "./run-state";
 import { RunStatistics } from "./statistics";
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 export const IMPLEMENTATION = "typescript";
 
 const pad = (value: number, size = 2): string => String(value).padStart(size, "0");
@@ -117,6 +117,7 @@ export interface RunRecord {
 	readonly level: number;
 	readonly magicLevel: number;
 	readonly deathCause: string;
+	readonly won: boolean;
 	readonly stats: RunStatistics;
 }
 
@@ -138,6 +139,7 @@ export function runRecordToJson(record: RunRecord): JsonObject {
 		level: record.level,
 		magicLevel: record.magicLevel,
 		deathCause: record.deathCause,
+		won: record.won,
 		stats: record.stats.toJson(),
 	};
 }
@@ -161,6 +163,7 @@ export function runRecordFromJson(raw: JsonValue): RunRecord {
 		level: jsonInt(field(data, "level")),
 		magicLevel: jsonInt(field(data, "magicLevel")),
 		deathCause: jsonStr(field(data, "deathCause")),
+		won: jsonBool(field(data, "won")),
 		stats: RunStatistics.fromJson(field(data, "stats")),
 	};
 }

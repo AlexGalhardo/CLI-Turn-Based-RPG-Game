@@ -38,3 +38,8 @@ Any change that alters, for a fixed seed and command list, the events or the fin
   later roll.
 - Item generation with no candidate items consumes no randomness; adding a new item to a tier changes drops.
 - Biome ignores `shared/golden` (the files are single-line JSON on purpose).
+- Scripted scenarios (`mage-spells`, `merchant-and-errors`, victory/continue) age with the balance: after a balance
+  change, check that each scenario still reaches the situation it was written for (e.g. the monster no longer dies on
+  the first cast), not only that it regenerates.
+- Balance first, golden files last: tune `shared/data` with `bun run balance:check` until the win-rate targets hold,
+  then regenerate once; every balance tweak rewrites the `bot-full-run-*` files.

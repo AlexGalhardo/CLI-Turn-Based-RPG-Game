@@ -1,4 +1,4 @@
-/** Headless balance simulator: the bot plays many runs and we aggregate how far it gets. */
+/** Headless balance simulator: the bot plays many runs and we aggregate how often it wins and how far it gets. */
 import type { GameData } from "../domain/definitions";
 import { GreedyBot } from "./bot";
 import { GameEngine } from "./engine";
@@ -11,12 +11,14 @@ export interface RunResult {
 	readonly round: number;
 	readonly level: number;
 	readonly deathCause: string;
+	readonly won: boolean;
 }
 
 export interface SimulationSummary {
 	readonly vocation: string;
 	readonly difficulty: string;
 	readonly runs: number;
+	readonly wins: number;
 	readonly minRound: number;
 	readonly p10Round: number;
 	readonly medianRound: number;
@@ -26,13 +28,22 @@ export interface SimulationSummary {
 	readonly topKillers: ReadonlyArray<readonly [string, number]>;
 }
 
+export function winRatePct(summary: SimulationSummary): number {
+	return Math.floor((summary.wins * 100) / summary.runs);
+}
+
 export function playOne(data: GameData, config: RunConfig, seed: number): RunResult {
 	const [engine] = GameEngine.newRun(data, config, seed);
 	const bot = new GreedyBot(data);
 	for (let step = 0; step < MAX_STEPS_PER_RUN; step++) {
 		if (engine.state.phase === "game_over") {
 			const state = engine.state;
-			return { round: state.round, level: state.player.level, deathCause: state.deathCause ?? "" };
+			return {
+				round: state.round,
+				level: state.player.level,
+				deathCause: state.deathCause ?? "",
+				won: state.won,
+			};
 		}
 		engine.step(bot.choose(engine.state));
 	}
@@ -57,7 +68,9 @@ export function simulate(
 	);
 	const rounds = results.map((r) => r.round).sort((a, b) => a - b);
 	const killers = new Counter();
-	for (const result of results) killers.add(result.deathCause);
+	for (const result of results) {
+		if (result.deathCause !== "") killers.add(result.deathCause);
+	}
 	const topKillers = killers
 		.entries()
 		.sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
@@ -66,6 +79,7 @@ export function simulate(
 		vocation,
 		difficulty,
 		runs,
+		wins: results.filter((r) => r.won).length,
 		minRound: rounds[0] ?? 0,
 		p10Round: percentile(rounds, 10),
 		medianRound: percentile(rounds, 50),

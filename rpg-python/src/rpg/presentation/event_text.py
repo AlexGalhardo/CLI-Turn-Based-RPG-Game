@@ -39,6 +39,8 @@ class EventFormatter:
 			variant = "_charged"
 		elif event_type == "round_started" and event.get("isBoss") is True:
 			variant = "_boss"
+		elif event_type == "round_started" and event.get("enemyClass") == "elite":
+			variant = "_elite"
 		elif "target" in event:
 			variant = f"_{event['target']}"
 		return f"event.{event_type}{variant}"

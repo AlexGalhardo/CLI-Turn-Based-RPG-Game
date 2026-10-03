@@ -1,5 +1,6 @@
 """The game engine: a pure state machine `step(command) -> events` (docs/architecture.md)."""
 
+from rpg.application.auto_equip import auto_equip
 from rpg.application.battle import Battle, BattleOutcome
 from rpg.application.commands import (
 	Attack,
@@ -7,7 +8,9 @@ from rpg.application.commands import (
 	BuyStockItem,
 	Cast,
 	Command,
+	ContinueRun,
 	Defend,
+	EndRun,
 	Equip,
 	NextFight,
 	SellItem,
@@ -21,8 +24,8 @@ from rpg.application.progression import Progression
 from rpg.application.run_state import RunConfig, RunState
 from rpg.application.spawner import spawn_monster
 from rpg.domain.character import build_sheet, item_value
-from rpg.domain.definitions import GameData, UnknownIdError
-from rpg.domain.entities import ItemInstance, Player
+from rpg.domain.definitions import EnemyClassDef, GameData, UnknownIdError
+from rpg.domain.entities import ItemInstance, MonsterInstance, Player
 from rpg.domain.enums import Phase
 from rpg.domain.formulas import round_info
 from rpg.domain.rng import Rng
@@ -98,6 +101,10 @@ class GameEngine:
 				if phase is not Phase.MERCHANT:
 					return [error(ErrorCode.INVALID_PHASE)]
 				return Merchant(self._data, self._rng, self._state).handle(command)
+			case EndRun() | ContinueRun():
+				if phase is not Phase.VICTORY:
+					return [error(ErrorCode.INVALID_PHASE)]
+				return self._end_run() if isinstance(command, EndRun) else self._continue_run()
 
 	def _next_fight(self) -> list[Event]:
 		state = self._state
@@ -116,6 +123,7 @@ class GameEngine:
 				cycle=info.cycle,
 				monsterId=monster.creature_id,
 				isBoss=monster.is_boss,
+				enemyClass=monster.enemy_class,
 				hp=monster.hp,
 			)
 		]
@@ -138,13 +146,22 @@ class GameEngine:
 		monster = state.monster
 		if monster is None:
 			raise RuntimeError("victory without a monster")
-		events: list[Event] = [event("monster_killed", monsterId=monster.creature_id, isBoss=monster.is_boss)]
+		events: list[Event] = [
+			event(
+				"monster_killed",
+				monsterId=monster.creature_id,
+				isBoss=monster.is_boss,
+				enemyClass=monster.enemy_class,
+			)
+		]
 		events.extend(Progression(self._data).gain_experience(player, monster.xp))
 
 		gold = self._rng.roll(monster.gold_min, monster.gold_max)
 		player.gold += gold
 		events.append(event("gold_looted", amount=gold))
-		events.extend(self._drops(monster.is_boss))
+		events.extend(self._drops(monster))
+		if state.config.auto_equip:
+			events.extend(auto_equip(state, self._data))
 
 		player.statuses.clear()
 		player.stun_cooldown = 0
@@ -153,46 +170,69 @@ class GameEngine:
 		player.hp = min(player.hp, sheet.max_hp)
 		player.mp = min(player.mp, sheet.max_mp)
 		state.monster = None
-		state.phase = Phase.MERCHANT
 		state.turn = 0
+		if state.round == self._data.balance.final_round:
+			state.won = True
+			state.phase = Phase.VICTORY
+			events.append(event("run_won", round=state.round))
+			return events
+		state.phase = Phase.MERCHANT
 		events.extend(Merchant(self._data, self._rng, state).enter())
 		return events
 
-	def _drops(self, is_boss: bool) -> list[Event]:
+	def _drops(self, monster: MonsterInstance) -> list[Event]:
+		"""One rule for the three classes: chance(100) and chance(0) consume nothing (docs/game-design.md §8)."""
+		row = self._data.balance.enemy_class(monster.enemy_class)
+		events: list[Event] = []
+		if self._rng.chance(row.drop_chance_pct):
+			for _ in range(row.drops):
+				events.extend(self._drop_item(row))
+		if self._rng.chance(row.potion_drop_pct):
+			events.extend(self._drop_potion())
+		return events
+
+	def _drop_item(self, row: EnemyClassDef) -> list[Event]:
 		state = self._state
 		balance = self._data.balance
-		if is_boss:
-			count, table = balance.boss_drops, "boss"
-		elif self._rng.chance(balance.drop_chance_pct):
-			count, table = 1, "monster"
-		else:
+		item = generate_item(
+			self._data,
+			self._rng,
+			vocation=self._data.vocation(state.player.vocation_id),
+			tier=round_info(state.round, balance, self._data.tier_count).tier,
+			weights=row.rarity_weights,
+			uid=state.next_item_uid,
+		)
+		if item is None:
 			return []
-
-		tier = round_info(state.round, balance, self._data.tier_count).tier
-		difficulty = balance.difficulty(state.config.difficulty_id)
-		vocation = self._data.vocation(state.player.vocation_id)
-		events: list[Event] = []
-		for _ in range(count):
-			item = generate_item(
-				self._data,
-				self._rng,
-				vocation=vocation,
-				tier=tier,
-				table=table,
-				difficulty=difficulty,
-				uid=state.next_item_uid,
-			)
-			if item is None:
-				continue
-			state.take_item_uid()
-			events.append(event("item_dropped", uid=item.uid, itemId=item.item_id, rarity=item.rarity))
-			if len(state.player.bag) >= balance.bag_capacity:
-				value = item_value(item, self._data)
-				state.player.gold += value
-				events.append(event("item_auto_sold", uid=item.uid, itemId=item.item_id, gold=value))
-			else:
-				state.player.bag.append(item)
+		state.take_item_uid()
+		events: list[Event] = [event("item_dropped", uid=item.uid, itemId=item.item_id, rarity=item.rarity)]
+		if len(state.player.bag) >= balance.bag_capacity:
+			value = item_value(item, self._data)
+			state.player.gold += value
+			events.append(event("item_auto_sold", uid=item.uid, itemId=item.item_id, gold=value))
+		else:
+			state.player.bag.append(item)
 		return events
+
+	def _drop_potion(self) -> list[Event]:
+		state = self._state
+		unlocked = [potion for potion in self._data.potions if potion.unlock_round <= state.round]
+		if not unlocked:
+			return []
+		potion = self._rng.pick(unlocked)
+		state.player.potions[potion.id] = state.player.potion_count(potion.id) + 1
+		return [event("potion_dropped", potionId=potion.id)]
+
+	def _end_run(self) -> list[Event]:
+		state = self._state
+		state.phase = Phase.GAME_OVER
+		state.death_cause = None
+		return [event("run_ended", won=state.won)]
+
+	def _continue_run(self) -> list[Event]:
+		state = self._state
+		state.phase = Phase.MERCHANT
+		return Merchant(self._data, self._rng, state).enter()
 
 	def _defeat(self) -> list[Event]:
 		state = self._state

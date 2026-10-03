@@ -19,6 +19,8 @@ const (
 	CmdEquip        = "equip"
 	CmdUnequip      = "unequip"
 	CmdBuyStockItem = "buy_stock_item"
+	CmdEndRun       = "end_run"
+	CmdContinueRun  = "continue_run"
 )
 
 // Command is a player command. Only the fields of its type are meaningful; JSON omits the others.
@@ -63,6 +65,12 @@ func Unequip(slot domain.Slot) Command { return Command{Type: CmdUnequip, Slot: 
 
 // BuyStockItem buys an item from the merchant stock.
 func BuyStockItem(index int) Command { return Command{Type: CmdBuyStockItem, Index: index} }
+
+// EndRun closes the won run (victory phase): history + Hall of Fame.
+func EndRun() Command { return Command{Type: CmdEndRun} }
+
+// ContinueRun keeps playing endlessly after beating the final boss (victory phase).
+func ContinueRun() Command { return Command{Type: CmdContinueRun} }
 
 // IsBattle reports whether the command belongs to the battle phase.
 func (c Command) IsBattle() bool {
@@ -113,16 +121,12 @@ func CommandFromJSON(raw []byte) (Command, error) {
 	}
 
 	switch data.Type {
-	case CmdAttack:
-		return Attack(), nil
+	case CmdAttack, CmdDefend, CmdNextFight, CmdEndRun, CmdContinueRun:
+		return Command{Type: data.Type}, nil
 	case CmdCast:
 		return Cast(data.SpellID), nil
 	case CmdPotion:
 		return UsePotion(data.PotionID), nil
-	case CmdDefend:
-		return Defend(), nil
-	case CmdNextFight:
-		return NextFight(), nil
 	case CmdBuyPotion:
 		return BuyPotion(data.PotionID, data.Quantity), nil
 	case CmdSellItem:

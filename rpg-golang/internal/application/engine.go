@@ -84,6 +84,16 @@ func (e *GameEngine) dispatch(command Command) []Event {
 		}
 
 		return e.nextFight()
+	case command.Type == CmdEndRun || command.Type == CmdContinueRun:
+		if phase != domain.PhaseVictory {
+			return []Event{ErrorEvent(ErrInvalidPhase)}
+		}
+
+		if command.Type == CmdEndRun {
+			return e.endRun()
+		}
+
+		return e.continueRun()
 	default:
 		if phase != domain.PhaseMerchant {
 			return []Event{ErrorEvent(ErrInvalidPhase)}
@@ -105,7 +115,7 @@ func (e *GameEngine) nextFight() []Event {
 
 	return []Event{NewEvent("round_started", map[string]any{
 		"round": state.Round, "tier": info.Tier, "cycle": info.Cycle, "monsterId": monster.CreatureID,
-		"isBoss": monster.IsBoss, "hp": monster.HP,
+		"isBoss": monster.IsBoss, "enemyClass": monster.EnemyClass, "hp": monster.HP,
 	})}
 }
 
@@ -132,13 +142,19 @@ func (e *GameEngine) victory() []Event {
 	state := e.State
 	player := state.Player
 	monster := state.Monster
-	events := []Event{NewEvent("monster_killed", map[string]any{"monsterId": monster.CreatureID, "isBoss": monster.IsBoss})}
+	events := []Event{NewEvent("monster_killed", map[string]any{
+		"monsterId": monster.CreatureID, "isBoss": monster.IsBoss, "enemyClass": monster.EnemyClass,
+	})}
 	events = append(events, NewProgression(e.Data).GainExperience(player, monster.XP)...)
 
 	gold := e.rng.Roll(monster.GoldMin, monster.GoldMax)
 	player.Gold += gold
 	events = append(events, NewEvent("gold_looted", map[string]any{"amount": gold}))
-	events = append(events, e.drops(monster.IsBoss)...)
+	events = append(events, e.drops(monster)...)
+
+	if state.Config.AutoEquip {
+		events = append(events, AutoEquip(state, e.Data)...)
+	}
 
 	player.Statuses = []domain.ActiveStatus{}
 	player.StunCooldown = 0
@@ -147,60 +163,99 @@ func (e *GameEngine) victory() []Event {
 	player.HP = min(player.HP, sheet.MaxHP)
 	player.MP = min(player.MP, sheet.MaxMP)
 	state.Monster = nil
-	state.Phase = domain.PhaseMerchant
 	state.Turn = 0
+
+	if state.Round == e.Data.Balance.FinalRound {
+		state.Won = true
+		state.Phase = domain.PhaseVictory
+
+		return append(events, NewEvent("run_won", map[string]any{"round": state.Round}))
+	}
+
+	state.Phase = domain.PhaseMerchant
 
 	return append(events, NewMerchant(e.Data, e.rng, state).Enter()...)
 }
 
-func (e *GameEngine) drops(isBoss bool) []Event {
-	state := e.State
-	balance := &e.Data.Balance
-
-	var (
-		count int
-		table string
-	)
-
-	switch {
-	case isBoss:
-		count, table = balance.BossDrops, "boss"
-	case e.rng.Chance(balance.DropChancePct):
-		count, table = 1, "monster"
-	default:
-		return nil
-	}
-
-	request := ItemRequest{
-		Vocation:   e.Data.Vocation(state.Player.VocationID),
-		Tier:       domain.RoundInfoFor(state.Round, balance, e.Data.TierCount()).Tier,
-		Table:      table,
-		Difficulty: balance.MustDifficulty(state.Config.DifficultyID),
-	}
+// drops follows one rule for the three classes: Chance(100) and Chance(0) consume nothing (docs/game-design.md §8).
+func (e *GameEngine) drops(monster *domain.MonsterInstance) []Event {
+	row := e.Data.Balance.MustEnemyClass(monster.EnemyClass)
 	events := []Event{}
 
-	for range count {
-		request.UID = state.NextItemUID
-
-		item, ok := GenerateItem(e.Data, e.rng, request)
-		if !ok {
-			continue
+	if e.rng.Chance(row.DropChancePct) {
+		for range row.Drops {
+			events = append(events, e.dropItem(row)...)
 		}
+	}
 
-		state.TakeItemUID()
-
-		events = append(events, NewEvent("item_dropped", map[string]any{"uid": item.UID, "itemId": item.ItemID, "rarity": item.Rarity}))
-
-		if len(state.Player.Bag) >= balance.BagCapacity {
-			value := domain.ItemValue(item, e.Data)
-			state.Player.Gold += value
-			events = append(events, NewEvent("item_auto_sold", map[string]any{"uid": item.UID, "itemId": item.ItemID, "gold": value}))
-		} else {
-			state.Player.Bag = append(state.Player.Bag, item)
-		}
+	if e.rng.Chance(row.PotionDropPct) {
+		events = append(events, e.dropPotion()...)
 	}
 
 	return events
+}
+
+func (e *GameEngine) dropItem(row domain.EnemyClassDef) []Event {
+	state := e.State
+	balance := &e.Data.Balance
+
+	item, ok := GenerateItem(e.Data, e.rng, ItemRequest{
+		Vocation: e.Data.Vocation(state.Player.VocationID),
+		Tier:     domain.RoundInfoFor(state.Round, balance, e.Data.TierCount()).Tier,
+		Weights:  row.RarityWeights,
+		UID:      state.NextItemUID,
+	})
+	if !ok {
+		return nil
+	}
+
+	state.TakeItemUID()
+
+	events := []Event{NewEvent("item_dropped", map[string]any{"uid": item.UID, "itemId": item.ItemID, "rarity": item.Rarity})}
+
+	if len(state.Player.Bag) >= balance.BagCapacity {
+		value := domain.ItemValue(item, e.Data)
+		state.Player.Gold += value
+		events = append(events, NewEvent("item_auto_sold", map[string]any{"uid": item.UID, "itemId": item.ItemID, "gold": value}))
+	} else {
+		state.Player.Bag = append(state.Player.Bag, item)
+	}
+
+	return events
+}
+
+func (e *GameEngine) dropPotion() []Event {
+	state := e.State
+	unlocked := []*domain.PotionDef{}
+
+	for i := range e.Data.Potions {
+		if e.Data.Potions[i].UnlockRound <= state.Round {
+			unlocked = append(unlocked, &e.Data.Potions[i])
+		}
+	}
+
+	if len(unlocked) == 0 {
+		return nil
+	}
+
+	potion := domain.Pick(e.rng, unlocked)
+	state.Player.Potions[potion.ID]++
+
+	return []Event{NewEvent("potion_dropped", map[string]any{"potionId": potion.ID})}
+}
+
+func (e *GameEngine) endRun() []Event {
+	state := e.State
+	state.Phase = domain.PhaseGameOver
+	state.DeathCause = nil
+
+	return []Event{NewEvent("run_ended", map[string]any{"won": state.Won})}
+}
+
+func (e *GameEngine) continueRun() []Event {
+	e.State.Phase = domain.PhaseMerchant
+
+	return NewMerchant(e.Data, e.rng, e.State).Enter()
 }
 
 func (e *GameEngine) defeat() []Event {

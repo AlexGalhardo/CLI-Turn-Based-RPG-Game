@@ -426,7 +426,7 @@ fn boss_drops_and_full_bag_auto_sells() {
 	let events = engine.step(&Command::Attack);
 	let dropped = events.iter().filter(|event| matches!(event, Event::ItemDropped { .. })).count() as i64;
 	let sold = events.iter().filter(|event| matches!(event, Event::ItemAutoSold { .. })).count() as i64;
-	assert_eq!(dropped, data.balance.boss_drops);
+	assert_eq!(dropped, data.balance.enemy_class(rpg::domain::enums::EnemyClass::Boss).drops);
 	assert_eq!(sold, dropped);
 	assert!(engine.state().player.gold > gold_before);
 	assert_eq!(engine.state().player.bag.len() as i64, capacity);

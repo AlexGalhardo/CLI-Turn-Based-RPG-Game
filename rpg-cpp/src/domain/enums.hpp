@@ -56,6 +56,18 @@ inline constexpr std::array<std::string_view, 8> kSlots{
     slot::shield,
 };
 
+// The order of the equipment screen and of auto-equip (docs/game-design.md §8.1, docs/tui.md).
+inline constexpr std::array<std::string_view, 8> kEquipmentSlotOrder{
+    slot::weapon,
+    slot::shield,
+    slot::helmet,
+    slot::armor,
+    slot::legs,
+    slot::boots,
+    slot::ring,
+    slot::amulet,
+};
+
 // Stat keys (docs/game-design.md §4).
 namespace stat {
 inline constexpr std::string_view attack = "attack";
@@ -72,13 +84,58 @@ inline constexpr std::string_view dodge = "dodge";
 inline constexpr std::string_view parry = "parry";
 inline constexpr std::string_view life_leech = "lifeLeech";
 inline constexpr std::string_view mana_leech = "manaLeech";
+inline constexpr std::string_view prot_physical = "protPhysical";
+inline constexpr std::string_view prot_fire = "protFire";
+inline constexpr std::string_view prot_ice = "protIce";
+inline constexpr std::string_view prot_energy = "protEnergy";
+inline constexpr std::string_view prot_earth = "protEarth";
+inline constexpr std::string_view prot_holy = "protHoly";
+inline constexpr std::string_view prot_death = "protDeath";
 } // namespace stat
+
+// Every stat key in canonical order (the reference's `Stat` enum order).
+inline constexpr std::array<std::string_view, 21> kStats{
+    stat::attack,
+    stat::armor,
+    stat::max_hp,
+    stat::max_mp,
+    stat::hp_regen,
+    stat::mp_regen,
+    stat::crit_chance,
+    stat::crit_damage,
+    stat::spell_power,
+    stat::physical_damage,
+    stat::dodge,
+    stat::parry,
+    stat::life_leech,
+    stat::mana_leech,
+    stat::prot_physical,
+    stat::prot_fire,
+    stat::prot_ice,
+    stat::prot_energy,
+    stat::prot_earth,
+    stat::prot_holy,
+    stat::prot_death,
+};
+
+// Enemy classes (docs/game-design.md §3): ids of `balance.enemyClasses`, saved as strings.
+namespace enemy_class {
+inline constexpr std::string_view normal = "normal";
+inline constexpr std::string_view elite = "elite";
+inline constexpr std::string_view boss = "boss";
+} // namespace enemy_class
+
+inline constexpr std::array<std::string_view, 3> kEnemyClasses{
+    enemy_class::normal,
+    enemy_class::elite,
+    enemy_class::boss,
+};
 
 // The protection stat of an element: "fire" → "protFire".
 std::string protection_stat(std::string_view element);
 
 // The run phase of the engine state machine. A real enum: unlike ids, phases are a closed set owned by the code.
-enum class Phase { merchant, battle, game_over };
+enum class Phase { merchant, battle, victory, game_over };
 
 std::string_view to_string(Phase phase);
 Phase phase_from_string(std::string_view text);

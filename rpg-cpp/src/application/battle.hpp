@@ -43,6 +43,8 @@ private:
 	[[nodiscard]] domain::CharacterSheet sheet() const { return domain::build_sheet(state_->player, *data_); }
 	[[nodiscard]] std::int64_t spell_cost(const domain::SpellDef& spell) const;
 	[[nodiscard]] std::int64_t monster_resistance(std::string_view element) const;
+	[[nodiscard]] const domain::EnemyClassDef& enemy_class() const;
+	[[nodiscard]] std::optional<BattleOutcome> death_check() const;
 
 	void player_action(const Command& command, std::vector<Event>& events);
 	void melee(std::vector<Event>& events);
@@ -51,9 +53,12 @@ private:
 	std::pair<std::int64_t, bool> roll_crit(std::int64_t damage, const domain::CharacterSheet& sheet);
 	[[nodiscard]] std::int64_t resisted(std::int64_t damage, std::string_view element) const;
 	void hit_monster(std::int64_t damage);
+	bool monster_dodges(std::vector<Event>& events);
+	bool monster_parries(std::int64_t damage, std::string_view element, std::vector<Event>& events);
+	void after_cast(const domain::SpellDef& spell, std::int64_t cost, std::vector<Event>& events);
 	void leech(std::int64_t damage, const domain::CharacterSheet& sheet, std::vector<Event>& events);
 
-	bool monster_phase(std::vector<Event>& events);
+	void monster_phase(std::vector<Event>& events);
 	void resolve_monster_attack(const domain::MonsterAttack& attack, bool charged, std::vector<Event>& events);
 	bool end_of_turn(std::vector<Event>& events);
 

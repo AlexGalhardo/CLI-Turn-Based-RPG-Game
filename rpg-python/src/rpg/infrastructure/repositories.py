@@ -7,9 +7,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from rpg.application.profile import Profile
-from rpg.application.save_game import RunRecord, SaveGame, check_schema
-from rpg.domain.json_types import JsonObject, JsonValue, json_obj, json_str
+from rpg.application.save_game import SCHEMA_VERSION, RunRecord, SaveGame, check_schema
+from rpg.domain.json_types import JsonObject, JsonValue, json_bool, json_int, json_obj, json_str
 from rpg.infrastructure.i18n import SUPPORTED_LOCALES
+from rpg.infrastructure.migrations import migrate_history, migrate_profile, migrate_save, migrate_settings
+
+BATTLE_SPEEDS = (1, 2)
 
 
 def write_json_atomic(path: Path, document: JsonObject) -> None:
@@ -33,6 +36,8 @@ class SystemClock:
 @dataclass(frozen=True, slots=True)
 class Settings:
 	locale: str | None = None
+	auto_equip: bool = False
+	battle_speed: int = 1
 
 
 class SettingsRepository:
@@ -44,13 +49,21 @@ class SettingsRepository:
 			return Settings()
 		data = json_obj(read_json(self._path))
 		check_schema(data, "settings.json")
+		data = migrate_settings(data)
 		locale = json_str(data["locale"]) if "locale" in data else None
-		return Settings(locale if locale in SUPPORTED_LOCALES else None)
+		speed = json_int(data["battleSpeed"])
+		return Settings(
+			locale=locale if locale in SUPPORTED_LOCALES else None,
+			auto_equip=json_bool(data["autoEquip"]),
+			battle_speed=speed if speed in BATTLE_SPEEDS else BATTLE_SPEEDS[0],
+		)
 
 	def save(self, settings: Settings) -> None:
-		document: JsonObject = {"schemaVersion": 1}
+		document: JsonObject = {"schemaVersion": SCHEMA_VERSION}
 		if settings.locale is not None:
 			document["locale"] = settings.locale
+		document["autoEquip"] = settings.auto_equip
+		document["battleSpeed"] = settings.battle_speed
 		write_json_atomic(self._path, document)
 
 
@@ -61,7 +74,9 @@ class FileSaveRepository:
 	def load(self) -> SaveGame | None:
 		if not self._path.exists():
 			return None
-		return SaveGame.from_dict(read_json(self._path))
+		document = json_obj(read_json(self._path))
+		check_schema(document, "save.json")
+		return SaveGame.from_dict(migrate_save(document))
 
 	def save(self, save: SaveGame) -> None:
 		write_json_atomic(self._path, save.to_dict())
@@ -80,7 +95,12 @@ class FileHistoryRepository:
 	def list(self) -> list[RunRecord]:
 		if not self._dir.exists():
 			return []
-		return [RunRecord.from_dict(read_json(path)) for path in sorted(self._dir.glob("*.json"))]
+		records = []
+		for path in sorted(self._dir.glob("*.json")):
+			document = json_obj(read_json(path))
+			check_schema(document, "history record")
+			records.append(RunRecord.from_dict(migrate_history(document)))
+		return records
 
 
 class FileProfileRepository:
@@ -92,7 +112,7 @@ class FileProfileRepository:
 			return Profile()
 		data = json_obj(read_json(self._path))
 		check_schema(data, "profile.json")
-		return Profile.from_dict(data)
+		return Profile.from_dict(migrate_profile(data))
 
 	def save(self, profile: Profile) -> None:
 		write_json_atomic(self._path, profile.to_dict())

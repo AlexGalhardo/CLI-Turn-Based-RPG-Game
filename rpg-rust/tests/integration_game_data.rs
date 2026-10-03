@@ -8,7 +8,7 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::PathBuf;
 
 use rpg::assets::SharedFs;
-use rpg::domain::enums::StatusKind;
+use rpg::domain::enums::{EnemyClass, Stat, StatusKind};
 use rpg::infrastructure::art::{ArtLibrary, frame_for, parse_art};
 use rpg::infrastructure::data_loader::load_game_data;
 use rpg::infrastructure::i18n::Translator;
@@ -66,11 +66,57 @@ fn cross_references_are_valid() {
 }
 
 #[test]
+fn balance_m8_tables() {
+	let data = common::data();
+	let balance = &data.balance;
+	let rarities: Vec<&str> = balance.rarities.iter().map(|rarity| rarity.id.as_str()).collect();
+	assert_eq!(rarities, ["common", "rare", "legendary", "mythic"]);
+	assert_eq!(balance.rarities.iter().map(|rarity| rarity.stat_pct).collect::<Vec<_>>(), [100, 150, 200, 300]);
+	assert_eq!(balance.spell_levels.iter().map(|level| level.effect_pct).collect::<Vec<_>>(), [100, 150, 200]);
+	assert_eq!(balance.rarity_weights.keys().collect::<Vec<_>>(), ["merchant"]);
+	for enemy_class in [EnemyClass::Normal, EnemyClass::Elite, EnemyClass::Boss] {
+		for rarity in balance.enemy_class(enemy_class).rarity_weights.keys() {
+			assert!(rarities.contains(&rarity.as_str()), "{rarity}");
+		}
+	}
+	assert!(balance.enemy_class(EnemyClass::Elite).stat_pct > balance.enemy_class(EnemyClass::Normal).stat_pct);
+	let weighted: Vec<Stat> = balance.item_score_weights.keys().copied().collect();
+	let every_stat: Vec<Stat> = serde_json::from_value(serde_json::json!([
+		"attack",
+		"armor",
+		"maxHp",
+		"maxMp",
+		"hpRegen",
+		"mpRegen",
+		"critChance",
+		"critDamage",
+		"spellPower",
+		"physicalDamage",
+		"dodge",
+		"parry",
+		"lifeLeech",
+		"manaLeech",
+		"protPhysical",
+		"protFire",
+		"protIce",
+		"protEnergy",
+		"protEarth",
+		"protHoly",
+		"protDeath"
+	]))
+	.unwrap();
+	assert_eq!(weighted, every_stat);
+	assert_eq!(data.boss_of_tier(data.tier_count() - 1).id, "ferumbras");
+	assert_eq!(balance.final_round, balance.rounds_per_tier * data.tier_count());
+	assert_eq!(balance.auto_battle.mode("balanced").support_every, 2);
+}
+
+#[test]
 fn lookup_errors() {
 	let data = common::data();
 	assert!(data.find_spell("avada_kedavra").is_none());
 	assert!(data.balance.find_difficulty("nightmare").is_none());
-	assert!(data.balance.find_rarity("mythic").is_none());
+	assert!(data.balance.find_rarity("epic").is_none());
 	assert!(data.creature("rat").find_attack("laser").is_none());
 	let panics = |lookup: &dyn Fn()| catch_unwind(AssertUnwindSafe(lookup)).is_err();
 	assert!(panics(&|| {
@@ -80,7 +126,10 @@ fn lookup_errors() {
 		data.balance.difficulty("nightmare");
 	}));
 	assert!(panics(&|| {
-		data.balance.rarity("mythic");
+		data.balance.rarity("epic");
+	}));
+	assert!(panics(&|| {
+		data.balance.auto_battle.mode("berserk");
 	}));
 	assert!(panics(&|| {
 		data.creature("rat").attack("laser");

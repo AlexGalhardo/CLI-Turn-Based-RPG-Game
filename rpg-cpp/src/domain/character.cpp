@@ -32,6 +32,27 @@ std::int64_t item_value(const ItemInstance& item, const GameData& data) {
 	return pct(data.item(item.item_id).value, data.balance.rarity(item.rarity).value_pct);
 }
 
+std::int64_t item_score(const ItemInstance& item, const GameData& data) {
+	const auto& weights = data.balance.item_score_weights;
+	std::int64_t score = 0;
+	for (const auto& [stat, value] : item_stats(item, data)) {
+		score += value * total_of(weights, stat);
+	}
+	return score;
+}
+
+std::int64_t required_level(const ItemInstance& item, const GameData& data) {
+	return 1 + item.tier * data.balance.item_level_per_tier;
+}
+
+std::int64_t equipment_score(const Player& player, const GameData& data) {
+	std::int64_t score = 0;
+	for (const auto& [slot, item] : player.equipment) {
+		score += item_score(item, data);
+	}
+	return score;
+}
+
 std::int64_t CharacterSheet::protection(std::string_view element) const { return total_of(protections, element); }
 
 CharacterSheet build_sheet(const Player& player, const GameData& data) {

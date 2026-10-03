@@ -23,6 +23,11 @@ const (
 	maxNameLength     = 16
 	maxQuantityDigits = 2
 	PageSize          = 10
+	// AutoBattleBaseMs is the auto-battle pace (docs/tui.md): one turn every 600 ms at 1x, 300 ms at 2x; instant
+	// with --no-anim.
+	AutoBattleBaseMs = 600
+	// maxAutoBattleTurns is a safety net: a fight that somehow never ends hands control back to the player.
+	maxAutoBattleTurns = 10_000
 )
 
 // View is a UI screen.
@@ -32,19 +37,25 @@ type View string
 const (
 	ViewLanguage     View = "language"
 	ViewTitle        View = "title"
+	ViewSettings     View = "settings"
 	ViewDifficulty   View = "difficulty"
 	ViewName         View = "name"
 	ViewVocation     View = "vocation"
+	ViewAutoEquip    View = "auto_equip"
 	ViewMerchant     View = "merchant"
 	ViewBuyPotions   View = "buy_potions"
 	ViewQuantity     View = "quantity"
 	ViewSell         View = "sell"
 	ViewEquipment    View = "equipment"
+	ViewCompare      View = "compare"
+	ViewEquippedSlot View = "equipped_slot"
 	ViewStock        View = "stock"
 	ViewCharacter    View = "character"
 	ViewBattle       View = "battle"
 	ViewSpells       View = "spells"
 	ViewPotions      View = "potions"
+	ViewAutoBattle   View = "auto_battle"
+	ViewVictory      View = "victory"
 	ViewGameOver     View = "game_over"
 	ViewHallOfFame   View = "hall_of_fame"
 	ViewBestiary     View = "bestiary"
@@ -57,15 +68,28 @@ func IsPaged(view View) bool {
 }
 
 func isBattleView(view View) bool {
-	return view == ViewBattle || view == ViewSpells || view == ViewPotions
+	return view == ViewBattle || view == ViewSpells || view == ViewPotions || view == ViewAutoBattle
+}
+
+// isStyled reports whether a view colours its body lines (the equipment screens).
+func isStyled(view View) bool {
+	return view == ViewEquipment || view == ViewCompare || view == ViewEquippedSlot
 }
 
 func isTextInput(view View) bool { return view == ViewName || view == ViewQuantity }
 
 // MenuOption is one selectable option.
 type MenuOption struct {
-	Key   string
-	Label string
+	Key         string
+	Label       string
+	Color       string
+	Detail      string
+	DetailColor string
+}
+
+// BodyLine is an informative line with an optional colour (a semantic style from render.go or a rarity id).
+type BodyLine struct {
+	Text  string
 	Color string
 }
 
@@ -91,6 +115,7 @@ type MonsterView struct {
 	HP         int
 	MaxHP      int
 	IsBoss     bool
+	EnemyClass string
 	Element    domain.Element
 	Details    string
 }
@@ -119,6 +144,7 @@ type Controller struct {
 	Page          int
 	Locale        string
 	Services      Services
+	Settings      infrastructure.Settings
 	// Err keeps the last persistence error so the renderer can show it instead of crashing.
 	Err error
 
@@ -127,7 +153,12 @@ type Controller struct {
 	languageReturn View
 	difficulty     string
 	name           string
+	vocation       string
 	potionID       string
+	compareUID     int
+	slot           domain.Slot
+	autoBattle     *application.AutoBattlePolicy
+	autoTurns      int
 	seed           *uint64
 	seedSource     func() uint64
 }
@@ -154,8 +185,8 @@ func NewController(services Services, seed *uint64, localeOverride string, seedS
 	}
 
 	controller := &Controller{
-		Services: services, Log: []string{}, languageReturn: ViewTitle, difficulty: "normal",
-		seed: seed, seedSource: seedSource, View: ViewLanguage,
+		Services: services, Settings: settings, Log: []string{}, languageReturn: ViewTitle, difficulty: "normal",
+		seed: seed, seedSource: seedSource, View: ViewLanguage, slot: domain.SlotWeapon,
 	}
 
 	locale := infrastructure.DefaultLocale
@@ -200,12 +231,16 @@ func (c *Controller) Title() string {
 		return c.T("language.title", nil)
 	case ViewTitle:
 		return c.T("app.title", nil)
+	case ViewSettings:
+		return c.T("settings.title", nil)
 	case ViewDifficulty:
 		return c.T("new_run.difficulty", nil)
 	case ViewName:
 		return c.T("new_run.name", nil)
 	case ViewVocation:
 		return c.T("new_run.vocation", nil)
+	case ViewAutoEquip:
+		return c.T("new_run.auto_equip", nil)
 	case ViewMerchant:
 		round := 0
 		if c.Session != nil {
@@ -225,6 +260,10 @@ func (c *Controller) Title() string {
 		return c.T("merchant.sell_items", nil)
 	case ViewEquipment:
 		return c.T("merchant.equipment", nil)
+	case ViewCompare:
+		return c.compareTitle()
+	case ViewEquippedSlot:
+		return c.T("slot."+string(c.slot), nil)
 	case ViewStock:
 		return c.T("merchant.stock", nil)
 	case ViewCharacter:
@@ -235,7 +274,15 @@ func (c *Controller) Title() string {
 		return c.T("battle.spells", nil)
 	case ViewPotions:
 		return c.T("battle.potions", nil)
+	case ViewAutoBattle:
+		return c.T("auto_battle.title", nil)
+	case ViewVictory:
+		return c.T("victory.title", nil)
 	case ViewGameOver:
+		if c.Session != nil && c.Session.State().Won {
+			return c.T("gameover.title_won", nil)
+		}
+
 		return c.T("gameover.title", nil)
 	case ViewHallOfFame:
 		return c.T("menu.hall_of_fame", nil)
@@ -263,6 +310,13 @@ func (c *Controller) Options() []MenuOption {
 // BodyLines are the informative lines above the options (paged for long lists).
 func (c *Controller) BodyLines() []string {
 	lines := c.body()
+	if isStyled(c.View) {
+		lines = []string{}
+		for _, line := range c.styledBody() {
+			lines = append(lines, line.Text)
+		}
+	}
+
 	if !IsPaged(c.View) || len(lines) <= PageSize {
 		return lines
 	}
@@ -273,6 +327,20 @@ func (c *Controller) BodyLines() []string {
 	end := min(len(lines), start+PageSize)
 
 	return append(slices.Clone(lines[start:end]), "", c.T("menu.page", map[string]any{"page": c.Page + 1, "pages": pages}))
+}
+
+// BodyColors is the colour of each line of BodyLines ("" for the default colour).
+func (c *Controller) BodyColors() []string {
+	if !isStyled(c.View) {
+		return make([]string, len(c.BodyLines()))
+	}
+
+	colors := []string{}
+	for _, line := range c.styledBody() {
+		colors = append(colors, line.Color)
+	}
+
+	return colors
 }
 
 // InputPrompt returns the text input prompt, or "" when the screen has no text input.
@@ -348,7 +416,7 @@ func (c *Controller) MonsterView() *MonsterView {
 
 	return &MonsterView{
 		Name: creature.Name, CreatureID: creature.ID, HP: monster.HP, MaxHP: monster.MaxHP,
-		IsBoss: monster.IsBoss, Element: main.Element, Details: details,
+		IsBoss: monster.IsBoss, EnemyClass: monster.EnemyClass, Element: main.Element, Details: details,
 	}
 }
 
@@ -386,6 +454,10 @@ func (c *Controller) PlayerView() *PlayerView {
 
 // Press handles one key ("1", "a", "enter", "escape", "backspace", ...).
 func (c *Controller) Press(key string) {
+	if c.AutoBattleActive() {
+		return
+	}
+
 	c.Message = ""
 
 	if isTextInput(c.View) {
@@ -415,6 +487,55 @@ func (c *Controller) Press(key string) {
 			return
 		}
 	}
+}
+
+// ── auto-battle (docs/game-design.md §13, docs/tui.md) ─────────────────────
+
+// AutoBattleActive reports whether an auto-battle is running (the player's keys are ignored).
+func (c *Controller) AutoBattleActive() bool { return c.autoBattle != nil }
+
+// AutoBattleIntervalMs is the delay between two auto-battle turns at the current battle speed.
+func (c *Controller) AutoBattleIntervalMs() int {
+	return AutoBattleBaseMs / max(1, c.Settings.BattleSpeed)
+}
+
+// AutoBattleStep plays one auto-battle turn. It returns true while the fight goes on (the renderer keeps ticking).
+func (c *Controller) AutoBattleStep() bool {
+	policy := c.autoBattle
+	if policy == nil || c.Session == nil || c.Session.State().Phase != domain.PhaseBattle {
+		c.autoBattle = nil
+
+		return false
+	}
+
+	c.autoTurns++
+	c.step(policy.Choose(c.Session.State()))
+
+	if c.Session == nil || c.Session.State().Phase != domain.PhaseBattle || c.autoTurns >= maxAutoBattleTurns || c.Err != nil {
+		c.autoBattle = nil
+	}
+
+	return c.AutoBattleActive()
+}
+
+// RunAutoBattle plays the whole fight at once (instant mode, --no-anim).
+func (c *Controller) RunAutoBattle() {
+	for c.AutoBattleStep() {
+	}
+}
+
+func (c *Controller) startAutoBattle(mode application.AutoBattleMode) {
+	policy, err := application.NewAutoBattlePolicy(c.Services.Data, mode)
+	if err != nil {
+		c.Err = err
+
+		return
+	}
+
+	c.autoTurns = 0
+	c.autoBattle = policy
+	c.View = ViewBattle
+	c.pushLog(c.T("auto_battle.started", map[string]any{"mode": c.T("auto_battle."+string(mode), nil)}))
 }
 
 //nolint:gocyclo // flat key dispatch for the two text inputs, mirroring the reference controller.
@@ -482,6 +603,8 @@ func (c *Controller) menu() []menuEntry {
 		return entries
 	case ViewTitle:
 		return c.titleMenu()
+	case ViewSettings:
+		return c.settingsMenu()
 	case ViewDifficulty:
 		entries := []menuEntry{}
 
@@ -500,6 +623,8 @@ func (c *Controller) menu() []menuEntry {
 		}
 
 		return append(entries, c.back(ViewDifficulty))
+	case ViewAutoEquip:
+		return c.autoEquipMenu()
 	case ViewMerchant:
 		return []menuEntry{
 			{MenuOption{Key: "1", Label: c.T("merchant.buy_potions", nil)}, c.goTo(ViewBuyPotions)},
@@ -516,6 +641,10 @@ func (c *Controller) menu() []menuEntry {
 		return append(c.sellMenu(), c.back(ViewMerchant))
 	case ViewEquipment:
 		return append(c.equipmentMenu(), c.back(ViewMerchant))
+	case ViewCompare:
+		return []menuEntry{{MenuOption{Key: "1", Label: c.T("equipment.equip", nil)}, c.equipCompared}, c.back(ViewEquipment)}
+	case ViewEquippedSlot:
+		return []menuEntry{{MenuOption{Key: "1", Label: c.T("equipment.unequip", nil)}, c.unequipSlot}, c.back(ViewEquipment)}
 	case ViewStock:
 		return append(c.stockMenu(), c.back(ViewMerchant))
 	case ViewCharacter:
@@ -526,7 +655,22 @@ func (c *Controller) menu() []menuEntry {
 			{MenuOption{Key: "2", Label: c.T("battle.spells", nil)}, c.goTo(ViewSpells)},
 			{MenuOption{Key: "3", Label: c.T("battle.potions", nil)}, c.goTo(ViewPotions)},
 			{MenuOption{Key: "4", Label: c.T("battle.defend", nil)}, c.command(application.Defend())},
+			{MenuOption{Key: "5", Label: c.T("battle.auto", nil)}, c.goTo(ViewAutoBattle)},
 			{MenuOption{Key: "q", Label: c.T("battle.save_quit", nil)}, c.saveAndQuit},
+		}
+	case ViewAutoBattle:
+		entries := []menuEntry{}
+
+		for i, mode := range application.AutoBattleModes {
+			label := c.T("auto_battle."+string(mode), nil)
+			entries = append(entries, menuEntry{MenuOption{Key: strconv.Itoa(i + 1), Label: label}, func() { c.startAutoBattle(mode) }})
+		}
+
+		return append(entries, c.back(ViewBattle))
+	case ViewVictory:
+		return []menuEntry{
+			{MenuOption{Key: "1", Label: c.T("victory.end_run", nil)}, c.command(application.EndRun())},
+			{MenuOption{Key: "2", Label: c.T("victory.continue", nil)}, c.command(application.ContinueRun())},
 		}
 	case ViewSpells:
 		return append(c.spellMenu(), c.back(ViewBattle))
@@ -567,15 +711,76 @@ func (c *Controller) titleMenu() []menuEntry {
 		menuEntry{MenuOption{Key: "3", Label: c.T("menu.hall_of_fame", nil)}, c.goTo(ViewHallOfFame)},
 		menuEntry{MenuOption{Key: "4", Label: c.T("menu.bestiary", nil)}, c.goTo(ViewBestiary)},
 		menuEntry{MenuOption{Key: "5", Label: c.T("menu.achievements", nil)}, c.goTo(ViewAchievements)},
-		menuEntry{MenuOption{Key: "6", Label: c.T("menu.language", nil)}, c.openLanguage},
+		menuEntry{MenuOption{Key: "6", Label: c.T("menu.settings", nil)}, c.goTo(ViewSettings)},
 		menuEntry{MenuOption{Key: "0", Label: c.T("menu.quit", nil)}, func() { c.ExitRequested = true }},
 	)
+}
+
+func (c *Controller) onOff(enabled bool) string {
+	if enabled {
+		return c.T("settings.on", nil)
+	}
+
+	return c.T("settings.off", nil)
+}
+
+func (c *Controller) settingsMenu() []menuEntry {
+	settings := c.Settings
+
+	return []menuEntry{
+		{MenuOption{Key: "1", Label: c.T("settings.language", map[string]any{"language": c.T("language."+c.Locale, nil)})}, c.openLanguage},
+		{MenuOption{Key: "2", Label: c.T("settings.auto_equip", map[string]any{"state": c.onOff(settings.AutoEquip)})}, func() {
+			updated := c.Settings
+			updated.AutoEquip = !updated.AutoEquip
+			c.saveSettings(updated)
+		}},
+		{MenuOption{Key: "3", Label: c.T("settings.battle_speed", map[string]any{"speed": settings.BattleSpeed})}, c.cycleBattleSpeed},
+		c.back(ViewTitle),
+	}
+}
+
+func (c *Controller) saveSettings(settings infrastructure.Settings) {
+	c.Settings = settings
+	if err := c.Services.Settings.Save(settings); err != nil {
+		c.Err = err
+	}
+}
+
+func (c *Controller) cycleBattleSpeed() {
+	speeds := infrastructure.BattleSpeeds
+	index := max(0, slices.Index(speeds, c.Settings.BattleSpeed))
+	updated := c.Settings
+	updated.BattleSpeed = speeds[(index+1)%len(speeds)]
+	c.saveSettings(updated)
+}
+
+func (c *Controller) autoEquipMenu() []menuEntry {
+	defaultMark := c.T("new_run.default", nil)
+	entries := []menuEntry{}
+
+	for _, choice := range []struct {
+		key     string
+		enabled bool
+	}{{"1", true}, {"2", false}} {
+		label := c.T("new_run.auto_equip_off", nil)
+		if choice.enabled {
+			label = c.T("new_run.auto_equip_on", nil)
+		}
+
+		if choice.enabled == c.Settings.AutoEquip {
+			label += " " + defaultMark
+		}
+
+		entries = append(entries, menuEntry{MenuOption{Key: choice.key, Label: label}, func() { c.startRun(choice.enabled) }})
+	}
+
+	return append(entries, c.back(ViewVocation))
 }
 
 func (c *Controller) itemLabel(template string, item domain.ItemInstance, params map[string]any) string {
 	definition := c.Services.Data.Item(item.ItemID)
 	values := map[string]any{
-		"name": definition.Name, "rarity": c.T("rarity."+item.Rarity, nil), "slot": c.T("slot."+string(definition.Slot), nil),
+		"name": definition.Name, paramRarity: c.T("rarity."+item.Rarity, nil), "slot": c.T("slot."+string(definition.Slot), nil),
 	}
 
 	maps.Copy(values, params)
@@ -602,30 +807,6 @@ func (c *Controller) sellMenu() []menuEntry {
 	for index, item := range c.Session.State().Player.Bag {
 		label := c.itemLabel("merchant.sell_option", item, map[string]any{"gold": domain.ItemValue(item, c.Services.Data)})
 		entries = append(entries, menuEntry{MenuOption{Key: ListKey(index), Label: label, Color: item.Rarity}, c.command(application.SellItem(item.UID))})
-	}
-
-	return entries
-}
-
-func (c *Controller) equipmentMenu() []menuEntry {
-	player := c.Session.State().Player
-	vocation := c.Services.Data.Vocation(player.VocationID)
-	entries := []menuEntry{}
-
-	add := func(label, color string, command application.Command) {
-		entries = append(entries, menuEntry{MenuOption{Key: ListKey(len(entries)), Label: label, Color: color}, c.command(command)})
-	}
-
-	for _, item := range player.Bag {
-		if application.CanUse(c.Services.Data.Item(item.ItemID), vocation) {
-			add(c.itemLabel("merchant.equip_option", item, nil), item.Rarity, application.Equip(item.UID))
-		}
-	}
-
-	for _, slot := range domain.Slots {
-		if item, ok := player.Equipment[slot]; ok {
-			add(c.itemLabel("merchant.unequip_option", item, nil), item.Rarity, application.Unequip(slot))
-		}
 	}
 
 	return entries
@@ -691,15 +872,14 @@ func (c *Controller) chooseLanguage(locale string) {
 		return
 	}
 
-	if err := c.Services.Settings.Save(infrastructure.Settings{Locale: locale}); err != nil {
-		c.Err = err
-	}
-
+	updated := c.Settings
+	updated.Locale = locale
+	c.saveSettings(updated)
 	c.View = c.languageReturn
 }
 
 func (c *Controller) openLanguage() {
-	c.languageReturn = ViewTitle
+	c.languageReturn = ViewSettings
 	c.View = ViewLanguage
 }
 
@@ -719,12 +899,17 @@ func (c *Controller) sessionContext() application.SessionContext {
 }
 
 func (c *Controller) chooseVocation(vocationID string) {
+	c.vocation = vocationID
+	c.View = ViewAutoEquip
+}
+
+func (c *Controller) startRun(autoEquip bool) {
 	seed := c.seedSource()
 	if c.seed != nil {
 		seed = *c.seed
 	}
 
-	config := application.RunConfig{Name: c.name, VocationID: vocationID, DifficultyID: c.difficulty}
+	config := application.RunConfig{Name: c.name, VocationID: c.vocation, DifficultyID: c.difficulty, AutoEquip: autoEquip}
 
 	session, events, err := application.StartSession(c.Services.Data, config, seed, c.sessionContext())
 	if err != nil {
@@ -750,7 +935,11 @@ func (c *Controller) continueRun() {
 	c.Session = session
 	c.Log = []string{}
 	c.pushLog(c.T("menu.welcome_back", map[string]any{"name": session.State().Player.Name, "round": session.State().Round}))
+
 	c.View = ViewMerchant
+	if session.State().Phase == domain.PhaseVictory {
+		c.View = ViewVictory
+	}
 }
 
 func (c *Controller) askQuantity(potionID string) {
@@ -789,7 +978,9 @@ func (c *Controller) step(command application.Command) {
 		c.View = ViewBattle
 	case phase == domain.PhaseGameOver:
 		c.View = ViewGameOver
-	case isBattleView(c.View):
+	case phase == domain.PhaseVictory:
+		c.View = ViewVictory
+	case isBattleView(c.View) || c.View == ViewVictory:
 		c.View = ViewMerchant
 	}
 }

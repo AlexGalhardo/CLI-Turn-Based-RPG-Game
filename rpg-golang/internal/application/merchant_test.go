@@ -169,9 +169,9 @@ func TestGenerateItem(t *testing.T) {
 
 	data := withTestItems(t)
 	vocation := data.Vocation("warrior")
-	normal := data.Balance.MustDifficulty("normal")
+	boss := data.Balance.MustEnemyClass("boss").RarityWeights
 	generate := func(rng *domain.Rng, tier, uid int) (domain.ItemInstance, bool) {
-		return application.GenerateItem(data, rng, application.ItemRequest{Vocation: vocation, Tier: tier, Table: "boss", Difficulty: normal, UID: uid})
+		return application.GenerateItem(data, rng, application.ItemRequest{Vocation: vocation, Tier: tier, Weights: boss, UID: uid})
 	}
 
 	first, _ := generate(domain.NewRng(5), 0, 1)
@@ -203,16 +203,9 @@ func TestGenerateItem(t *testing.T) {
 	empty.Index()
 
 	emptyRng := domain.NewRng(3)
-	if _, ok := application.GenerateItem(empty, emptyRng, application.ItemRequest{Vocation: vocation, Tier: 9, Table: "monster", Difficulty: normal}); ok || emptyRng.State() != 3 {
+
+	normalWeights := data.Balance.MustEnemyClass("normal").RarityWeights
+	if _, ok := application.GenerateItem(empty, emptyRng, application.ItemRequest{Vocation: vocation, Tier: 9, Weights: normalWeights}); ok || emptyRng.State() != 3 {
 		t.Fatal("no candidates consumes nothing")
-	}
-
-	normalWeights := application.RarityWeights(data, "monster", normal)
-	hardWeights := application.RarityWeights(data, "monster", data.Balance.MustDifficulty("hard"))
-
-	for i := range hardWeights {
-		if (i == 0 && hardWeights[i] != normalWeights[i]) || hardWeights[i] < normalWeights[i] {
-			t.Fatalf("hard weights %v vs normal %v", hardWeights, normalWeights)
-		}
 	}
 }

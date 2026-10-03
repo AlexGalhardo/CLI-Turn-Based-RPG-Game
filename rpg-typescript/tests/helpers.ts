@@ -101,9 +101,9 @@ export function withTestItems(data: GameData): GameData {
 	return data.with({ items: [...data.items, ...extra] });
 }
 
-export function makeServices(dir: string): Services {
+export function makeServices(dir: string, data: GameData = DATA): Services {
 	return {
-		data: DATA,
+		data,
 		settings: new SettingsRepository(dir),
 		repositories: {
 			saves: new FileSaveRepository(dir),
@@ -113,4 +113,31 @@ export function makeServices(dir: string): Services {
 		clock: new SystemClock(),
 		version: VERSION,
 	};
+}
+
+export interface EnemyClassOverrides {
+	readonly dodge?: number;
+	readonly parry?: number;
+	readonly crit?: number;
+	readonly heal?: number;
+	readonly dropChancePct?: number;
+	readonly potionDropPct?: number;
+}
+
+/** Overrides fields of one `balance.enemyClasses` row (chances of 0/100 make the RNG outcome certain). */
+export function withEnemyClass(data: GameData, classId: string, overrides: EnemyClassOverrides): GameData {
+	const balance = data.balance;
+	const row = balance.enemyClass(classId);
+	const changed = { ...row, ...overrides };
+	const enemyClasses = balance.enemyClasses.map((c) => (c.id === classId ? changed : c));
+	return data.with({ balance: balance.with({ enemyClasses }) });
+}
+
+/** No monster dodge, parry, crit or heal, and no elites: the pre-M8 fight, for tests of other mechanics. */
+export function calm(data: GameData): GameData {
+	let result = data;
+	for (const enemyClass of data.balance.enemyClasses) {
+		result = withEnemyClass(result, enemyClass.id, { dodge: 0, parry: 0, crit: 0, heal: 0 });
+	}
+	return result.with({ balance: result.balance.with({ eliteChancePct: 0 }) });
 }

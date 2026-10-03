@@ -36,7 +36,9 @@ defmodule Rpg.Integration.PersistenceTest do
     {session, events} = start(dir, config("Alex", "archer", "normal"), 5, FakeClock.new(), "9.9.9")
     assert hd(events)["type"] == "run_started"
     save = Helpers.read_json(Path.join(dir, "save.json"))
-    assert save["schemaVersion"] == 1
+    assert save["schemaVersion"] == 2
+    assert save["run"]["config"]["autoEquip"] == false
+    assert save["run"]["won"] == false
     assert save["implementation"] == "elixir"
     assert save["gameVersion"] == "9.9.9"
     assert save["session"]["runId"] == session.info.run_id
@@ -59,7 +61,8 @@ defmodule Rpg.Integration.PersistenceTest do
     clock = FakeClock.new()
     {session, _} = start(dir, config("Alex", "warrior", "normal"), 5, clock)
     {session, _} = GameSession.step(session, %NextFight{})
-    {session, _} = GameSession.step(session, %Attack{})
+    engine = Helpers.update_monster(session.engine, &%{&1 | hp: 1_000_000, max_hp: 1_000_000})
+    {session, _} = GameSession.step(%{session | engine: engine}, %Attack{})
     assert GameSession.state(session).phase == :battle
     GameSession.save_and_quit(session)
 
@@ -121,12 +124,19 @@ defmodule Rpg.Integration.PersistenceTest do
   test "settings round trip", %{tmp_dir: dir} do
     repo = SettingsRepository.new(dir)
     assert SettingsRepository.load(repo) == %Settings{}
-    SettingsRepository.save(repo, %Settings{locale: "pt-BR"})
-    assert SettingsRepository.load(repo) == %Settings{locale: "pt-BR"}
+    SettingsRepository.save(repo, %Settings{locale: "pt-BR", auto_equip: true, battle_speed: 2})
+    assert SettingsRepository.load(repo) == %Settings{locale: "pt-BR", auto_equip: true, battle_speed: 2}
+    saved = Helpers.read_json(Path.join(dir, "settings.json"))
+    assert saved == %{"schemaVersion" => 2, "locale" => "pt-BR", "autoEquip" => true, "battleSpeed" => 2}
     SettingsRepository.save(repo, %Settings{})
     assert SettingsRepository.load(repo) == %Settings{}
     File.write!(Path.join(dir, "settings.json"), JSON.encode!(%{"schemaVersion" => 1, "locale" => "fr"}))
     assert SettingsRepository.load(repo) == %Settings{}
+    File.write!(Path.join(dir, "settings.json"), JSON.encode!(%{"schemaVersion" => 1, "locale" => "en"}))
+    assert SettingsRepository.load(repo) == %Settings{locale: "en", auto_equip: false, battle_speed: 1}
+    document = %{"schemaVersion" => 2, "autoEquip" => true, "battleSpeed" => 7}
+    File.write!(Path.join(dir, "settings.json"), JSON.encode!(document))
+    assert SettingsRepository.load(repo) == %Settings{locale: nil, auto_equip: true, battle_speed: 1}
   end
 
   test "profile round trip and Hall of Fame order", %{tmp_dir: dir} do
@@ -151,6 +161,20 @@ defmodule Rpg.Integration.PersistenceTest do
     assert length(hall) == 10
     assert hall |> Enum.take(3) |> Enum.map(& &1.round) == [4, 4, 3]
     assert Enum.at(hall, 0).level > Enum.at(hall, 1).level
+
+    winner = %HallOfFameEntry{
+      run_id: "winner",
+      name: "W",
+      vocation: "mage",
+      difficulty: "easy",
+      round: 1,
+      level: 1,
+      ended_at: "2026-02-01T00:00:00Z",
+      won: true
+    }
+
+    service = ProfileService.record_finished_run(service, winner)
+    assert hd(service.profile.hall_of_fame).run_id == "winner"
     repo = FileProfileRepository.new(dir)
     ProfileRepository.save(repo, service.profile)
     assert ProfileRepository.load(repo) == service.profile
@@ -170,7 +194,7 @@ defmodule Rpg.Integration.PersistenceTest do
 
     # Same keys and shapes as rpg-python writes (key order differs; JSON readers ignore it).
     python_save = %{
-      "schemaVersion" => 1,
+      "schemaVersion" => 2,
       "gameVersion" => "1.0.0",
       "implementation" => "python",
       "savedAt" => "2026-09-27T21:04:11Z",
@@ -199,7 +223,7 @@ defmodule Rpg.Integration.PersistenceTest do
     golden = Helpers.read_json(Path.join(Helpers.golden_dir(), "merchant-and-errors.json"))
 
     save = %{
-      "schemaVersion" => 1,
+      "schemaVersion" => 2,
       "gameVersion" => "1.0.0",
       "implementation" => "python",
       "savedAt" => "2026-09-27T21:04:11Z",

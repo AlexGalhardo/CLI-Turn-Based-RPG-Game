@@ -11,7 +11,9 @@ defmodule Rpg.Application.GameEngine do
     BuyPotion,
     BuyStockItem,
     Cast,
+    ContinueRun,
     Defend,
+    EndRun,
     Equip,
     NextFight,
     SellItem,
@@ -20,6 +22,7 @@ defmodule Rpg.Application.GameEngine do
   }
 
   alias Rpg.Application.{
+    AutoEquip,
     Battle,
     Commands,
     Events,
@@ -105,6 +108,14 @@ defmodule Rpg.Application.GameEngine do
     end
   end
 
+  defp dispatch(engine, %module{}) when module in [EndRun, ContinueRun] do
+    cond do
+      engine.state.phase != :victory -> invalid_phase(engine)
+      module == EndRun -> end_run(engine)
+      true -> continue_run(engine)
+    end
+  end
+
   defp invalid_phase(engine), do: {engine, [Events.error("invalid_phase")]}
 
   defp next_fight(%__MODULE__{data: data, state: state} = engine) do
@@ -120,6 +131,7 @@ defmodule Rpg.Application.GameEngine do
         cycle: info.cycle,
         monsterId: monster.creature_id,
         isBoss: monster.is_boss,
+        enemyClass: monster.enemy_class,
         hp: monster.hp
       )
 
@@ -152,52 +164,66 @@ defmodule Rpg.Application.GameEngine do
 
   defp victory(%__MODULE__{data: data, state: %RunState{monster: monster} = state} = engine) do
     if monster == nil, do: raise(RuntimeError, "victory without a monster")
-    killed = Events.event("monster_killed", monsterId: monster.creature_id, isBoss: monster.is_boss)
+
+    killed =
+      Events.event("monster_killed",
+        monsterId: monster.creature_id,
+        isBoss: monster.is_boss,
+        enemyClass: monster.enemy_class
+      )
+
     {player, xp_events} = Progression.gain_experience(data, state.player, monster.xp)
 
     {gold, rng} = Rng.roll(engine.rng, monster.gold_min, monster.gold_max)
     state = %{state | player: %{player | gold: player.gold + gold}}
     looted = Events.event("gold_looted", amount: gold)
-    {drop_events, state, rng} = drops(data, rng, state, monster.is_boss)
+    {drop_events, state, rng} = drops(data, rng, state, monster)
+
+    {equip_events, state} =
+      if state.config.auto_equip, do: AutoEquip.auto_equip(state, data), else: {[], state}
 
     player = %{state.player | statuses: [], stun_cooldown: 0, defending: false}
     sheet = Character.build_sheet(player, data)
     player = %{player | hp: min(player.hp, sheet.max_hp), mp: min(player.mp, sheet.max_mp)}
-    state = %{state | player: player, monster: nil, phase: :merchant, turn: 0}
-    {merchant_events, state, rng} = Merchant.enter(data, rng, state)
+    state = %{state | player: player, monster: nil, turn: 0}
+    events = [killed] ++ xp_events ++ [looted] ++ drop_events ++ equip_events
 
-    events = [killed] ++ xp_events ++ [looted] ++ drop_events ++ merchant_events
-    {%{engine | state: state, rng: rng}, events}
-  end
-
-  defp drops(data, rng, state, is_boss) do
-    balance = data.balance
-
-    {count_and_table, rng} =
-      if is_boss do
-        {{balance.boss_drops, "boss"}, rng}
-      else
-        case Rng.chance(rng, balance.drop_chance_pct) do
-          {true, rng} -> {{1, "monster"}, rng}
-          {false, rng} -> {nil, rng}
-        end
-      end
-
-    case count_and_table do
-      nil -> {[], state, rng}
-      {count, table} -> generate_drops(data, rng, state, count, table)
+    if state.round == data.balance.final_round do
+      state = %{state | won: true, phase: :victory}
+      {%{engine | state: state, rng: rng}, events ++ [Events.event("run_won", round: state.round)]}
+    else
+      {merchant_events, state, rng} = Merchant.enter(data, rng, %{state | phase: :merchant})
+      {%{engine | state: state, rng: rng}, events ++ merchant_events}
     end
   end
 
-  defp generate_drops(data, rng, state, count, table) do
-    balance = data.balance
-    tier = Formulas.round_info(state.round, balance, GameData.tier_count(data)).tier
-    difficulty = Balance.difficulty(balance, state.config.difficulty_id)
+  # One rule for the three classes: chance(100) and chance(0) consume nothing (docs/game-design.md §8).
+  defp drops(data, rng, state, monster) do
+    row = Balance.enemy_class(data.balance, monster.enemy_class)
+
+    {item_events, state, rng} =
+      case Rng.chance(rng, row.drop_chance_pct) do
+        {true, rng} -> generate_drops(data, rng, state, row)
+        {false, rng} -> {[], state, rng}
+      end
+
+    case Rng.chance(rng, row.potion_drop_pct) do
+      {true, rng} ->
+        {potion_events, state, rng} = drop_potion(data, rng, state)
+        {item_events ++ potion_events, state, rng}
+
+      {false, rng} ->
+        {item_events, state, rng}
+    end
+  end
+
+  defp generate_drops(data, rng, state, row) do
+    tier = Formulas.round_info(state.round, data.balance, GameData.tier_count(data)).tier
     vocation = GameData.vocation(data, state.player.vocation_id)
 
     {events, state, rng} =
-      Enum.reduce(1..count//1, {[], state, rng}, fn _, {events, state, rng} ->
-        opts = [vocation: vocation, tier: tier, table: table, difficulty: difficulty, uid: state.next_item_uid]
+      Enum.reduce(1..row.drops//1, {[], state, rng}, fn _, {events, state, rng} ->
+        opts = [vocation: vocation, tier: tier, weights: row.rarity_weights, uid: state.next_item_uid]
 
         case Loot.generate_item(data, rng, opts) do
           {nil, rng} ->
@@ -212,6 +238,30 @@ defmodule Rpg.Application.GameEngine do
       end)
 
     {Enum.reverse(events), state, rng}
+  end
+
+  defp drop_potion(data, rng, state) do
+    case Enum.filter(data.potions, &(&1.unlock_round <= state.round)) do
+      [] ->
+        {[], state, rng}
+
+      unlocked ->
+        {potion, rng} = Rng.pick(rng, unlocked)
+        player = state.player
+        potions = Map.put(player.potions, potion.id, Player.potion_count(player, potion.id) + 1)
+        state = %{state | player: %{player | potions: potions}}
+        {[Events.event("potion_dropped", potionId: potion.id)], state, rng}
+    end
+  end
+
+  defp end_run(%__MODULE__{state: state} = engine) do
+    state = %{state | phase: :game_over, death_cause: nil}
+    {%{engine | state: state}, [Events.event("run_ended", won: state.won)]}
+  end
+
+  defp continue_run(%__MODULE__{data: data, state: state} = engine) do
+    {events, state, rng} = Merchant.enter(data, engine.rng, %{state | phase: :merchant})
+    {%{engine | state: state, rng: rng}, events}
   end
 
   # A full bag auto-sells the new item.

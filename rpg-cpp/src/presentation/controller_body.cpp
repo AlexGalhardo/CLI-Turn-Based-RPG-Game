@@ -1,4 +1,5 @@
-// Informative screen bodies of the controller (character sheet, game over, Hall of Fame, bestiary, achievements).
+// Informative screen bodies of the controller (character sheet, game over, victory, equipment screens, Hall of Fame,
+// bestiary, achievements).
 #include <algorithm>
 #include <array>
 #include <format>
@@ -6,6 +7,7 @@
 #include "domain/character.hpp"
 #include "domain/formulas.hpp"
 #include "presentation/controller.hpp"
+#include "presentation/render.hpp"
 
 namespace rpg::presentation {
 
@@ -50,6 +52,8 @@ std::vector<std::string> Controller::body() {
 		return character_sheet();
 	case View::game_over:
 		return game_over_summary();
+	case View::victory:
+		return victory_summary();
 	case View::hall_of_fame:
 		return hall_of_fame();
 	case View::bestiary:
@@ -135,16 +139,186 @@ std::vector<std::string> Controller::character_sheet() const {
 	return lines;
 }
 
+std::string Controller::run_stats_line() const {
+	const application::RunState& state = session->state();
+	return t("gameover.stats",
+	    {{"level", state.player.level}, {"damage", state.stats.damage_dealt}, {"kills", state.stats.total_kills()},
+	        {"elites", state.stats.elites_killed}, {"bosses", state.stats.bosses_killed}});
+}
+
 std::vector<std::string> Controller::game_over_summary() const {
 	const application::RunState& state = session->state();
 	const std::string cause = state.death_cause.value_or("");
-	const std::string monster = cause.empty() ? std::string("?") : services.data->creature(cause).name;
+	infrastructure::Params params{
+	    {"name", state.player.name}, {"vocation", t("vocation." + state.player.vocation_id)}, {"round", state.round}};
+	std::string summary;
+	if (!cause.empty()) {
+		params.insert_or_assign("monster", services.data->creature(cause).name);
+		summary = t("gameover.summary", params);
+	} else if (state.won) {
+		summary = t("gameover.won_summary", params);
+	} else {
+		params.insert_or_assign("monster", "?");
+		summary = t("gameover.summary", params);
+	}
+	return {summary, run_stats_line()};
+}
+
+std::vector<std::string> Controller::victory_summary() const {
+	const domain::GameData& data = *services.data;
+	const application::RunState& state = session->state();
+	const domain::MonsterDef& boss =
+	    data.boss_of_tier(domain::round_info(state.round, data.balance, data.tier_count()).tier);
 	return {
-	    t("gameover.summary", {{"name", state.player.name}, {"vocation", t("vocation." + state.player.vocation_id)},
-	                              {"round", state.round}, {"monster", monster}}),
-	    t("gameover.stats", {{"level", state.player.level}, {"damage", state.stats.damage_dealt},
-	                            {"kills", state.stats.total_kills()}, {"bosses", state.stats.bosses_killed}}),
+	    t("victory.summary", {{"name", state.player.name}, {"vocation", t("vocation." + state.player.vocation_id)},
+	                             {"monster", boss.name}, {"round", state.round}}),
+	    run_stats_line(),
+	    "",
+	    t("victory.choice"),
 	};
+}
+
+// ── equipment screens (docs/tui.md "Equipment screen") ─────────────────────────────────────────────────────────────
+
+std::vector<BodyLine> Controller::styled_body() const {
+	switch (view) {
+	case View::equipment:
+		return equipment_body();
+	case View::compare:
+		return compare_body();
+	default:
+		return slot_body();
+	}
+}
+
+std::vector<BodyLine> Controller::equipment_body() const {
+	const domain::GameData& data = *services.data;
+	const domain::Player& player = session->state().player;
+	std::vector<BodyLine> lines{
+	    {t("equipment.equipped_header", {{"score", domain::equipment_score(player, data)}}), ""}};
+	for (const std::string_view slot : domain::kEquipmentSlotOrder) {
+		const std::string slot_name = t("slot." + std::string(slot));
+		const auto found = player.equipment.find(slot);
+		if (found == player.equipment.end()) {
+			lines.push_back({t("equipment.slot_empty", {{"slot", slot_name}}), std::string(style_warning)});
+			continue;
+		}
+		const domain::ItemInstance& item = found->second;
+		lines.push_back(
+		    {t("equipment.slot_line",
+		         {{"slot", slot_name}, {"name", data.item(item.item_id).name}, {"rarity", t("rarity." + item.rarity)},
+		             {"level", domain::required_level(item, data)}, {"score", domain::item_score(item, data)}}),
+		        item.rarity});
+	}
+	lines.push_back({"", ""});
+	lines.push_back({t("equipment.bag_header"), ""});
+	if (usable_bag().empty()) {
+		lines.push_back({t("equipment.bag_empty"), ""});
+	}
+	return lines;
+}
+
+std::string Controller::compare_title() const {
+	const domain::ItemInstance* item = compared_item();
+	if (item == nullptr) {
+		return t("merchant.equipment");
+	}
+	const domain::GameData& data = *services.data;
+	const domain::Player& player = session->state().player;
+	const domain::Slot& slot = data.item(item->item_id).slot;
+	const auto current = player.equipment.find(slot);
+	const std::string current_name =
+	    current == player.equipment.end() ? t("equipment.empty") : data.item(current->second.item_id).name;
+	return t("equipment.compare_title",
+	    {{"slot", t("slot." + slot)}, {"current", current_name}, {"new", data.item(item->item_id).name}});
+}
+
+std::string Controller::affix_list(const domain::ItemInstance* item) const {
+	if (item == nullptr) {
+		return {};
+	}
+	std::vector<std::string> parts;
+	for (const domain::AffixRoll& affix : item->affixes) {
+		parts.push_back(t("equipment.affix", {{"value", affix.value}, {"stat", t("stat." + affix.stat)}}));
+	}
+	std::string result;
+	for (std::size_t i = 0; i < parts.size(); ++i) {
+		if (i > 0) {
+			result += ", ";
+		}
+		result += parts[i];
+	}
+	return result;
+}
+
+std::vector<BodyLine> Controller::compare_body() const {
+	const domain::ItemInstance* item = compared_item();
+	if (item == nullptr) {
+		return {};
+	}
+	const domain::GameData& data = *services.data;
+	const domain::Player& player = session->state().player;
+	const auto equipped = player.equipment.find(data.item(item->item_id).slot);
+	const domain::ItemInstance* current = equipped == player.equipment.end() ? nullptr : &equipped->second;
+	const domain::StatTotals new_stats = domain::item_stats(*item, data);
+	const domain::StatTotals old_stats = current == nullptr ? domain::StatTotals{} : domain::item_stats(*current, data);
+	const auto value_of = [](const domain::StatTotals& stats, std::string_view stat) {
+		const auto found = stats.find(stat);
+		return found == stats.end() ? std::int64_t{0} : found->second;
+	};
+
+	std::vector<BodyLine> lines;
+	for (const std::string_view stat : domain::kStats) {
+		if (!new_stats.contains(stat) && !old_stats.contains(stat)) {
+			continue;
+		}
+		const std::int64_t old_value = value_of(old_stats, stat);
+		const std::int64_t new_value = value_of(new_stats, stat);
+		lines.push_back(
+		    {t("equipment.stat_delta", {{"stat", t("stat." + std::string(stat))}, {"current", old_value},
+		                                   {"new", new_value}, {"delta", format_delta(new_value - old_value)}}),
+		        std::string(delta_style(new_value - old_value))});
+	}
+	if (const std::string gained = affix_list(item); !gained.empty()) {
+		lines.push_back({t("equipment.affixes_gained", {{"affixes", gained}}), std::string(style_gain)});
+	}
+	if (const std::string lost = affix_list(current); !lost.empty()) {
+		lines.push_back({t("equipment.affixes_lost", {{"affixes", lost}}), std::string(style_loss)});
+	}
+	const std::int64_t old_score = current == nullptr ? 0 : domain::item_score(*current, data);
+	const std::int64_t new_score = domain::item_score(*item, data);
+	lines.push_back({t("equipment.score_delta",
+	                     {{"current", old_score}, {"new", new_score}, {"delta", format_delta(new_score - old_score)}}),
+	    std::string(delta_style(new_score - old_score))});
+	if (const std::int64_t level = domain::required_level(*item, data); level > player.level) {
+		lines.push_back(
+		    {t("equipment.level_needed", {{"level", level}, {"current", player.level}}), std::string(style_loss)});
+	}
+	return lines;
+}
+
+std::vector<BodyLine> Controller::slot_body() const {
+	const domain::GameData& data = *services.data;
+	const auto& equipment = session->state().player.equipment;
+	const auto found = equipment.find(slot_);
+	if (found == equipment.end()) {
+		return {{t("equipment.empty"), std::string(style_warning)}};
+	}
+	const domain::ItemInstance& item = found->second;
+	std::vector<BodyLine> lines{
+	    {t("equipment.item_title",
+	         {{"name", data.item(item.item_id).name}, {"rarity", t("rarity." + item.rarity)},
+	             {"level", domain::required_level(item, data)}, {"score", domain::item_score(item, data)}}),
+	        item.rarity},
+	};
+	const domain::StatTotals stats = domain::item_stats(item, data);
+	for (const std::string_view stat : domain::kStats) {
+		if (const auto value = stats.find(stat); value != stats.end()) {
+			lines.push_back(
+			    {t("character.stat_line", {{"stat", t("stat." + std::string(stat))}, {"value", value->second}}), ""});
+		}
+	}
+	return lines;
 }
 
 std::vector<std::string> Controller::hall_of_fame() {
@@ -155,10 +329,10 @@ std::vector<std::string> Controller::hall_of_fame() {
 	std::vector<std::string> lines;
 	for (std::size_t index = 0; index < hall.size(); ++index) {
 		const application::HallOfFameEntry& entry = hall[index];
-		lines.push_back(t(
-		    "hall.entry", {{"position", index + 1}, {"name", entry.name}, {"vocation", t("vocation." + entry.vocation)},
-		                      {"difficulty", t("difficulty." + entry.difficulty)}, {"round", entry.round},
-		                      {"level", entry.level}, {"date", date_of(entry.ended_at)}}));
+		lines.push_back(t(entry.won ? "hall.entry_won" : "hall.entry",
+		    {{"position", index + 1}, {"name", entry.name}, {"vocation", t("vocation." + entry.vocation)},
+		        {"difficulty", t("difficulty." + entry.difficulty)}, {"round", entry.round}, {"level", entry.level},
+		        {"date", date_of(entry.ended_at)}}));
 	}
 	return lines;
 }

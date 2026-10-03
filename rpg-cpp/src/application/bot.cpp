@@ -30,17 +30,12 @@ template <typename T, typename Key> const T* max_by(const std::vector<const T*>&
 
 } // namespace
 
-std::int64_t item_score(const domain::ItemInstance& item, const domain::GameData& data) {
-	std::int64_t score = 0;
-	for (const auto& [stat, value] : domain::item_stats(item, data)) {
-		score += value;
-	}
-	return score;
-}
-
 Command GreedyBot::choose(const RunState& state) const {
 	if (state.phase == domain::Phase::battle) {
 		return battle(state);
+	}
+	if (state.phase == domain::Phase::victory) {
+		return EndRun{};
 	}
 	return merchant(state);
 }
@@ -137,11 +132,12 @@ Command GreedyBot::merchant(const RunState& state) const {
 
 	for (const domain::ItemInstance& item : bag) {
 		const domain::ItemDef& definition = data_->item(item.item_id);
-		if (!can_use(definition, vocation)) {
+		if (!can_use(definition, vocation) || domain::required_level(item, *data_) > player.level) {
 			continue;
 		}
 		const auto current = player.equipment.find(definition.slot);
-		if (current == player.equipment.end() || item_score(item, *data_) > item_score(current->second, *data_)) {
+		if (current == player.equipment.end() ||
+		    domain::item_score(item, *data_) > domain::item_score(current->second, *data_)) {
 			return Equip{item.uid};
 		}
 	}

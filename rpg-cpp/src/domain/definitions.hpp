@@ -149,7 +149,6 @@ struct DifficultyDef {
 	std::int64_t damage_pct = 0;
 	std::int64_t gold_pct = 0;
 	std::int64_t xp_pct = 0;
-	std::int64_t non_common_weight_pct = 0;
 };
 
 struct RarityDef {
@@ -158,6 +157,39 @@ struct RarityDef {
 	std::int64_t value_pct = 0;
 	std::int64_t affix_min = 0;
 	std::int64_t affix_max = 0;
+};
+
+// Rarity id → weight. Read only by rarity id (the roll follows the order of `balance.rarities`), so a map is safe.
+using RarityWeights = std::map<std::string, std::int64_t, std::less<>>;
+
+// A row of `balance.enemyClasses`: multipliers, combat chances and drop table (docs/game-design.md §3).
+struct EnemyClassDef {
+	std::string id;
+	std::int64_t stat_pct = 0;
+	std::int64_t reward_pct = 0;
+	std::int64_t dodge = 0;
+	std::int64_t parry = 0;
+	std::int64_t crit = 0;
+	std::int64_t heal = 0;
+	std::int64_t drop_chance_pct = 0;
+	std::int64_t drops = 0;
+	std::int64_t potion_drop_pct = 0;
+	RarityWeights rarity_weights;
+};
+
+struct AutoBattleModeDef {
+	std::string id;
+	std::string offense; // "attack" or "spell"
+	std::int64_t support_every = 0;
+};
+
+struct AutoBattleDef {
+	std::int64_t heal_below_pct = 0;
+	std::int64_t mana_below_pct = 0;
+	std::int64_t emergency_heal_below_pct = 0;
+	std::vector<AutoBattleModeDef> modes;
+
+	[[nodiscard]] const AutoBattleModeDef& mode(std::string_view mode_id) const;
 };
 
 struct SpellLevelDef {
@@ -187,9 +219,14 @@ struct Balance {
 	std::int64_t cycle_stat_pct = 0;
 	std::int64_t cycle_reward_pct = 0;
 	std::int64_t position_pct = 0;
+	std::int64_t final_round = 0;
+	std::int64_t elite_chance_pct = 0;
 	std::vector<DifficultyDef> difficulties;
+	std::vector<EnemyClassDef> enemy_classes;
 	std::int64_t crit_multiplier_pct = 0;
 	std::int64_t defend_damage_pct = 0;
+	std::int64_t parry_reflect_pct = 0;
+	std::int64_t monster_heal_pct = 0;
 	std::int64_t boss_telegraph_every = 0;
 	std::int64_t boss_charge_damage_pct = 0;
 	Caps caps;
@@ -199,16 +236,18 @@ struct Balance {
 	std::int64_t starting_gold = 0;
 	std::vector<PotionStack> starting_potions;
 	std::int64_t bag_capacity = 0;
-	std::int64_t drop_chance_pct = 0;
-	std::int64_t boss_drops = 0;
+	std::int64_t item_level_per_tier = 0;
+	// Read only by stat key, so a map is safe here.
+	std::map<Stat, std::int64_t, std::less<>> item_score_weights;
 	std::vector<RarityDef> rarities;
-	// Read only by rarity id (weights are combined in the order of `rarities`), so a map is safe here.
-	std::map<std::string, std::map<std::string, std::int64_t, std::less<>>, std::less<>> rarity_weights;
+	std::map<std::string, RarityWeights, std::less<>> rarity_weights;
 	std::int64_t merchant_stock_size = 0;
 	std::int64_t merchant_markup_pct = 0;
 	std::int64_t spell_status_damage_pct = 0;
+	AutoBattleDef auto_battle;
 
 	[[nodiscard]] const DifficultyDef& difficulty(std::string_view id) const;
+	[[nodiscard]] const EnemyClassDef& enemy_class(std::string_view id) const;
 	[[nodiscard]] const RarityDef& rarity(std::string_view id) const;
 	[[nodiscard]] bool has_difficulty(std::string_view id) const;
 };

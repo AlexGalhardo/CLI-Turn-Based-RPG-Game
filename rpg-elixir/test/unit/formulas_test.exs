@@ -85,6 +85,6 @@ defmodule Rpg.Unit.FormulasTest do
     data = Helpers.data()
     normal = Balance.difficulty(data.balance, "normal")
     info = Formulas.round_info(10, data.balance, GameData.tier_count(data))
-    assert Formulas.scaling(info, data.balance, normal).hp_pct_product == 100 * 100 * 100
+    assert Formulas.scaling(info, data.balance, normal).hp_pct_product == normal.hp_pct * 100 * 100
   end
 end

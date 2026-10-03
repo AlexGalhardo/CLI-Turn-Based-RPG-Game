@@ -10,27 +10,30 @@ type DroppedItem struct {
 // RunStatistics are deterministic run counters derived only from engine events (docs/game-design.md §11).
 // Maps marshal with sorted keys, matching the Python reference.
 type RunStatistics struct {
-	DamageDealt     int            `json:"damageDealt"`
-	DamageTaken     int            `json:"damageTaken"`
-	HealingDone     int            `json:"healingDone"`
-	HighestHit      int            `json:"highestHit"`
-	NormalAttacks   int            `json:"normalAttacks"`
-	Crits           int            `json:"crits"`
-	Dodges          int            `json:"dodges"`
-	Parries         int            `json:"parries"`
-	Defends         int            `json:"defends"`
-	GoldLooted      int            `json:"goldLooted"`
-	GoldSpent       int            `json:"goldSpent"`
-	GoldEarned      int            `json:"goldEarned"`
-	ItemsSold       int            `json:"itemsSold"`
-	BossesKilled    int            `json:"bossesKilled"`
-	SpellsCast      map[string]int `json:"spellsCast"`
-	PotionsUsed     map[string]int `json:"potionsUsed"`
-	PotionsBought   map[string]int `json:"potionsBought"`
-	ItemsDropped    map[string]int `json:"itemsDropped"`
-	Kills           map[string]int `json:"kills"`
-	StatusesApplied map[string]int `json:"statusesApplied"`
-	DroppedItems    []DroppedItem  `json:"droppedItems"`
+	DamageDealt       int            `json:"damageDealt"`
+	DamageTaken       int            `json:"damageTaken"`
+	HealingDone       int            `json:"healingDone"`
+	HighestHit        int            `json:"highestHit"`
+	NormalAttacks     int            `json:"normalAttacks"`
+	Crits             int            `json:"crits"`
+	Dodges            int            `json:"dodges"`
+	Parries           int            `json:"parries"`
+	Defends           int            `json:"defends"`
+	GoldLooted        int            `json:"goldLooted"`
+	GoldSpent         int            `json:"goldSpent"`
+	GoldEarned        int            `json:"goldEarned"`
+	ItemsSold         int            `json:"itemsSold"`
+	ItemsAutoEquipped int            `json:"itemsAutoEquipped"`
+	BossesKilled      int            `json:"bossesKilled"`
+	ElitesKilled      int            `json:"elitesKilled"`
+	SpellsCast        map[string]int `json:"spellsCast"`
+	PotionsUsed       map[string]int `json:"potionsUsed"`
+	PotionsBought     map[string]int `json:"potionsBought"`
+	PotionsDropped    map[string]int `json:"potionsDropped"`
+	ItemsDropped      map[string]int `json:"itemsDropped"`
+	Kills             map[string]int `json:"kills"`
+	StatusesApplied   map[string]int `json:"statusesApplied"`
+	DroppedItems      []DroppedItem  `json:"droppedItems"`
 }
 
 // NewRunStatistics returns empty counters.
@@ -39,6 +42,7 @@ func NewRunStatistics() *RunStatistics {
 		SpellsCast:      map[string]int{},
 		PotionsUsed:     map[string]int{},
 		PotionsBought:   map[string]int{},
+		PotionsDropped:  map[string]int{},
 		ItemsDropped:    map[string]int{},
 		Kills:           map[string]int{},
 		StatusesApplied: map[string]int{},
@@ -88,6 +92,9 @@ func (s *RunStatistics) recordOne(evt Event, currentRound int) {
 		s.Dodges++
 	case "attack_parried":
 		s.Parries++
+		s.DamageDealt += evt.Int("reflected")
+	case "monster_parried":
+		s.DamageTaken += evt.Int("reflected")
 	case "status_ticked":
 		if evt.Str("target") == "player" {
 			s.DamageTaken += evt.Int("damage")
@@ -103,6 +110,10 @@ func (s *RunStatistics) recordOne(evt Event, currentRound int) {
 		if evt.Bool("isBoss") {
 			s.BossesKilled++
 		}
+
+		if evt.Str("enemyClass") == "elite" {
+			s.ElitesKilled++
+		}
 	case "gold_looted":
 		s.GoldLooted += evt.Int("amount")
 	case "item_dropped":
@@ -113,6 +124,10 @@ func (s *RunStatistics) recordOne(evt Event, currentRound int) {
 		s.GoldSpent += evt.Int("gold")
 	case "item_bought":
 		s.GoldSpent += evt.Int("gold")
+	case "potion_dropped":
+		s.PotionsDropped[evt.Str("potionId")]++
+	case "item_auto_equipped":
+		s.ItemsAutoEquipped++
 	case "item_sold", "item_auto_sold":
 		s.ItemsSold++
 		s.GoldEarned += evt.Int("gold")

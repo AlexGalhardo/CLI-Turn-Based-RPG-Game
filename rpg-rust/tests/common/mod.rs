@@ -18,9 +18,9 @@ use rpg::application::game_session::Repositories;
 use rpg::application::ports::Clock;
 use rpg::application::run_state::RunConfig;
 use rpg::assets::SharedFs;
-use rpg::domain::definitions::{GameData, ItemDef};
+use rpg::domain::definitions::{Balance, GameData, ItemDef};
 use rpg::domain::entities::MonsterInstance;
-use rpg::domain::enums::{Slot, Stat};
+use rpg::domain::enums::{EnemyClass, Slot, Stat};
 use rpg::infrastructure::data_loader::load_game_data;
 use rpg::infrastructure::repositories::{
 	FileHistoryRepository, FileProfileRepository, FileSaveRepository, SettingsRepository, SystemClock,
@@ -72,6 +72,52 @@ pub fn with_test_items(data: &GameData) -> Rc<GameData> {
 		test_item("test_rod", "Test Rod", Slot::Weapon, "rod", &[(Stat::Attack, 1)]),
 	]);
 	Rc::new(GameData::new(content))
+}
+
+/// A copy of the data with a modified balance (`dataclasses.replace(data, balance=…)` in the reference tests).
+pub fn with_balance(data: &GameData, change: impl FnOnce(&mut Balance)) -> Rc<GameData> {
+	let mut content = data.content();
+	change(&mut content.balance);
+	Rc::new(GameData::new(content))
+}
+
+/// Fields of one `balance.enemyClasses` row to override (`None` keeps the data value).
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ClassOverrides {
+	pub dodge: Option<i64>,
+	pub parry: Option<i64>,
+	pub crit: Option<i64>,
+	pub heal: Option<i64>,
+	pub drop_chance_pct: Option<i64>,
+	pub potion_drop_pct: Option<i64>,
+}
+
+/// Overrides fields of one enemy class row (chances of 0/100 make the RNG outcome certain).
+pub fn with_enemy_class(data: &GameData, enemy_class: EnemyClass, overrides: ClassOverrides) -> Rc<GameData> {
+	with_balance(data, |balance| {
+		let row = match enemy_class {
+			EnemyClass::Normal => &mut balance.enemy_classes.normal,
+			EnemyClass::Elite => &mut balance.enemy_classes.elite,
+			EnemyClass::Boss => &mut balance.enemy_classes.boss,
+		};
+		let set = |field: &mut i64, value: Option<i64>| *field = value.unwrap_or(*field);
+		set(&mut row.dodge, overrides.dodge);
+		set(&mut row.parry, overrides.parry);
+		set(&mut row.crit, overrides.crit);
+		set(&mut row.heal, overrides.heal);
+		set(&mut row.drop_chance_pct, overrides.drop_chance_pct);
+		set(&mut row.potion_drop_pct, overrides.potion_drop_pct);
+	})
+}
+
+/// No monster dodge, parry, crit or heal, and no elites: the pre-M8 fight, for tests of other mechanics.
+pub fn calm(data: &GameData) -> Rc<GameData> {
+	let still = ClassOverrides { dodge: Some(0), parry: Some(0), crit: Some(0), heal: Some(0), ..Default::default() };
+	let mut calm = with_balance(data, |balance| balance.elite_chance_pct = 0);
+	for enemy_class in [EnemyClass::Normal, EnemyClass::Elite, EnemyClass::Boss] {
+		calm = with_enemy_class(&calm, enemy_class, still);
+	}
+	calm
 }
 
 pub fn types(events: &[Event]) -> Vec<String> {

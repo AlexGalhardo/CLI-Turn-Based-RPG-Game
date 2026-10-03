@@ -11,6 +11,16 @@ defmodule Rpg.Application.Commands do
   defmodule Defend, do: defstruct([])
   defmodule NextFight, do: defstruct([])
 
+  defmodule EndRun do
+    @moduledoc "Victory phase: close the won run (history + Hall of Fame)."
+    defstruct []
+  end
+
+  defmodule ContinueRun do
+    @moduledoc "Victory phase: keep playing endlessly after beating the final boss."
+    defstruct []
+  end
+
   defmodule Cast do
     @enforce_keys [:spell_id]
     defstruct [:spell_id]
@@ -57,6 +67,8 @@ defmodule Rpg.Application.Commands do
           | %Equip{}
           | %Unequip{}
           | %BuyStockItem{}
+          | %EndRun{}
+          | %ContinueRun{}
 
   @spec to_map(t()) :: map()
   def to_map(%Attack{}), do: %{"type" => "attack"}
@@ -69,6 +81,8 @@ defmodule Rpg.Application.Commands do
   def to_map(%Equip{uid: uid}), do: %{"type" => "equip", "uid" => uid}
   def to_map(%Unequip{slot: slot}), do: %{"type" => "unequip", "slot" => slot}
   def to_map(%BuyStockItem{index: index}), do: %{"type" => "buy_stock_item", "index" => index}
+  def to_map(%EndRun{}), do: %{"type" => "end_run"}
+  def to_map(%ContinueRun{}), do: %{"type" => "continue_run"}
 
   @spec from_map(term()) :: t()
   def from_map(raw) do
@@ -104,6 +118,12 @@ defmodule Rpg.Application.Commands do
 
       "buy_stock_item" ->
         %BuyStockItem{index: JsonTypes.int(field.("index"))}
+
+      "end_run" ->
+        %EndRun{}
+
+      "continue_run" ->
+        %ContinueRun{}
 
       other ->
         raise ArgumentError, "unknown command type: #{other}"

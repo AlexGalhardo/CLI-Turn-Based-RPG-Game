@@ -30,8 +30,9 @@ rpg-python/
 │   ├── __main__.py            # CLI entry (argparse) → presentation or simulator
 │   ├── domain/                # rng, enums, formulas, models, player, monster, items, statuses
 │   ├── application/           # engine, commands, events, battle, merchant, loot, spawner, progression, statistics,
-│   │                          # run state, save game, profile, game session (use case), ports, bot, simulator
-│   ├── infrastructure/        # data loader, repositories + clock, i18n, art parser, paths
+│   │                          # run state, save game, profile, game session (use case), ports, bot, simulator,
+│   │                          # auto_equip (item score + auto-equip), auto_battle (policy)
+│   ├── infrastructure/        # data loader, repositories + clock, i18n, art parser, paths, migrations (schema 1 → 2)
 │   ├── presentation/          # cli flags, event text, render helpers, UI controller, simulator report
 │   │   └── tui/app.py         # Textual renderer of the controller
 │   └── tools/golden.py        # golden file generator (`rpg-golden`)

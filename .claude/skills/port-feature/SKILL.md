@@ -90,6 +90,26 @@ and the UI controller behaves the same. Ports: TypeScript, Go, Rust, Elixir, C++
   UTF-8 sequence).
 - FTXUI: empty screen cells have `character == ""`, not a space; account for it when reading the screen in e2e tests.
 
+## Lessons from porting a feature to five languages at once (M8, 1.4.0)
+
+- Workflow that worked: finish and balance Python first (`bun run balance:check`), regenerate the golden files once,
+  commit on a branch, then one worktree per language at a short path (`~/m8/<lang>`; deep paths break the MSVC linker
+  and CMake on Windows) and one agent per worktree, each validated with `CI_JOBS="<lang>" bash scripts/ci-local.sh`.
+  All five matched the golden files and the simulator on the first run after their engine port.
+- Mirror the reference test helpers before porting tests: `calm()` (a monster that can't kill), `with_enemy_class`,
+  `with_balance`. Make definition/balance types copyable with overrides (`with()` in TS, a lambda that edits the row in
+  C++ — partial designated initializers break GCC `-Werror`); positional constructors make these ports painful.
+- JSON objects whose key order means something (`autoBattle.modes` = menu order) lose it in Go maps and Elixir maps:
+  read them with an ordered decoder or keep the order from the reference enum.
+- Schema migrations run on the raw JSON (after the version check, before the typed decode), like the reference. Keep
+  the old Python fixtures as v1 migration fixtures and regenerate the current ones with the reference.
+- Timer-driven UI (auto-battle): the controller exposes one step, the renderer owns the clock, and tests send the tick
+  event themselves (FTXUI `Event::Special`, Bubble Tea `tea.Tick` message, Ink effect keyed on a state flag); with
+  `--no-anim` the whole fight runs at once.
+- Windows tooling: Bash heredocs collapse `\` to `\` (breaks Elixir default arguments) — edit with the Write/Edit
+  tools; Python edit scripts need `newline=""` and UTF-8 stdin; never share `/tmp` between parallel agents.
+- Tests that must keep a fight going need a huge monster HP: after a balance change monsters often die in one hit.
+
 ## Done when
 
 - `shared/golden` replay passes, unit/integration/e2e suites pass, coverage floors met (see `docs/testing.md`).

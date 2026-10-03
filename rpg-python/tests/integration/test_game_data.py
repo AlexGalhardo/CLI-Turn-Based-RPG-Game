@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from rpg.domain.definitions import GameData, UnknownIdError
-from rpg.domain.enums import StatusKind
+from rpg.domain.enums import Stat, StatusKind
 from rpg.infrastructure.data_loader import DataError, load_game_data
 from rpg.infrastructure.paths import find_shared_dir, resolve_data_dir
 
@@ -42,13 +42,31 @@ def test_cross_references_are_valid(data: GameData) -> None:
 	assert len(ids) == len(set(ids))
 
 
+def test_balance_m8_tables(data: GameData) -> None:
+	balance = data.balance
+	assert [r.id for r in balance.rarities] == ["common", "rare", "legendary", "mythic"]
+	assert [r.stat_pct for r in balance.rarities] == [100, 150, 200, 300]
+	assert [level.effect_pct for level in balance.spell_levels] == [100, 150, 200]
+	assert set(balance.rarity_weights) == {"merchant"}
+	for enemy_class in balance.enemy_classes:
+		assert set(enemy_class.rarity_weights) <= {r.id for r in balance.rarities}
+	assert balance.enemy_class("elite").stat_pct > balance.enemy_class("normal").stat_pct
+	assert set(balance.item_score_weights) == set(Stat)
+	assert data.boss_of_tier(data.tier_count - 1).id == "ferumbras"
+	assert balance.final_round == balance.rounds_per_tier * data.tier_count
+
+
 def test_lookup_errors(data: GameData) -> None:
 	with pytest.raises(UnknownIdError):
 		data.spell("avada_kedavra")
 	with pytest.raises(UnknownIdError):
 		data.balance.difficulty("nightmare")
 	with pytest.raises(UnknownIdError):
-		data.balance.rarity("mythic")
+		data.balance.rarity("epic")
+	with pytest.raises(UnknownIdError):
+		data.balance.enemy_class("champion")
+	with pytest.raises(UnknownIdError):
+		data.balance.auto_battle.mode("berserk")
 	with pytest.raises(UnknownIdError):
 		data.creature("rat").attack("laser")
 

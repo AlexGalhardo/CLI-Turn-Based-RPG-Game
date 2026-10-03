@@ -39,7 +39,7 @@ func (f *EventFormatter) Format(evt application.Event, state *application.RunSta
 		}
 	}
 
-	for _, field := range []string{"element", "status", "rarity", "resource"} {
+	for _, field := range []string{"element", "status", paramRarity, "resource"} {
 		if value, ok := evt[field]; ok {
 			params[field] = f.translator.T(field+"."+fmt.Sprint(value), nil)
 		}
@@ -72,6 +72,8 @@ func eventKey(evt application.Event) string {
 		variant = "_charged"
 	case evt.Type() == "round_started" && evt.Bool("isBoss"):
 		variant = "_boss"
+	case evt.Type() == "round_started" && evt.Str("enemyClass") == "elite":
+		variant = "_elite"
 	case evt.Str("target") != "":
 		variant = "_" + evt.Str("target")
 	}

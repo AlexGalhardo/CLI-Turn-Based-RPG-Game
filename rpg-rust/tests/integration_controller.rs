@@ -9,8 +9,8 @@ use common::{TempDir, make_controller, warrior};
 use rpg::application::commands::Command;
 use rpg::application::events::Event;
 use rpg::application::profile::BestiaryEntry;
-use rpg::domain::entities::{ActiveStatus, ItemInstance};
-use rpg::domain::enums::{Element, Slot};
+use rpg::domain::entities::{ActiveStatus, ItemInstance, MonsterInstance};
+use rpg::domain::enums::{Element, EnemyClass, Slot};
 use rpg::infrastructure::i18n::Translator;
 use rpg::presentation::controller::{Controller, PAGE_SIZE, View};
 use rpg::presentation::event_text::EventFormatter;
@@ -18,6 +18,10 @@ use rpg::presentation::render::list_key;
 use serde_json::{Map, Value, json};
 
 fn start_run(controller: &mut Controller, name: &str, vocation_key: &str) {
+	start_run_with(controller, name, vocation_key, "2");
+}
+
+fn start_run_with(controller: &mut Controller, name: &str, vocation_key: &str, auto_equip_key: &str) {
 	controller.press("2");
 	controller.press("2");
 	for character in name.chars() {
@@ -25,6 +29,7 @@ fn start_run(controller: &mut Controller, name: &str, vocation_key: &str) {
 	}
 	controller.press("enter");
 	controller.press(vocation_key);
+	controller.press(auto_equip_key);
 }
 
 fn labels(controller: &Controller) -> Vec<String> {
@@ -92,10 +97,14 @@ fn language_switch_from_title() {
 	let dir = TempDir::new();
 	let mut controller = make_controller(&data, dir.path(), Some("en"), 7);
 	controller.press("6");
+	assert_eq!(controller.view, View::Settings);
+	controller.press("1");
 	assert_eq!(controller.view, View::Language);
 	controller.press("2");
-	assert_eq!(controller.view, View::Title);
+	assert_eq!(controller.view, View::Settings);
 	assert_eq!(controller.locale, "pt-BR");
+	controller.press("0");
+	assert_eq!(controller.view, View::Title);
 	assert_eq!(controller.title(), "CLI Turn-Based RPG");
 	assert!(labels(&controller).contains(&"Sair".to_owned()));
 }
@@ -120,6 +129,9 @@ fn merchant_menus() {
 	assert!(!equipment.iter().any(|label| label.contains("Bow")));
 	assert_eq!(controller.options()[0].color.as_deref(), Some("rare"));
 	controller.press("1");
+	assert_eq!(controller.view, View::Compare);
+	controller.press("1");
+	assert_eq!(controller.view, View::Equipment);
 	let weapon_uid = controller.session.as_ref().unwrap().state().player.equipment[&Slot::Weapon].uid;
 	assert_eq!(weapon_uid, 900);
 	controller.press("0");
@@ -312,7 +324,7 @@ fn persistence_errors_are_shown_instead_of_crashing() {
 	std::fs::write(dir.path().join("profile.json"), r#"{"schemaVersion": 99}"#).unwrap();
 	let mut controller = make_controller(&data, dir.path(), Some("en"), 7);
 	start_run(&mut controller, "Zed", "1");
-	assert_eq!(controller.view, View::Vocation);
+	assert_eq!(controller.view, View::AutoEquip);
 	assert!(controller.error.as_deref().is_some_and(|error| error.contains("update the game")));
 	std::fs::write(dir.path().join("settings.json"), r#"{"schemaVersion": 99}"#).unwrap();
 	assert!(Controller::new(common::services(&data, dir.path()), None, None, None).is_err());
@@ -341,10 +353,28 @@ fn object(value: &Value) -> Map<String, Value> {
 	value.as_object().unwrap().clone()
 }
 
+fn rat() -> MonsterInstance {
+	MonsterInstance {
+		creature_id: "rat".into(),
+		is_boss: false,
+		enemy_class: EnemyClass::Normal,
+		hp: 10,
+		max_hp: 10,
+		xp: 1,
+		gold_min: 1,
+		gold_max: 1,
+		attacks: Vec::new(),
+		statuses: Vec::new(),
+		stun_cooldown: 0,
+		boss_actions: 0,
+	}
+}
+
 #[test]
 fn format_events() {
 	let data = common::data();
-	let engine = warrior(&data);
+	let mut engine = warrior(&data);
+	engine.state_mut().monster = Some(rat());
 	let formatter = formatter();
 	let cases = [
 		(
@@ -367,13 +397,40 @@ fn format_events() {
 			json!({"type": "status_applied", "target": "player", "status": "burn", "turns": 3, "perTurn": 2}),
 			"You are burning (3 turns).",
 		),
-		(json!({"type": "monster_killed", "monsterId": "dragon", "isBoss": false}), "You defeated Dragon!"),
 		(
-			json!({"type": "round_started", "round": 10, "tier": 0, "cycle": 0, "monsterId": "munster", "isBoss": true, "hp": 5}),
+			json!({"type": "monster_killed", "monsterId": "dragon", "isBoss": false, "enemyClass": "normal"}),
+			"You defeated Dragon!",
+		),
+		(
+			json!({"type": "round_started", "round": 10, "tier": 0, "cycle": 0, "monsterId": "munster", "isBoss": true, "enemyClass": "boss", "hp": 5}),
 			"Round 10: the boss Munster challenges you! (5 HP)",
 		),
 		(json!({"type": "item_sold", "uid": 3, "itemId": "sword", "gold": 25}), "You sold Sword for 25 gold."),
 		(json!({"type": "error", "code": "not_enough_mana"}), "Not enough mana."),
+		(json!({"type": "error", "code": "level_too_low"}), "Your level is too low for that item."),
+		(
+			json!({"type": "round_started", "round": 3, "tier": 0, "cycle": 0, "monsterId": "rat", "isBoss": false, "enemyClass": "elite", "hp": 90}),
+			"Round 3: an ELITE Rat appears! (90 HP)",
+		),
+		(
+			json!({"type": "monster_attacked", "attackId": "bite", "damage": 9, "element": "physical", "charged": false, "crit": true}),
+			"CRITICAL! Rat hits you for 9 physical damage.",
+		),
+		(json!({"type": "monster_dodged"}), "Rat dodges your attack!"),
+		(json!({"type": "monster_parried", "reflected": 4}), "Rat parries your attack: you take 4 damage!"),
+		(json!({"type": "monster_healed", "amount": 12}), "Rat heals 12 HP."),
+		(
+			json!({"type": "attack_parried", "attackId": "bite", "reflected": 3}),
+			"You parry the attack and reflect 3 damage!",
+		),
+		(
+			json!({"type": "item_auto_equipped", "uid": 5, "itemId": "sword", "slot": "weapon", "score": 60}),
+			"Auto-equipped Sword (score 60).",
+		),
+		(json!({"type": "item_auto_sold", "uid": 6, "itemId": "bow", "gold": 30}), "Sold Bow for 30 gold (auto-sell)."),
+		(json!({"type": "potion_dropped", "potionId": "mana_potion"}), "Loot: Mana Potion!"),
+		(json!({"type": "run_won", "round": 100}), "VICTORY! You defeated the final boss on round 100!"),
+		(json!({"type": "run_ended", "won": true}), "Your victory is recorded in the Hall of Fame."),
 	];
 	for (event, expected) in cases {
 		assert_eq!(formatter.format_fields(&object(&event), engine.state()), expected, "{event}");

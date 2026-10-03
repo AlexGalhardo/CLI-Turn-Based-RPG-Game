@@ -29,8 +29,10 @@ rpg-typescript/src/
 ├── version.ts               # reads package.json
 ├── domain/                  # rng, enums, json-types, definitions, formulas, entities, character
 ├── application/             # engine, battle, merchant, loot, spawner, progression, statistics, run-state,
-│                            # save-game, profile, game-session, ports, bot, simulator, commands, events
-├── infrastructure/          # embedded-shared (static imports of shared/), data-loader, i18n, art, repositories, paths
+│                            # save-game, profile, game-session, ports, bot, simulator, commands, events,
+│                            # auto-equip (auto-equip + auto-sell), auto-battle (policy)
+├── infrastructure/          # embedded-shared (static imports of shared/), data-loader, i18n, art, repositories, paths,
+│                            # migrations (schema 1 → 2)
 ├── presentation/            # cli, event-text, render, controller, simulator-report, tui/app.tsx (Ink)
 └── stubs/react-devtools-core.ts
 tests/{unit,integration,golden,e2e}/ + helpers.ts
@@ -42,6 +44,9 @@ tests/{unit,integration,golden,e2e}/ + helpers.ts
   compiled binary needs no checkout. A new monster family or boss needs one import line there.
 - Integer math: always `Math.floor` after multiplications/divisions; the PRNG uses `Math.imul` and `>>> 0`.
 - No `any`: untrusted JSON is read through `json-types.ts` narrowing helpers.
+- Auto-battle pacing lives in the Ink app (`tui/app.tsx`): a `setInterval` of `controller.autoBattleIntervalMs()`
+  (600 ms at 1x, 300 ms at 2x) calls `autoBattleStep()` until it returns `false`; with `--no-anim` the app calls
+  `runAutoBattle()` and the fight resolves instantly.
 - Ink imports the optional `react-devtools-core` peer only when `DEV=true`, but `bun build --compile` still needs to
   resolve it: `tsconfig.json` maps it to `src/stubs/react-devtools-core.ts`.
 - In e2e tests, a lone `ESC` needs ~100 ms before Ink emits it (it may start an escape sequence).

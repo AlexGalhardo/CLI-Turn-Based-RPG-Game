@@ -33,8 +33,9 @@ fn start(data: &Rc<GameData>, vocation: &str, difficulty: &str, seed: u64) -> (G
 }
 
 #[test]
-fn bot_plays_until_death() {
+fn bot_plays_until_the_run_ends() {
 	let data = common::data();
+	let mut won = 0;
 	for vocation in ["warrior", "archer", "mage"] {
 		for difficulty in ["easy", "normal", "hard"] {
 			let (mut engine, _) = start(&data, vocation, difficulty, 1234);
@@ -42,12 +43,37 @@ fn bot_plays_until_death() {
 			let state = engine.state();
 			assert_eq!(state.phase, Phase::GameOver);
 			assert!(state.round >= 1);
-			assert!(state.death_cause.as_deref().is_some_and(|cause| !cause.is_empty()));
-			assert_eq!(log.last().and_then(|events| events.last()).map(Event::kind).as_deref(), Some("player_died"));
-			assert_eq!(state.stats.total_kills(), state.round - 1);
 			assert!(state.stats.damage_dealt > 0);
+			if state.won {
+				won += 1;
+				assert_eq!(state.round, data.balance.final_round);
+				assert_eq!(state.death_cause, None);
+				assert_eq!(log[log.len() - 2].last(), Some(&Event::RunWon { round: state.round }));
+				assert_eq!(log[log.len() - 1], [Event::RunEnded { won: true }]);
+				assert_eq!(state.stats.total_kills(), state.round);
+			} else {
+				assert!(state.death_cause.as_deref().is_some_and(|cause| !cause.is_empty()));
+				let last = log.last().and_then(|events| events.last()).map(Event::kind);
+				assert_eq!(last.as_deref(), Some("player_died"));
+				assert_eq!(state.stats.total_kills(), state.round - 1);
+			}
 		}
 	}
+	assert!(won > 0, "both branches are covered");
+}
+
+/// The balance must keep the victory reachable.
+#[test]
+fn some_bot_runs_are_won() {
+	let data = common::data();
+	let won = (2002..2006)
+		.filter(|&seed| {
+			let (mut engine, _) = start(&data, "archer", "easy", seed);
+			play_to_death(&mut engine, &GreedyBot::new(&data));
+			engine.state().won
+		})
+		.count();
+	assert!(won > 0);
 }
 
 #[test]

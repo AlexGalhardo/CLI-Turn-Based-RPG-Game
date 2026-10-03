@@ -21,17 +21,40 @@ defmodule Rpg.Integration.FullRunsTest do
   end
 
   for vocation <- ["warrior", "archer", "mage"], difficulty <- ["easy", "normal", "hard"] do
-    test "the bot plays #{vocation} #{difficulty} until death" do
-      {engine, _} = GameEngine.new_run(Helpers.data(), config(unquote(vocation), unquote(difficulty)), 1234)
+    test "the bot plays #{vocation} #{difficulty} until the run ends" do
+      data = Helpers.data()
+      {engine, _} = GameEngine.new_run(data, config(unquote(vocation), unquote(difficulty)), 1234)
       {engine, log} = play_to_death(engine)
       state = engine.state
+      kills = state.stats.kills |> Map.values() |> Enum.sum()
       assert state.phase == :game_over
       assert state.round >= 1
-      assert state.death_cause not in [nil, ""]
-      assert List.last(List.last(log))["type"] == "player_died"
-      assert state.stats.kills |> Map.values() |> Enum.sum() == state.round - 1
       assert state.stats.damage_dealt > 0
+
+      if state.won do
+        assert state.round == data.balance.final_round
+        assert state.death_cause == nil
+        assert List.last(Enum.at(log, -2)) == %{"type" => "run_won", "round" => state.round}
+        assert List.last(log) == [%{"type" => "run_ended", "won" => true}]
+        assert kills == state.round
+      else
+        assert state.death_cause not in [nil, ""]
+        assert List.last(List.last(log))["type"] == "player_died"
+        assert kills == state.round - 1
+      end
     end
+  end
+
+  test "some bot runs are won" do
+    # The balance must keep the victory reachable (the balance gate tunes the rates).
+    won =
+      Enum.count(2002..2005, fn seed ->
+        {engine, _} = GameEngine.new_run(Helpers.data(), config("archer", "easy"), seed)
+        {engine, _log} = play_to_death(engine)
+        engine.state.won
+      end)
+
+    assert won > 0
   end
 
   test "same seed, same events" do

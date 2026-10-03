@@ -1,6 +1,7 @@
 package presentation
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/rpg-golang/internal/domain"
@@ -29,8 +30,45 @@ var ElementColors = map[domain.Element]string{
 var RarityColors = map[string]string{
 	"common":    "#ffffff",
 	"rare":      "#1e90ff",
-	"epic":      "#af87ff",
 	"legendary": "#ffaf00",
+	"mythic":    "#af87ff",
+}
+
+// Semantic styles used by the equipment screen (docs/tui.md): empty slots, score/stat gains and losses.
+const (
+	StyleWarning = "warning"
+	StyleGain    = "gain"
+	StyleLoss    = "loss"
+	StyleDim     = "dim"
+)
+
+// StyleColors are the colours of the semantic styles.
+var StyleColors = map[string]string{
+	StyleWarning: "#ffff00",
+	StyleGain:    "#00ff00",
+	StyleLoss:    "#ff0000",
+	StyleDim:     "#808080",
+}
+
+// FormatDelta renders a signed difference ("+3", "-2", "0").
+func FormatDelta(delta int) string {
+	if delta > 0 {
+		return "+" + strconv.Itoa(delta)
+	}
+
+	return strconv.Itoa(delta)
+}
+
+// DeltaStyle is the gain/loss style of a difference ("" when it is zero).
+func DeltaStyle(delta int) string {
+	switch {
+	case delta > 0:
+		return StyleGain
+	case delta < 0:
+		return StyleLoss
+	default:
+		return ""
+	}
 }
 
 // Bar renders `█` filled / `░` empty cells. A living creature always shows at least one filled cell.

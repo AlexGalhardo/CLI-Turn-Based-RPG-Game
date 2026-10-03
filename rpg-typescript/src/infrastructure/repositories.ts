@@ -3,9 +3,19 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, w
 import { dirname, join } from "node:path";
 import type { Clock, HistoryRepository, ProfileRepository, SaveRepository } from "../application/ports";
 import { Profile } from "../application/profile";
-import { checkSchema, type RunRecord, runRecordFromJson, runRecordToJson, SaveGame } from "../application/save-game";
-import { type JsonObject, type JsonValue, jsonObj, jsonStr } from "../domain/json-types";
+import {
+	checkSchema,
+	type RunRecord,
+	runRecordFromJson,
+	runRecordToJson,
+	SaveGame,
+	SCHEMA_VERSION,
+} from "../application/save-game";
+import { type JsonObject, type JsonValue, jsonBool, jsonInt, jsonObj, jsonStr } from "../domain/json-types";
 import { SUPPORTED_LOCALES } from "./i18n";
+import { migrateHistory, migrateProfile, migrateSave, migrateSettings } from "./migrations";
+
+export const BATTLE_SPEEDS: readonly number[] = [1, 2];
 
 /** Write to a temp file then rename, so a crash never leaves a half-written save. */
 export function writeJsonAtomic(path: string, document: JsonObject): void {
@@ -27,7 +37,11 @@ export class SystemClock implements Clock {
 
 export interface Settings {
 	readonly locale: string | null;
+	readonly autoEquip: boolean;
+	readonly battleSpeed: number;
 }
+
+export const DEFAULT_SETTINGS: Settings = { locale: null, autoEquip: false, battleSpeed: 1 };
 
 export class SettingsRepository {
 	readonly #path: string;
@@ -37,16 +51,24 @@ export class SettingsRepository {
 	}
 
 	load(): Settings {
-		if (!existsSync(this.#path)) return { locale: null };
-		const data = jsonObj(readJson(this.#path));
+		if (!existsSync(this.#path)) return DEFAULT_SETTINGS;
+		let data = jsonObj(readJson(this.#path));
 		checkSchema(data, "settings.json");
+		data = migrateSettings(data);
 		const locale = data.locale === undefined ? null : jsonStr(data.locale);
-		return { locale: locale !== null && SUPPORTED_LOCALES.includes(locale) ? locale : null };
+		const speed = jsonInt(data.battleSpeed);
+		return {
+			locale: locale !== null && SUPPORTED_LOCALES.includes(locale) ? locale : null,
+			autoEquip: jsonBool(data.autoEquip),
+			battleSpeed: BATTLE_SPEEDS.includes(speed) ? speed : (BATTLE_SPEEDS[0] ?? 1),
+		};
 	}
 
 	save(settings: Settings): void {
-		const document: JsonObject = { schemaVersion: 1 };
+		const document: JsonObject = { schemaVersion: SCHEMA_VERSION };
 		if (settings.locale !== null) document.locale = settings.locale;
+		document.autoEquip = settings.autoEquip;
+		document.battleSpeed = settings.battleSpeed;
 		writeJsonAtomic(this.#path, document);
 	}
 }
@@ -59,7 +81,10 @@ export class FileSaveRepository implements SaveRepository {
 	}
 
 	load(): SaveGame | null {
-		return existsSync(this.#path) ? SaveGame.fromJson(readJson(this.#path)) : null;
+		if (!existsSync(this.#path)) return null;
+		const document = jsonObj(readJson(this.#path));
+		checkSchema(document, "save.json");
+		return SaveGame.fromJson(migrateSave(document));
 	}
 
 	save(save: SaveGame): void {
@@ -87,7 +112,11 @@ export class FileHistoryRepository implements HistoryRepository {
 		return readdirSync(this.#dir)
 			.filter((file) => file.endsWith(".json"))
 			.sort()
-			.map((file) => runRecordFromJson(readJson(join(this.#dir, file))));
+			.map((file) => {
+				const document = jsonObj(readJson(join(this.#dir, file)));
+				checkSchema(document, "history record");
+				return runRecordFromJson(migrateHistory(document));
+			});
 	}
 }
 
@@ -102,7 +131,7 @@ export class FileProfileRepository implements ProfileRepository {
 		if (!existsSync(this.#path)) return new Profile();
 		const data = jsonObj(readJson(this.#path));
 		checkSchema(data, "profile.json");
-		return Profile.fromJson(data);
+		return Profile.fromJson(migrateProfile(data));
 	}
 
 	save(profile: Profile): void {

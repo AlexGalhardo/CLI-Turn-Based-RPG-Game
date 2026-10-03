@@ -13,6 +13,40 @@ commit.
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-03
+
+ARPG update (M8), in the six implementations at parity (golden files regenerated, simulator reports byte-identical).
+
+### Added
+
+- **Win the game**: beating Ferumbras in round 100 opens a Victory screen — end the run as a win (history and Hall of
+  Fame, won runs first) or continue endlessly. New achievement `conqueror`.
+- **Elite enemies**: 20% of non-boss fights; 3× HP, damage, XP and gold; always drop a rare (80%) or legendary (20%)
+  item and, one time in three, a potion unlocked at that round.
+- **Enemy combat chances** by class (normal 10%, elite 20%, boss 30%): dodge, parry, critical hit (+50%) and a heal of
+  20% of max HP that uses their turn. **Parry reflects 20%** of the blocked damage to the attacker, both ways.
+- **Item rarities** common, rare, legendary and mythic: 100/150/200/300% stats with 0/1/2/2 extra attributes; drop
+  tables per enemy class (normal common 90 / rare 10, boss legendary 80 / mythic 20). Items have a **required level**
+  (`1 + tier × itemLevelPerTier`) and an **item score** (weighted stats, like Diablo's item power).
+- **Auto-equip** (chosen at new run, default in Settings): after every victory and merchant purchase the best usable
+  item per slot is equipped and the replaced one is sold, both reported in the combat log.
+- **Auto-battle** in battle (`[5]`): weapon focus (80/20), spell focus (80/20) or balanced (50/50) with need-based
+  support turns and an emergency heal; it can't be cancelled; 1x/2x speed in Settings.
+- **Settings screen** (language, auto-equip default, battle speed) and an **ARPG equipment screen**: all eight slots
+  with empty ones highlighted, total score, bag items with required level and score delta, and a per-stat comparison
+  (gains in green, losses in red, affixes gained and lost) before equipping.
+- **Balance gate** `bun run balance:check` (`scripts/balance.ts`, targets in `shared/data/balance-targets.json`): plays
+  1000 seeded bot runs per vocation and difficulty in parallel with any implementation's simulator. Result: EASY 76.2%,
+  NORMAL 50.1%, HARD 25.6% wins (targets 75/50/25 ± 5). The simulator report gained `wins` and `win %`.
+
+### Changed
+
+- Spell levels 2 and 3 (20 and 50 uses) now give 150% and 200% effect.
+- Difficulty multipliers rebalanced for the stronger enemies (monster HP and damage 25/30/36%); the HARD rarity bonus is
+  gone (drop tables are per enemy class).
+- Saves, settings, history and profile use schema 2; schema 1 files migrate on load (`epic` items become `legendary`).
+- Selling lists only bag items; selling an equipped item is refused (`invalid_item`), now covered by tests.
+
 ## [1.3.6] - 2026-10-03
 
 ### Changed
@@ -431,7 +465,8 @@ First stable release: the same game in Python, TypeScript and Go, proven equival
 - General-purpose agent skills, agents and reference checklists in `.claude/`.
 - The 2016 Python and 2022 TypeScript code is not carried over; the originals remain in their own repositories.
 
-[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.6...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.6...v1.4.0
 [1.3.6]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.5...v1.3.6
 [1.3.5]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.4...v1.3.5
 [1.3.4]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.3...v1.3.4

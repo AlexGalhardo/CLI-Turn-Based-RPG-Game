@@ -3,7 +3,20 @@ from collections.abc import Iterable
 from rpg.application.simulator import SimulationSummary
 from rpg.domain.definitions import GameData
 
-HEADER = ("vocation", "difficulty", "runs", "min", "p10", "median", "p90", "max", "avg lvl", "top killers")
+HEADER = (
+	"vocation",
+	"difficulty",
+	"runs",
+	"wins",
+	"win %",
+	"min",
+	"p10",
+	"median",
+	"p90",
+	"max",
+	"avg lvl",
+	"top killers",
+)
 
 
 def render_report(summaries: Iterable[SimulationSummary], data: GameData) -> str:
@@ -15,6 +28,8 @@ def render_report(summaries: Iterable[SimulationSummary], data: GameData) -> str
 				s.vocation,
 				s.difficulty,
 				str(s.runs),
+				str(s.wins),
+				f"{s.win_rate_pct}%",
 				str(s.min_round),
 				str(s.p10_round),
 				str(s.median_round),

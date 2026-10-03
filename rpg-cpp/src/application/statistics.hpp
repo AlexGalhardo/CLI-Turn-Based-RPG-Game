@@ -34,10 +34,13 @@ struct RunStatistics {
 	std::int64_t gold_spent = 0;
 	std::int64_t gold_earned = 0;
 	std::int64_t items_sold = 0;
+	std::int64_t items_auto_equipped = 0;
 	std::int64_t bosses_killed = 0;
+	std::int64_t elites_killed = 0;
 	domain::CountMap spells_cast;
 	domain::CountMap potions_used;
 	domain::CountMap potions_bought;
+	domain::CountMap potions_dropped;
 	domain::CountMap items_dropped;
 	domain::CountMap kills;
 	domain::CountMap statuses_applied;
@@ -52,7 +55,9 @@ struct RunStatistics {
 	bool operator==(const RunStatistics&) const = default;
 
 private:
-	void record_one(const Event& event, std::int64_t current_round);
+	// Battle counters; returns false when the event is not a battle event.
+	bool record_combat(const Event& event);
+	void record_loot(const Event& event, std::int64_t current_round);
 	void dealt(const Event& event);
 };
 

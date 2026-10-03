@@ -4,6 +4,7 @@ defmodule Rpg.Integration.CliAndSimulatorTest do
   import ExUnit.CaptureIO
 
   alias Rpg.Application.Simulator
+  alias Rpg.Application.Simulator.SimulationSummary
   alias Rpg.Infrastructure.I18n
   alias Rpg.Presentation.Cli
   alias Rpg.Presentation.Cli.CliOptions
@@ -12,6 +13,8 @@ defmodule Rpg.Integration.CliAndSimulatorTest do
   test "simulate summary" do
     summary = Simulator.simulate(Helpers.data(), "warrior", "normal", 3, 10)
     assert summary.runs == 3
+    assert summary.wins in 0..3
+    assert SimulationSummary.win_rate_pct(summary) == div(summary.wins * 100, 3)
     assert 1 <= summary.min_round and summary.min_round <= summary.median_round
     assert summary.median_round <= summary.max_round
     assert summary.top_killers |> Enum.map(&elem(&1, 1)) |> Enum.sum() <= 3
@@ -25,7 +28,15 @@ defmodule Rpg.Integration.CliAndSimulatorTest do
       end)
 
     assert output =~ "median"
+    assert output =~ "win %"
     assert output =~ "mage"
+  end
+
+  test "the simulator counts won runs" do
+    data = Helpers.data()
+    summary = Simulator.simulate(data, "archer", "easy", 2, 2002)
+    assert summary.wins >= 1
+    assert summary.max_round == data.balance.final_round
   end
 
   test "main --simulate rejects an unknown vocation" do

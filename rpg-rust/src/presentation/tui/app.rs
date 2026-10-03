@@ -19,6 +19,7 @@ use ratatui::widgets::{Block, BorderType, Padding, Paragraph};
 use crate::application::game_session::Repositories;
 use crate::assets::SharedFs;
 use crate::domain::definitions::GameData;
+use crate::domain::enums::EnemyClass;
 use crate::infrastructure::art::{ArtLibrary, frame_for};
 use crate::infrastructure::paths::resolve_data_dir;
 use crate::infrastructure::repositories::{
@@ -26,7 +27,9 @@ use crate::infrastructure::repositories::{
 };
 use crate::presentation::cli::CliOptions;
 use crate::presentation::controller::{Controller, Services};
-use crate::presentation::render::{BAR_WIDTH, MIN_COLUMNS, MIN_ROWS, bar, element_color, hp_color, rarity_color};
+use crate::presentation::render::{
+	BAR_WIDTH, MIN_COLUMNS, MIN_ROWS, bar, element_color, hp_color, rarity_color, style_color,
+};
 use crate::version::VERSION;
 
 pub const ANIMATION_INTERVAL: Duration = Duration::from_millis(500);
@@ -58,12 +61,12 @@ pub fn color(name: &str) -> Color {
 	}
 }
 
-/// Colour of a menu option: a rarity, an element id or a plain colour name.
+/// Colour of a menu option or body line: a rarity, a semantic style, an element id or a plain colour name.
 pub fn option_style(name: Option<&str>) -> Style {
 	let Some(name) = name else {
 		return Style::default();
 	};
-	let resolved = rarity_color(name).unwrap_or_else(|| {
+	let resolved = rarity_color(name).or_else(|| style_color(name)).unwrap_or_else(|| {
 		crate::domain::enums::ELEMENTS
 			.iter()
 			.find(|element| element.as_str() == name)
@@ -96,6 +99,22 @@ impl App {
 		App { controller, art, animate, tick: 0, cues: Vec::new() }
 	}
 
+	/// The pace of the auto-battle timer, or `None` when no auto-battle is running.
+	pub fn auto_battle_interval(&self) -> Option<Duration> {
+		self.controller.auto_battle_active().then(|| Duration::from_millis(self.controller.auto_battle_interval_ms()))
+	}
+
+	/// One paced auto-battle turn (called by the event loop every [`App::auto_battle_interval`]).
+	pub fn on_auto_battle_tick(&mut self) {
+		self.controller.auto_battle_step();
+		self.take_cues();
+	}
+
+	fn take_cues(&mut self) {
+		self.cues = if self.animate { std::mem::take(&mut self.controller.animation_cues) } else { Vec::new() };
+		self.controller.animation_cues.clear();
+	}
+
 	/// Advances the idle animation and consumes one queued cue (every [`ANIMATION_INTERVAL`]).
 	pub fn on_tick(&mut self) {
 		self.tick += 1;
@@ -124,8 +143,11 @@ impl App {
 		if self.controller.exit_requested {
 			return true;
 		}
-		self.cues = if self.animate { std::mem::take(&mut self.controller.animation_cues) } else { Vec::new() };
-		self.controller.animation_cues.clear();
+		// Paced by the battle speed setting; instant without animation (--no-anim, tests).
+		if self.controller.auto_battle_active() && !self.animate {
+			self.controller.run_auto_battle();
+		}
+		self.take_cues();
 		false
 	}
 
@@ -203,6 +225,11 @@ impl App {
 				format!("{} ", controller.t("hud.boss", &[])),
 				Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD),
 			));
+		} else if monster.enemy_class == EnemyClass::Elite {
+			name.push(Span::styled(
+				format!("{} ", controller.t("hud.elite", &[])),
+				Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+			));
 		}
 		name.push(Span::styled(monster.name.to_uppercase(), bold));
 		Text::from(vec![
@@ -259,7 +286,14 @@ impl App {
 			controller.title(),
 			Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
 		)];
-		lines.extend(controller.body_lines().into_iter().map(Line::from));
+		let colors = controller.body_colors();
+		lines.extend(
+			controller
+				.body_lines()
+				.into_iter()
+				.zip(colors)
+				.map(|(line, color)| Line::styled(line, option_style(color.as_deref()))),
+		);
 		let options = controller.options();
 		if !options.is_empty() {
 			lines.push(Line::default());
@@ -270,13 +304,19 @@ impl App {
 			let mut spans = Vec::new();
 			for option in row {
 				spans.push(Span::styled(format!("[{}] ", option.key.to_uppercase()), key_style));
-				let label = if columns == 1 {
+				let detail = if option.detail.is_empty() { String::new() } else { format!("  {}", option.detail) };
+				let detail_width = detail.chars().count();
+				let label: String = if columns == 1 {
 					option.label.clone()
 				} else {
-					let truncated: String = option.label.chars().take(COLUMN_WIDTH - 1).collect();
-					format!("{truncated:<COLUMN_WIDTH$}")
+					option.label.chars().take((COLUMN_WIDTH - 1).saturating_sub(detail_width)).collect()
 				};
+				let padding = COLUMN_WIDTH.saturating_sub(label.chars().count() + detail_width);
 				spans.push(Span::styled(label, option_style(option.color.as_deref())));
+				spans.push(Span::styled(detail, option_style(option.detail_color.as_deref())));
+				if columns > 1 {
+					spans.push(Span::raw(" ".repeat(padding)));
+				}
 			}
 			lines.push(Line::from(spans));
 		}
@@ -351,15 +391,29 @@ pub fn run_tui(data: Rc<GameData>, shared: Rc<SharedFs>, options: &CliOptions) -
 
 fn event_loop(terminal: &mut ratatui::DefaultTerminal, app: &mut App) -> io::Result<()> {
 	let mut last_tick = Instant::now();
+	let mut last_auto_turn = Instant::now();
 	loop {
 		terminal.draw(|frame| app.render(frame))?;
-		let timeout =
+		let mut timeout =
 			if app.animate { ANIMATION_INTERVAL.saturating_sub(last_tick.elapsed()) } else { Duration::from_secs(60) };
+		let auto_interval = app.auto_battle_interval();
+		if let Some(interval) = auto_interval {
+			timeout = timeout.min(interval.saturating_sub(last_auto_turn.elapsed()));
+		}
 		if event::poll(timeout)?
 			&& let event::Event::Key(key) = event::read()?
 			&& app.on_key(&key)
 		{
 			return Ok(());
+		}
+		match auto_interval {
+			Some(interval) if last_auto_turn.elapsed() >= interval => {
+				app.on_auto_battle_tick();
+				last_auto_turn = Instant::now();
+			}
+			Some(_) => {}
+			// The first paced turn comes one interval after the auto-battle starts.
+			None => last_auto_turn = Instant::now(),
 		}
 		if app.animate && last_tick.elapsed() >= ANIMATION_INTERVAL {
 			app.on_tick();

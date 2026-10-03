@@ -1,7 +1,20 @@
-import type { SimulationSummary } from "../application/simulator";
+import { type SimulationSummary, winRatePct } from "../application/simulator";
 import type { GameData } from "../domain/definitions";
 
-const HEADER = ["vocation", "difficulty", "runs", "min", "p10", "median", "p90", "max", "avg lvl", "top killers"];
+const HEADER = [
+	"vocation",
+	"difficulty",
+	"runs",
+	"wins",
+	"win %",
+	"min",
+	"p10",
+	"median",
+	"p90",
+	"max",
+	"avg lvl",
+	"top killers",
+];
 
 export function renderReport(summaries: readonly SimulationSummary[], data: GameData): string {
 	const rows: string[][] = [HEADER];
@@ -11,6 +24,8 @@ export function renderReport(summaries: readonly SimulationSummary[], data: Game
 			s.vocation,
 			s.difficulty,
 			String(s.runs),
+			String(s.wins),
+			`${winRatePct(s)}%`,
 			String(s.minRound),
 			String(s.p10Round),
 			String(s.medianRound),

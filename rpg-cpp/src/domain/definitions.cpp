@@ -42,6 +42,10 @@ const MonsterAttack& MonsterDef::attack(std::string_view attack_id) const { retu
 
 const DifficultyDef& Balance::difficulty(std::string_view id) const { return find_by_id(difficulties, id); }
 
+const EnemyClassDef& Balance::enemy_class(std::string_view id) const { return find_by_id(enemy_classes, id); }
+
+const AutoBattleModeDef& AutoBattleDef::mode(std::string_view mode_id) const { return find_by_id(modes, mode_id); }
+
 const RarityDef& Balance::rarity(std::string_view id) const { return find_by_id(rarities, id); }
 
 bool Balance::has_difficulty(std::string_view id) const {

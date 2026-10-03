@@ -44,6 +44,7 @@ struct HallOfFameEntry {
 	std::int64_t round = 0;
 	std::int64_t level = 0;
 	std::string ended_at;
+	bool won = false;
 
 	bool operator==(const HallOfFameEntry&) const = default;
 };
@@ -71,7 +72,7 @@ public:
 	std::vector<domain::AchievementDef> observe(
 	    std::span<const Event> events, const RunState& state, const std::string& now, const std::string& run_id);
 
-	// Inserts a run into the Hall of Fame (round desc, level desc, earliest end first).
+	// Inserts a run into the Hall of Fame (won runs first, then round desc, level desc, earliest end first).
 	void record_finished_run(const HallOfFameEntry& entry);
 
 	// Whether a creature's weaknesses are shown in the bestiary.

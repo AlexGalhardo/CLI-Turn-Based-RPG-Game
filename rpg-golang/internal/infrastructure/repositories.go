@@ -55,9 +55,19 @@ type SystemClock struct{}
 // Now returns the current time.
 func (SystemClock) Now() time.Time { return time.Now() }
 
+// BattleSpeeds are the valid auto-battle paces (1x, 2x); the first one is the default.
+var BattleSpeeds = []int{1, 2}
+
 // Settings are the player's preferences (settings.json).
 type Settings struct {
-	Locale string
+	Locale      string
+	AutoEquip   bool
+	BattleSpeed int
+}
+
+// DefaultSettings are the settings of a first launch.
+func DefaultSettings() Settings {
+	return Settings{BattleSpeed: BattleSpeeds[0]}
 }
 
 // SettingsRepository stores settings.json.
@@ -70,34 +80,50 @@ func NewSettingsRepository(dataDir string) *SettingsRepository {
 	return &SettingsRepository{path: filepath.Join(dataDir, "settings.json")}
 }
 
-// Load reads the settings; an unknown locale is ignored.
+// Load reads the settings; an unknown locale is ignored and an unknown battle speed loads as 1.
 func (r *SettingsRepository) Load() (Settings, error) {
 	content, ok, err := readIfExists(r.path)
 	if err != nil || !ok {
-		return Settings{}, err
+		return DefaultSettings(), err
 	}
 
 	if err := application.CheckSchema(content, "settings.json"); err != nil {
-		return Settings{}, err
+		return DefaultSettings(), err
+	}
+
+	content, err = MigrateSettings(content)
+	if err != nil {
+		return DefaultSettings(), fmt.Errorf("migrate settings.json: %w", err)
 	}
 
 	var document struct {
-		Locale string `json:"locale"`
+		Locale      string `json:"locale"`
+		AutoEquip   bool   `json:"autoEquip"`
+		BattleSpeed int    `json:"battleSpeed"`
 	}
 	if err := json.Unmarshal(content, &document); err != nil {
-		return Settings{}, fmt.Errorf("parse settings.json: %w", err)
+		return DefaultSettings(), fmt.Errorf("parse settings.json: %w", err)
 	}
 
-	if !slices.Contains(SupportedLocales, document.Locale) {
-		return Settings{}, nil
+	settings := Settings{AutoEquip: document.AutoEquip, BattleSpeed: BattleSpeeds[0]}
+	if slices.Contains(SupportedLocales, document.Locale) {
+		settings.Locale = document.Locale
 	}
 
-	return Settings{Locale: document.Locale}, nil
+	if slices.Contains(BattleSpeeds, document.BattleSpeed) {
+		settings.BattleSpeed = document.BattleSpeed
+	}
+
+	return settings, nil
 }
 
 // Save writes the settings.
 func (r *SettingsRepository) Save(settings Settings) error {
-	document := map[string]any{"schemaVersion": application.SchemaVersion}
+	document := map[string]any{
+		"schemaVersion": application.SchemaVersion,
+		"autoEquip":     settings.AutoEquip,
+		"battleSpeed":   settings.BattleSpeed,
+	}
 	if settings.Locale != "" {
 		document["locale"] = settings.Locale
 	}
@@ -120,6 +146,15 @@ func (r *FileSaveRepository) Load() (*application.SaveGame, error) {
 	content, ok, err := readIfExists(r.path)
 	if err != nil || !ok {
 		return nil, err
+	}
+
+	if err := application.CheckSchema(content, "save.json"); err != nil {
+		return nil, err
+	}
+
+	content, err = MigrateSave(content)
+	if err != nil {
+		return nil, fmt.Errorf("migrate save.json: %w", err)
 	}
 
 	return application.SaveGameFromJSON(content)
@@ -181,6 +216,11 @@ func (r *FileHistoryRepository) List() ([]*application.RunRecord, error) {
 			return nil, err
 		}
 
+		content, err = MigrateHistory(content)
+		if err != nil {
+			return nil, fmt.Errorf("migrate %s: %w", entry.Name(), err)
+		}
+
 		var record application.RunRecord
 		if err := json.Unmarshal(content, &record); err != nil {
 			return nil, fmt.Errorf("parse %s: %w", entry.Name(), err)
@@ -215,6 +255,11 @@ func (r *FileProfileRepository) Load() (*application.Profile, error) {
 
 	if err := application.CheckSchema(content, "profile.json"); err != nil {
 		return nil, err
+	}
+
+	content, err = MigrateProfile(content)
+	if err != nil {
+		return nil, fmt.Errorf("migrate profile.json: %w", err)
 	}
 
 	profile := application.NewProfile()

@@ -57,35 +57,43 @@ The engine returns a list of events for each command. An event is a flat JSON ob
 | Type | Fields |
 |---|---|
 | `run_started` | `seed`, `vocation`, `difficulty` |
-| `round_started` | `round`, `tier`, `cycle`, `monsterId`, `isBoss`, `hp` |
+| `round_started` | `round`, `tier`, `cycle`, `monsterId`, `isBoss`, `enemyClass` (`normal`/`elite`/`boss`), `hp` |
 | `player_attacked` | `damage`, `crit`, `element` |
 | `spell_cast` | `spellId`, `damage`, `crit`, `element`, `mana` |
 | `spell_healed` | `spellId`, `amount`, `mana` |
 | `potion_used` | `potionId`, `amount`, `resource` (`hp`/`mp`) |
 | `player_defended` | — |
 | `leeched` | `hp`, `mp` |
-| `monster_attacked` | `attackId`, `damage`, `element`, `charged` |
-| `attack_dodged` / `attack_parried` | `attackId` |
+| `monster_attacked` | `attackId`, `damage`, `element`, `charged`, `crit` |
+| `monster_dodged` | — (the player's attack or spell missed) |
+| `monster_parried` | `reflected` (damage taken by the player) |
+| `monster_healed` | `amount` |
+| `attack_dodged` | `attackId` |
+| `attack_parried` | `attackId`, `reflected` (damage taken by the monster) |
 | `boss_telegraph` | `attackId`, `element` |
 | `status_applied` | `target` (`player`/`monster`), `status`, `turns`, `perTurn` |
 | `status_ticked` | `target`, `status`, `damage` |
 | `status_expired` | `target`, `status` |
 | `player_stunned` / `monster_stunned` | — |
 | `regenerated` | `hp`, `mp` |
-| `monster_killed` | `monsterId`, `isBoss` |
+| `monster_killed` | `monsterId`, `isBoss`, `enemyClass` |
 | `xp_gained` | `amount`, `total` |
 | `level_up` | `level`, `maxHp`, `maxMp` |
 | `magic_level_up` | `magicLevel` |
 | `spell_level_up` | `spellId`, `level` |
 | `gold_looted` | `amount` |
 | `item_dropped` | `uid`, `itemId`, `rarity` |
-| `item_auto_sold` | `uid`, `itemId`, `gold` |
+| `item_auto_sold` | `uid`, `itemId`, `gold` (a drop sold because the bag is full, or the item replaced by auto-equip) |
+| `item_auto_equipped` | `uid`, `itemId`, `slot`, `score` |
+| `potion_dropped` | `potionId` |
+| `run_won` | `round` (last event of the final boss victory; the phase becomes `victory`) |
+| `run_ended` | `won` (emitted by `end_run`, always `true` today) |
 | `merchant_entered` | `round` |
 | `potion_bought` | `potionId`, `quantity`, `gold` |
 | `item_bought` / `item_sold` | `uid`, `itemId`, `gold` |
 | `item_equipped` / `item_unequipped` | `uid`, `itemId`, `slot` |
 | `player_died` | `monsterId`, `round` |
-| `error` | `code` (`not_enough_mana`, `not_enough_gold`, `no_potion`, `unknown_spell`, `unknown_potion`, `potion_locked`, `invalid_phase`, `invalid_quantity`, `bag_full`, `cannot_equip`, `invalid_item`) |
+| `error` | `code` (`not_enough_mana`, `not_enough_gold`, `no_potion`, `unknown_spell`, `unknown_potion`, `potion_locked`, `invalid_phase`, `invalid_quantity`, `bag_full`, `cannot_equip`, `invalid_item`, `level_too_low`) |
 
 ## 4. Golden tests
 
@@ -95,17 +103,24 @@ The engine returns a list of events for each command. An event is a flat JSON ob
 {
 	"name": "knight-normal-seed-42",
 	"seed": 42,
-	"config": { "name": "Alex", "vocation": "knight", "difficulty": "normal" },
+	"config": { "name": "Alex", "vocation": "knight", "difficulty": "normal", "autoEquip": false },
 	"commands": [{ "type": "next_fight" }, { "type": "attack" }, { "type": "cast", "spellId": "brutal_strike" }],
 	"events": [[{ "type": "run_started" }], [{ "type": "merchant_entered", "round": 0 }]],
 	"finalState": { "round": 1, "hp": 700, "gold": 100 }
 }
 ```
 
+Commands (`type` + fields): `attack`, `cast` (`spellId`), `potion` (`potionId`), `defend`, `next_fight`, `buy_potion`
+(`potionId`, `quantity`), `sell_item` (`uid`), `equip` (`uid`), `unequip` (`slot`), `buy_stock_item` (`index`), and in the
+`victory` phase `end_run` and `continue_run`. The run config carries `autoEquip` (boolean).
+
 `events[i]` is the list returned by command `i` (index 0 is run creation). Each implementation loads every golden
 file, replays the commands and compares events and the final-state summary structurally. Golden files are
 regenerated **only** when a rule change is intended, in the same commit as the rule change (`test(shared): regenerate
 golden files`).
 
-The bot-driven "full run" golden (`bot-full-run-*.json`) plays whole runs until death with the simulator bot and
-compares the final summary; it is the end-to-end parity check.
+The bot-driven "full run" golden (`bot-full-run-*.json`) plays whole runs with the simulator bot until the run ends
+(death, or `end_run` after beating the final boss) and compares the final summary; it is the end-to-end parity check.
+`bot-victory-continue-archer-easy.json` (auto-equip on) wins the run, sends invalid commands in the `victory` phase,
+continues with `continue_run` and stops at the merchant three rounds later; `mage-spells.json` starts a new fight
+whenever the scripted spells kill the monster.

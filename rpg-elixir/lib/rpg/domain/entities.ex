@@ -174,10 +174,11 @@ defmodule Rpg.Domain.Entities do
 
   defmodule MonsterInstance do
     @moduledoc "A spawned monster: definition id plus stats already scaled for the round and difficulty."
-    @enforce_keys [:creature_id, :is_boss, :hp, :max_hp, :xp, :gold_min, :gold_max, :attacks]
+    @enforce_keys [:creature_id, :is_boss, :enemy_class, :hp, :max_hp, :xp, :gold_min, :gold_max, :attacks]
     defstruct [
       :creature_id,
       :is_boss,
+      :enemy_class,
       :hp,
       :max_hp,
       :xp,
@@ -192,6 +193,7 @@ defmodule Rpg.Domain.Entities do
     @type t :: %__MODULE__{
             creature_id: String.t(),
             is_boss: boolean(),
+            enemy_class: String.t(),
             hp: integer(),
             max_hp: integer(),
             xp: integer(),
@@ -213,6 +215,7 @@ defmodule Rpg.Domain.Entities do
       %{
         "creatureId" => m.creature_id,
         "isBoss" => m.is_boss,
+        "enemyClass" => m.enemy_class,
         "hp" => m.hp,
         "maxHp" => m.max_hp,
         "xp" => m.xp,
@@ -232,6 +235,7 @@ defmodule Rpg.Domain.Entities do
       %__MODULE__{
         creature_id: JsonTypes.str(f.("creatureId")),
         is_boss: JsonTypes.bool(f.("isBoss")),
+        enemy_class: JsonTypes.str(f.("enemyClass")),
         hp: JsonTypes.int(f.("hp")),
         max_hp: JsonTypes.int(f.("maxHp")),
         xp: JsonTypes.int(f.("xp")),
