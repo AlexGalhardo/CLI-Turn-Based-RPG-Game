@@ -47,3 +47,19 @@ func TestBuildServices(t *testing.T) {
 		t.Fatal("services must be wired")
 	}
 }
+
+func TestSimulatorSeedZeroMatchesSeedOne(t *testing.T) {
+	t.Parallel()
+
+	output := func(seed string) string {
+		var stdout, stderr bytes.Buffer
+		if code := run([]string{"--simulate", "2", "--vocation", "mage", "--difficulty", "easy", "--seed", seed}, &stdout, &stderr); code != 0 {
+			t.Fatalf("code=%d stderr=%q", code, stderr.String())
+		}
+
+		return stdout.String()
+	}
+	if output("0") != output("1") {
+		t.Fatal("--seed 0 must fall back to base seed 1 like the reference")
+	}
+}

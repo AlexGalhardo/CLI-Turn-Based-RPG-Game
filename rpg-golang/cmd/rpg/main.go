@@ -78,8 +78,9 @@ func runSimulator(data *domain.GameData, options presentation.CliOptions, stdout
 		}
 	}
 
+	// Like the reference (`options.seed or 1`), seed 0 means "no seed" for the simulator.
 	baseSeed := uint64(1)
-	if options.Seed != nil {
+	if options.Seed != nil && *options.Seed != 0 {
 		baseSeed = *options.Seed
 	}
 
