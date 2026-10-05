@@ -17,6 +17,7 @@ Thumbs.db
 # Node / Bun
 node_modules/
 dist/
+dist-release/
 *.tsbuildinfo
 coverage/
 

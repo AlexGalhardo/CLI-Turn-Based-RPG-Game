@@ -12,15 +12,37 @@ The GitHub workflows below are kept in the repository but **disabled** on GitHub
   C++ coverage gate.
 - `.husky/post-commit` creates the per-commit release tag `vX.Y.Z` (annotated, message = the commit's CHANGELOG
   section) when the commit bumped the version; with `git config push.followTags true` the tag is pushed with the
-  commit. GitHub Release pages with binaries are not created while `release.yml` is disabled (a manual
-  `gh workflow run release.yml -f tag=vX.Y.Z` after re-enabling it builds and attaches them).
+  commit. `release.yml` is disabled, so the GitHub Release page and its binaries are made locally (next section).
+
+## Release binaries: built locally
+
+`bash scripts/release-local.sh vX.Y.Z` builds every downloadable asset of `release.yml` from the tag (`git archive`,
+never the working tree), smoke-tests them, writes `SHA256SUMS.txt`, creates the GitHub Release when it does not exist
+(notes = the tag's CHANGELOG section, via `scripts/release.ts notes`) and uploads the files with `--clobber`.
+`--no-upload` only builds (into `dist-release/`, git-ignored; `OUT_DIR` overrides). Run it after pushing every
+release commit, so the latest release always has binaries.
+
+| Asset | Built with |
+|---|---|
+| `rpg-typescript-{linux-x64,darwin-arm64,windows-x64.exe}` | host `bun build --compile --target=bun-…` (cross-compiles) |
+| `rpg-golang-{linux-x64,darwin-arm64,windows-x64.exe}` | host `go build`, `CGO_ENABLED=0` with `GOOS`/`GOARCH` |
+| `rpg-elixir-escript` | host `MIX_ENV=prod mix escript.build` (portable; players need Erlang/OTP) |
+| `rpg-rust-windows-x64.exe`, `rpg-cpp-windows-x64.exe` | host `cargo` and LLVM-MinGW `clang++` (**Windows host only**) |
+| `rpg-rust-linux-x64`, `rpg-cpp-linux-x64` | Docker `rust:1.99.0-bookworm` and `gcc:14` (static libstdc++/libgcc) |
+| `rpg-rust-darwin-arm64`, `rpg-cpp-darwin-arm64` | Docker `ghcr.io/rust-cross/cargo-zigbuild:0.23.4` (`cargo zigbuild`, `zig c++ -target aarch64-macos`) |
+
+The Docker cross-builds of `rpg-rust-linux-x64`, `rpg-rust-darwin-arm64` and `rpg-cpp-darwin-arm64` are optional: a failure only warns and the asset is missing from the release (they were not validated yet; first verified build: `rpg-cpp-linux-x64`). Docker Desktop can hang when several multi-GB images are pulled at once: pull them one by one (`docker pull -q <image>`) before the first run.
+
+Requirements: bun, go, mix, Docker running, `gh` authenticated; on Windows also rustup and LLVM-MinGW (scoop
+`mingw-mstorsjo-llvm-ucrt`). The darwin binaries cannot run here; they are checked only by being produced. The
+first run pulls the images and downloads bun's cross-compile runtimes (several minutes); later runs reuse them.
 
 ## Workflows (`.github/workflows/`)
 
 | Workflow | Trigger | Jobs |
 |---|---|---|
 | `ci.yml` | push / PR to `main` | `repo` (commitlint on PR commits, Biome for root JSON/TS, shared data schemas + i18n key parity, release tooling tests, version files ↔ CHANGELOG check) · `python` (ruff format --check, ruff check, mypy, pytest + coverage) · `typescript` (biome ci, tsc --noEmit, bun test, bun build --compile) · `golang` (gofmt check, go vet, golangci-lint, go test -race, go build) · `rust` (rustfmt, clippy `-D warnings`, cargo llvm-cov floors, release build) · `elixir` (mix format, warnings as errors, mix test --cover, escript) · `cpp` (clang-format, GCC 14 and Clang 20 with `-Werror`, ctest, llvm-cov floors, release build) · `cpp-windows` (LLVM-MinGW build + ctest) |
-| `release.yml` | push to `main` | one GitHub Release per pushed commit (tag `vX.Y.Z` on that commit, notes = its CHANGELOG section); the newest commit gets the binaries: TypeScript, Go, Rust and C++ for linux-x64, darwin-arm64, windows-x64, the Elixir escript and `SHA256SUMS.txt`. Manual run (`workflow_dispatch`): with `tag`, rebuilds and attaches the binaries of an existing release; without, a dry run that only builds |
+| `release.yml` (disabled; replaced by `scripts/release-local.sh`) | push to `main` | one GitHub Release per pushed commit (tag `vX.Y.Z` on that commit, notes = its CHANGELOG section); the newest commit gets the binaries: TypeScript, Go, Rust and C++ for linux-x64, darwin-arm64, windows-x64, the Elixir escript and `SHA256SUMS.txt`. Manual run (`workflow_dispatch`): with `tag`, rebuilds and attaches the binaries of an existing release; without, a dry run that only builds |
 
 Every implementation job runs on Linux and Windows (C++ on Windows is the separate `cpp-windows` job), each with
 smoke tests of the executable. A language job is skipped while its project does not exist (`detect` job).

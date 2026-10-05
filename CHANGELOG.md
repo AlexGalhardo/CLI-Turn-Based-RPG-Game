@@ -13,6 +13,16 @@ commit.
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-10-05
+
+### Added
+
+- `scripts/release-local.sh vX.Y.Z`: builds the release binaries on the developer's machine (host toolchains for
+  TypeScript, Go, Elixir and the Windows Rust/C++ builds; Docker for Rust and C++ on linux-x64 and darwin-arm64, the
+  latter cross-compiled with zig), writes `SHA256SUMS.txt`, creates the GitHub Release if missing and uploads the
+  assets, replacing the disabled `release.yml`. Documented in `docs/ci-cd.md`, the `release` skill and
+  `.claude/rules/release.md`.
+
 ## [1.4.1] - 2026-10-03
 
 ### Changed
@@ -473,7 +483,8 @@ First stable release: the same game in Python, TypeScript and Go, proven equival
 - General-purpose agent skills, agents and reference checklists in `.claude/`.
 - The 2016 Python and 2022 TypeScript code is not carried over; the originals remain in their own repositories.
 
-[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.4.2...HEAD
+[1.4.2]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.6...v1.4.0
 [1.3.6]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.5...v1.3.6
