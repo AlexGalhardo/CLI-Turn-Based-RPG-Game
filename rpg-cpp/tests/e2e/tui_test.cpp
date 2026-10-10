@@ -250,10 +250,11 @@ TEST_CASE("animation cues play once per tick", "[e2e]") {
 		ftxui::Render(screen, component->Render());
 		return screen.ToString();
 	};
-	// Title → new run → normal → name "Z" → warrior → auto-equip off → next fight → attack.
+	// Title → new run → normal → name "Z" → warrior → auto-equip off → next fight → defend (an attack could kill the
+	// first monster and leave the battle view).
 	for (const ftxui::Event& event : {ftxui::Event::Character("2"), ftxui::Event::Character("2"),
 	         ftxui::Event::Character("Z"), ftxui::Event::Return, ftxui::Event::Character("1"),
-	         ftxui::Event::Character("2"), ftxui::Event::Character("0"), ftxui::Event::Character("1")}) {
+	         ftxui::Event::Character("2"), ftxui::Event::Character("0"), ftxui::Event::Character("4")}) {
 		component->OnEvent(event);
 	}
 	REQUIRE(controller.view == presentation::View::battle);

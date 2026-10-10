@@ -35,6 +35,8 @@ fn melee_damage_is_within_sheet_range() {
 	let mut engine = warrior(&data);
 	fight(&mut engine);
 	let sheet = build_sheet(&engine.state().player, &data);
+	let monster = engine.state().monster.as_ref().unwrap();
+	let resistance = data.creature(&monster.creature_id).resistance(Element::Physical);
 	let events = engine.step(&Command::Attack);
 	let (damage, crit) = events
 		.iter()
@@ -43,8 +45,6 @@ fn melee_damage_is_within_sheet_range() {
 			_ => None,
 		})
 		.expect("player attacked");
-	let monster = engine.state().monster.as_ref().unwrap();
-	let resistance = data.creature(&monster.creature_id).resistance(Element::Physical);
 	let low = 1.max(sheet.melee_min * resistance / 100);
 	let high = sheet.melee_max * resistance / 100;
 	assert!(!crit);

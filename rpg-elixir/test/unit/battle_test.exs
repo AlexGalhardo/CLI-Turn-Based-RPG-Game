@@ -28,9 +28,9 @@ defmodule Rpg.Unit.BattleTest do
     data = Helpers.data()
     engine = fight(new_engine())
     sheet = Character.build_sheet(engine.state.player, data)
-    {engine, events} = step(engine, %Attack{})
-    hit = find(events, "player_attacked")
     resistance = MonsterDef.resistance(GameData.creature(data, engine.state.monster.creature_id), "physical")
+    {_engine, events} = step(engine, %Attack{})
+    hit = find(events, "player_attacked")
     low = max(1, div(sheet.melee_min * resistance, 100))
     high = div(sheet.melee_max * resistance, 100)
     assert hit["crit"] == false

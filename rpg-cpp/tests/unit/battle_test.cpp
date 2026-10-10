@@ -35,10 +35,10 @@ TEST_CASE("melee damage is within the sheet range", "[unit][battle]") {
 	auto engine = new_engine(data);
 	fight(engine);
 	const auto sheet = domain::build_sheet(engine.state.player, data);
+	const auto resistance = data.creature(engine.state.monster->creature_id).resistance("physical");
 	const auto events = engine.step(application::Attack{});
 	const Event* hit = find_event(events, "player_attacked");
 	REQUIRE(hit != nullptr);
-	const auto resistance = data.creature(engine.state.monster->creature_id).resistance("physical");
 	const auto low = std::max<std::int64_t>(1, sheet.melee_min * resistance / 100);
 	const auto high = sheet.melee_max * resistance / 100;
 	REQUIRE_FALSE(hit->flag("crit"));

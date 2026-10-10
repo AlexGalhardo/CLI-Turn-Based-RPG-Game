@@ -67,7 +67,9 @@ win rates, not the multipliers. Drop rarities do not depend on the difficulty.
 - Scaling percentages:
   - `cyclePct = 100 + cycle * balance.cycleStatPct` (HP and damage)
   - `cycleRewardPct = 100 + cycle * balance.cycleRewardPct` (XP and gold)
-  - `positionPct = 100 + position * balance.positionPct` (0 for bosses, i.e. `100`)
+  - `positionPct = 100 + position * balance.positionPct` (0 for bosses, i.e. `100`). `balance.positionPct` (8) is
+    sized so the last normal fight of a tier (+64%) is close to the first fight of the next tier: every round is a
+    little tougher than the previous one instead of nine flat rounds and a jump
   - `scaledHp = floor(floor(baseHp * diff.hpPct * cyclePct * positionPct / 1_000_000) * class.statPct / 100)`,
     minimum 1
   - each attack `min/max` scaled the same way with `diff.damagePct` instead of `diff.hpPct`

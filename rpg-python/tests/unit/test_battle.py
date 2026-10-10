@@ -34,10 +34,10 @@ def test_melee_damage_is_within_sheet_range(new_engine: EngineFactory, data: Gam
 	engine = new_engine()
 	_fight(engine)
 	sheet = build_sheet(engine.state.player, data)
-	events = engine.step(Attack())
-	hit = next(e for e in events if e["type"] == "player_attacked")
 	assert engine.state.monster is not None
 	resistance = data.creature(engine.state.monster.creature_id).resistance(Element.PHYSICAL)
+	events = engine.step(Attack())
+	hit = next(e for e in events if e["type"] == "player_attacked")
 	low = max(1, sheet.melee_min * resistance // 100)
 	high = sheet.melee_max * resistance // 100
 	assert hit["crit"] is False

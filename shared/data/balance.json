@@ -3,28 +3,28 @@
 	"roundsPerTier": 10,
 	"cycleStatPct": 60,
 	"cycleRewardPct": 50,
-	"positionPct": 4,
+	"positionPct": 8,
 	"finalRound": 100,
 	"eliteChancePct": 20,
 	"difficulties": [
 		{
 			"id": "easy",
-			"hpPct": 25,
-			"damagePct": 25,
+			"hpPct": 22,
+			"damagePct": 22,
 			"goldPct": 100,
 			"xpPct": 100
 		},
 		{
 			"id": "normal",
-			"hpPct": 30,
-			"damagePct": 30,
+			"hpPct": 26,
+			"damagePct": 26,
 			"goldPct": 100,
 			"xpPct": 100
 		},
 		{
 			"id": "hard",
-			"hpPct": 36,
-			"damagePct": 36,
+			"hpPct": 32,
+			"damagePct": 32,
 			"goldPct": 125,
 			"xpPct": 125
 		}

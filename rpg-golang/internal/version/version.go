@@ -2,4 +2,4 @@
 package version
 
 // Version is the game version shown by --version and stored in saves.
-const Version = "1.4.2"
+const Version = "1.5.0"

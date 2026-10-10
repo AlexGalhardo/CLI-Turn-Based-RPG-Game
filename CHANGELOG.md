@@ -13,6 +13,21 @@ commit.
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-10
+
+### Changed
+
+- Enemy progression: `balance.positionPct` 4 → 8, so every round inside a tier has visibly more HP and damage than
+  the previous one (+64% at the last normal fight of a tier instead of +32%) and the ramp meets the next tier
+  without a jump. Difficulties retuned to keep the win rates (`hpPct`/`damagePct` easy 22, normal 26, hard 32) and
+  vocations rebalanced (Archer `hpPerLevel` 8, Mage `hpPerLevel` 6): the balance gate passes with every vocation
+  within ± 5 (EASY 73.9%, NORMAL 49.1%, HARD 24.7%). Golden files regenerated.
+
+### Fixed
+
+- Tests that read the monster after a first hit that can now kill it (Python, Rust, Elixir, C++), and the C++
+  `python_save*_continued.json` fixtures, regenerated with the reference.
+
 ## [1.4.2] - 2026-10-05
 
 ### Added
@@ -483,7 +498,8 @@ First stable release: the same game in Python, TypeScript and Go, proven equival
 - General-purpose agent skills, agents and reference checklists in `.claude/`.
 - The 2016 Python and 2022 TypeScript code is not carried over; the originals remain in their own repositories.
 
-[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.4.2...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.4.2...v1.5.0
 [1.4.2]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.3.6...v1.4.0
