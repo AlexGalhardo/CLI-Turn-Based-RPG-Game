@@ -2,6 +2,6 @@
 #ifndef RPG_VERSION_H
 #define RPG_VERSION_H
 
-#define RPG_VERSION "1.8.0"
+#define RPG_VERSION "1.8.1"
 
 #endif

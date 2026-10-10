@@ -41,6 +41,8 @@ host_path() { if $windows_host; then cygpath -m "$1"; else printf '%s' "$1"; fi;
 docker_run() { MSYS_NO_PATHCONV=1 docker run --rm -v "$(host_path "$SRC"):/src:ro" -v "$(host_path "$OUT_DIR"):/out" "$@"; }
 
 step() { printf '\n== %s\n' "$*"; }
+# Cross-builds that may fail without failing the release: the asset is reported as missing at the end.
+optional() { "$@" || echo "warning: optional step failed" >&2; }
 
 step "typescript"
 (cd "$SRC/rpg-typescript" && bun install --frozen-lockfile >/dev/null &&
@@ -69,20 +71,22 @@ else
 	echo "warning: not a Windows host; rpg-rust/rpg-cpp windows-x64 are not built" >&2
 fi
 
+# The containers copy shared/ next to the project (build.rs and embed_shared.cmake read ../shared) and drop the build
+# outputs left in the tag checkout by the host builds above (a Windows CMake cache or target/ breaks the Linux build).
 step "rust linux-x64 (docker)"
-optional docker_run "$RUST_IMAGE" bash -c 'set -e; cp -r /src/rpg-rust /w && cd /w && cargo build --release --locked &&
+optional docker_run "$RUST_IMAGE" bash -c 'set -e; mkdir /w && cp -r /src/shared /src/rpg-rust /w/ && cd /w/rpg-rust && rm -rf target && cargo build --release --locked &&
 	cp target/release/rpg-rust /out/rpg-rust-linux-x64'
 
 step "cpp linux-x64 (docker)"
 # libstdc++ and libgcc are linked statically so the binary runs on older distributions too.
 docker_run "$CPP_IMAGE" bash -c 'set -e; apt-get update -qq >/dev/null && apt-get install -y -qq cmake ninja-build >/dev/null
-	cp -r /src/rpg-cpp /w && cd /w &&
+	mkdir /w && cp -r /src/shared /src/rpg-cpp /w/ && cd /w/rpg-cpp && rm -rf build &&
 	cmake --preset release "-DCMAKE_EXE_LINKER_FLAGS=-static-libstdc++ -static-libgcc" >/dev/null &&
 	cmake --build --preset release && cp build/release/rpg-cpp /out/rpg-cpp-linux-x64'
 
 step "rust darwin-arm64 (docker, cargo-zigbuild)"
 optional docker_run "$ZIG_IMAGE" bash -c 'set -e; rustup toolchain install 1.99.0 --profile minimal -t aarch64-apple-darwin >/dev/null
-	cp -r /src/rpg-rust /w && cd /w && cargo +1.99.0 zigbuild --release --locked --target aarch64-apple-darwin &&
+	mkdir /w && cp -r /src/shared /src/rpg-rust /w/ && cd /w/rpg-rust && rm -rf target && cargo +1.99.0 zigbuild --release --locked --target aarch64-apple-darwin &&
 	cp target/aarch64-apple-darwin/release/rpg-rust /out/rpg-rust-darwin-arm64'
 
 step "cpp darwin-arm64 (docker, zig c++)"
@@ -90,7 +94,7 @@ optional docker_run "$ZIG_IMAGE" bash -c 'set -e; apt-get update -qq >/dev/null 
 	printf "#!/bin/sh\nexec zig c++ -target aarch64-macos \"\$@\"\n" > /usr/local/bin/zcxx
 	printf "#!/bin/sh\nexec zig cc -target aarch64-macos \"\$@\"\n" > /usr/local/bin/zcc
 	chmod +x /usr/local/bin/zcxx /usr/local/bin/zcc
-	cp -r /src/rpg-cpp /w && cd /w &&
+	mkdir /w && cp -r /src/shared /src/rpg-cpp /w/ && cd /w/rpg-cpp && rm -rf build &&
 	cmake --preset release -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_SYSTEM_PROCESSOR=arm64 \
 		-DCMAKE_C_COMPILER=zcc -DCMAKE_CXX_COMPILER=zcxx >/dev/null &&
 	cmake --build --preset release && cp build/release/rpg-cpp /out/rpg-cpp-darwin-arm64'

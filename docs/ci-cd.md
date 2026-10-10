@@ -33,7 +33,7 @@ release commit, so the latest release always has binaries.
 | `rpg-rust-linux-x64`, `rpg-cpp-linux-x64` | Docker `rust:1.99.0-bookworm` and `gcc:14` (static libstdc++/libgcc) |
 | `rpg-rust-darwin-arm64`, `rpg-cpp-darwin-arm64` | Docker `ghcr.io/rust-cross/cargo-zigbuild:0.23.4` (`cargo zigbuild`, `zig c++ -target aarch64-macos`) |
 
-The Docker cross-builds of `rpg-rust-linux-x64`, `rpg-rust-darwin-arm64` and `rpg-cpp-darwin-arm64` are optional: a failure only warns and the asset is missing from the release (they were not validated yet; first verified build: `rpg-cpp-linux-x64`). Docker Desktop can hang when several multi-GB images are pulled at once: pull them one by one (`docker pull -q <image>`) before the first run.
+The Docker cross-builds of `rpg-rust-linux-x64`, `rpg-rust-darwin-arm64` and `rpg-cpp-darwin-arm64` are optional: a failure only warns and the asset is missing from the release (they were not validated yet; first verified build: `rpg-cpp-linux-x64`). State after v1.8.0: both Rust cross-builds work; `rpg-cpp-darwin-arm64` still fails (`zig c++`: `unknown cpu architecture`), and `rpg-cpp-linux-x64` needs glibc ≥ 2.38 because `gcc:14` is Debian trixie (it does not start on Debian 12 / Ubuntu 22.04). Never start the script twice at once: the runs share `dist-release/` and race on the upload. Docker Desktop can hang when several multi-GB images are pulled at once: pull them one by one (`docker pull -q <image>`) before the first run.
 
 Requirements: bun, go, mix, Docker running, `gh` authenticated; on Windows also rustup and LLVM-MinGW (scoop
 `mingw-mstorsjo-llvm-ucrt`). The darwin binaries cannot run here; they are checked only by being produced. The

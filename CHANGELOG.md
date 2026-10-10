@@ -13,6 +13,15 @@ commit.
 
 ## [Unreleased]
 
+## [1.8.1] - 2026-10-10
+
+### Fixed
+
+- `scripts/release-local.sh` never finished: the `optional` helper used by the cross-builds was not defined, the
+  Docker builds copied the project without `shared/` (Rust `build.rs` and the C++ embed step read `../shared`) and
+  with the host's `build/`/`target/` (a Windows CMake cache broke the Linux build). First complete run: v1.8.0, with
+  12 binaries + `SHA256SUMS.txt` (`rpg-rust-linux-x64` and `rpg-rust-darwin-arm64` built for the first time).
+
 ## [1.8.0] - 2026-10-10
 
 ### Added
@@ -554,7 +563,8 @@ First stable release: the same game in Python, TypeScript and Go, proven equival
 - General-purpose agent skills, agents and reference checklists in `.claude/`.
 - The 2016 Python and 2022 TypeScript code is not carried over; the originals remain in their own repositories.
 
-[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.8.1...HEAD
+[1.8.1]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.6.1...v1.7.0
 [1.6.1]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.6.0...v1.6.1

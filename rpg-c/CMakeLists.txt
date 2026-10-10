@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(rpg_c VERSION 1.8.0 DESCRIPTION "Endless turn-based RPG for the terminal (C port)" LANGUAGES C)
+project(rpg_c VERSION 1.8.1 DESCRIPTION "Endless turn-based RPG for the terminal (C port)" LANGUAGES C)
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)

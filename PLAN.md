@@ -203,6 +203,8 @@ within target ± `vocationTolerancePct` (5) and **currently fails** on the Arche
 - [x] `rpg-c/`: C17 port at full parity (engine, golden files, bot, simulator, interchangeable saves, controller,
       ANSI TUI), no third-party libraries: 172 tests on Windows (LLVM-MinGW) and Linux (GCC 14 in Docker), `c` job in
       `scripts/ci-local.sh`, `c` service in `compose.yml`
+- [ ] Release binaries: fix `rpg-cpp-darwin-arm64` (`zig c++`: `unknown cpu architecture`) and make
+      `rpg-cpp-linux-x64` run on older distributions (it needs glibc ≥ 2.38: build on an older base or link statically)
 - [ ] `rpg-c` follow-ups: play the TUI by hand in a real Windows console and on macOS (only the Linux pty and the
       plain-text e2e tests ran); release binaries (`rpg-c-*` in `scripts/release-local.sh` + the asset table of
       `docs/ci-cd.md`); a coverage preset
