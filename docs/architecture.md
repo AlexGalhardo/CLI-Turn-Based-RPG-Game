@@ -16,6 +16,7 @@
 ├── rpg-rust/               # Phase 4 — port (Rust, ratatui)
 ├── rpg-elixir/             # Phase 5 — port (Elixir, hand-written ANSI TUI, escript)
 ├── rpg-cpp/                # Phase 6 — port (C++23, CMake, FTXUI)
+├── rpg-c/                  # Phase 7 — port (C17, CMake, hand-written ANSI TUI, no libraries)
 ├── rpg-asm/                # teaching port (x86-64 Linux NASM + libc): engine at rule parity, line-based UI, Docker
 ├── setups/                 # one-command play scripts per OS/implementation
 ├── compose.yml             # one Docker service per implementation (each rpg-*/ has its Dockerfile, docs/docker.md)
@@ -23,7 +24,7 @@
 └── .github/workflows/      # CI per language + shared data checks + release
 ```
 
-## Layers (Clean Architecture, identical in the six languages)
+## Layers (Clean Architecture, identical in the seven languages)
 
 ```
 presentation ──► application ──► domain
@@ -66,8 +67,9 @@ Every implementation has the same four layer folders (`domain/`, `application/`,
 | Rust | `rpg-rust/src/` | ratatui | `main.rs` (library in `lib.rs`) |
 | Elixir | `rpg-elixir/lib/rpg/` | hand-written ANSI renderer | `main.ex` (escript entry point) |
 | C++ | `rpg-cpp/src/` | FTXUI | `main.cpp` → `main_run.cpp` |
+| C | `rpg-c/src/` | hand-written ANSI renderer | `main.c` → `main_run.c` |
 
 File and type names mirror each other (`snake_case.py` / `kebab-case.ts` / `snake_case.go` / `snake_case.rs` /
-`snake_case.ex` / `snake_case.{hpp,cpp}`) so a reader can open the same concept in six languages side by side.
+`snake_case.ex` / `snake_case.{hpp,cpp}` / `snake_case.{h,c}`) so a reader can open the same concept in seven languages side by side.
 `rpg-asm/src/` uses the same four folders and file names (`rng.asm`, `formulas.asm`, `battle.asm`, `engine.asm`, …) for
 the parts it implements; it has no persistence and no TUI (see [asm.md](asm.md)).

@@ -1,6 +1,6 @@
 # Game Design — Rules and Formulas
 
-This document is the **contract** shared by the six implementations (Python, TypeScript, Go, Rust, Elixir, C++). Numbers
+This document is the **contract** shared by the seven implementations (Python, TypeScript, Go, Rust, Elixir, C++, C) and by the `rpg-asm` engine. Numbers
 live in [`shared/data/`](../shared/data) (see [data-format.md](data-format.md)); the **formulas and the order of
 operations** live here. If an implementation disagrees with this document, the implementation is wrong. If this document
 is wrong, fix it here first, then in the Python reference, regenerate the golden files and port the change.

@@ -43,6 +43,6 @@ rpg-python/
 
 - Shared files are found through `RPG_SHARED_DIR` or by walking up from the package to the repository `shared/`.
 - Domain models are frozen `dataclass(slots=True)` for definitions and mutable dataclasses for run state; everything
-  is serialised with explicit `to_dict`/`from_dict` (no pickle) because the save format is shared with the other five
+  is serialised with explicit `to_dict`/`from_dict` (no pickle) because the save format is shared with the other six
   implementations.
 - Python has no executable build (by design); it runs through `uv run`.

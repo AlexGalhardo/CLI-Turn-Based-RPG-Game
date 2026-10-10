@@ -1,0 +1,20 @@
+---
+# LLVM style adapted to the repository's .editorconfig: tabs (width 4) and 120 columns.
+BasedOnStyle: LLVM
+UseTab: ForIndentation
+IndentWidth: 4
+TabWidth: 4
+ContinuationIndentWidth: 4
+ColumnLimit: 120
+AlignAfterOpenBracket: DontAlign
+AllowShortFunctionsOnASingleLine: All
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^"'
+    Priority: 1
+  - Regex: '^<'
+    Priority: 2
+IndentCaseLabels: false
+PointerAlignment: Right
+SortIncludes: CaseSensitive
+...

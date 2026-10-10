@@ -1,0 +1,64 @@
+{
+	"schemaVersion": 2,
+	"bestiary": {
+		"bug": {
+			"kills": 1,
+			"firstKilledAt": "2026-09-27T12:07:20Z"
+		},
+		"cave_rat": {
+			"kills": 3,
+			"firstKilledAt": "2026-09-27T12:01:00Z"
+		},
+		"deer": {
+			"kills": 1,
+			"firstKilledAt": "2026-09-27T12:06:40Z"
+		},
+		"dwarf": {
+			"kills": 1,
+			"firstKilledAt": "2026-09-27T12:12:30Z"
+		},
+		"goblin": {
+			"kills": 1,
+			"firstKilledAt": "2026-09-27T12:06:10Z"
+		},
+		"munster": {
+			"kills": 1,
+			"firstKilledAt": "2026-09-27T12:09:20Z"
+		},
+		"snake": {
+			"kills": 1,
+			"firstKilledAt": "2026-09-27T12:03:00Z"
+		},
+		"spider": {
+			"kills": 1,
+			"firstKilledAt": "2026-09-27T12:05:10Z"
+		},
+		"troll": {
+			"kills": 1,
+			"firstKilledAt": "2026-09-27T12:04:00Z"
+		},
+		"valkyrie": {
+			"kills": 1,
+			"firstKilledAt": "2026-09-27T12:11:20Z"
+		}
+	},
+	"achievements": {
+		"boss_slayer": {
+			"unlockedAt": "2026-09-27T12:09:20Z",
+			"runId": "20260927T120010Z-2024"
+		},
+		"first_blood": {
+			"unlockedAt": "2026-09-27T12:01:00Z",
+			"runId": "20260927T120010Z-2024"
+		},
+		"legendary_find": {
+			"unlockedAt": "2026-09-27T12:03:00Z",
+			"runId": "20260927T120010Z-2024"
+		},
+		"round_10": {
+			"unlockedAt": "2026-09-27T12:09:00Z",
+			"runId": "20260927T120010Z-2024"
+		}
+	},
+	"hallOfFame": []
+}

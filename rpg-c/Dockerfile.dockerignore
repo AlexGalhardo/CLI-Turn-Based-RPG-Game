@@ -1,0 +1,7 @@
+# Used instead of the root .dockerignore when building rpg-c/Dockerfile: only shared/ and rpg-c/ are needed, and a
+# host build directory (another platform's CMake cache) must never reach the image.
+*
+!shared
+!rpg-c
+shared/golden
+**/build

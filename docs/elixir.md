@@ -3,7 +3,7 @@
 Written from scratch following the Python reference: same layers, file names and behaviour. It passes every
 `shared/golden` scenario, its bot issues exactly the commands recorded by the Python bot, its simulator report is
 byte-identical to Python's, and its run state serialises to the same JSON (saves are interchangeable with the
-other five implementations).
+other six implementations).
 
 ## Stack
 

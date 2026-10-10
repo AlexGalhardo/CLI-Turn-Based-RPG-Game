@@ -1,6 +1,6 @@
 # Shared Data Format
 
-Everything tunable lives in [`shared/`](../shared). The six implementations load the same files; the TypeScript, Go,
+Everything tunable lives in [`shared/`](../shared). The seven implementations load the same files; the TypeScript, Go,
 Rust and C++ executables and the Elixir escript embed them at build time. Every file under `shared/data/` has a JSON
 Schema in `shared/schemas/` and CI validates them (`bun run check:shared` at the repository root).
 

@@ -5,8 +5,8 @@ description: Use when a change alters deterministic game outcomes (rules, formul
 
 # Golden files (cross-language parity)
 
-`shared/golden/*.json` are recorded by the **Python reference** and replayed by the test suites of all six
-implementations. They are the proof that the six implementations are the same game.
+`shared/golden/*.json` are recorded by the **Python reference** and replayed by the test suites of all seven
+implementations. They are the proof that the seven implementations are the same game.
 
 ## When a regeneration is required
 
@@ -35,7 +35,7 @@ Any change that alters, for a fixed seed and command list, the events or the fin
 
 - Never hand-edit golden files; always regenerate.
 - After regenerating, two derived copies age too: Go embeds a git-ignored copy of `shared/` (`cd rpg-golang && go
-  generate ./...`, or every Go golden test fails against stale data) and the C++ save-continuation fixtures
+  generate ./...`, or every Go golden test fails against stale data) and the C++ and C save-continuation fixtures
   (`cd rpg-python && uv run python ../rpg-cpp/tests/fixtures/regenerate.py`).
 - Tests that read the monster after one hit break when a balance change lets that hit kill it: read the monster (or
   defend) before attacking.

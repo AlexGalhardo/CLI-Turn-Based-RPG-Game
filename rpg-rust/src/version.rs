@@ -1,4 +1,4 @@
 //! The monorepo version, bumped together with the other implementations.
 
 /// Game version shown by `--version` and stored in saves.
-pub const VERSION: &str = "1.7.0";
+pub const VERSION: &str = "1.8.0";

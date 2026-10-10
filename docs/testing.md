@@ -20,6 +20,8 @@ Where each level lives:
 | Rust (cargo test) | `#[cfg(test)] mod tests` next to the code | `tests/integration_*.rs` | `tests/golden.rs` | `tests/e2e_tui.rs` (ratatui `TestBackend`) |
 | Elixir (ExUnit) | `test/unit/` | `test/integration/` | `test/golden/` | `test/e2e/` (pure `App` + `render_plain/1`) |
 | C++ (Catch2 + ctest) | `tests/unit/` (`[unit]`) | `tests/integration/` (`[integration]`) | `tests/golden/` (`[golden]`) | `tests/e2e/` (`[e2e]`, FTXUI component rendered into a `Screen`) |
+| C (in-tree harness + ctest) | `tests/unit/` | `tests/integration/` | `tests/golden/` | `tests/e2e/` (pure `App` rendered as plain text) |
+| Assembly (Python tools in the Docker build) | — | — | `tools/golden_test.py` (replay + bot parity), `tools/simulator_test.py` | — |
 
 ## Commands
 
@@ -37,6 +39,10 @@ cd rpg-elixir && mix test --cover
 # C++ (coverage needs Clang: see docs/cpp.md)
 cd rpg-cpp && cmake --preset debug && cmake --build --preset debug && ctest --preset debug
 cmake --preset coverage && cmake --build --preset coverage && ctest --preset coverage   # then llvm-profdata + llvm-cov
+# C
+cd rpg-c && cmake --preset debug && cmake --build --preset debug && ctest --preset debug
+# Assembly (the image build runs the tests)
+docker build -f rpg-asm/Dockerfile -t rpg-asm .
 # Shared data (root)
 bun run check:shared
 ```

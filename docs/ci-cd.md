@@ -6,7 +6,7 @@ The GitHub workflows below are kept in the repository but **disabled** on GitHub
 `release.yml`; re-enable with `gh workflow enable`). The same checks run on the developer's machine:
 
 - `.husky/pre-push` runs `scripts/ci-local.sh`, which mirrors `ci.yml` job by job (repo, python, typescript, golang,
-  rust, elixir, cpp) plus the local-only `asm` job (a `docker build` of `rpg-asm/Dockerfile`, which assembles, links
+  rust, elixir, cpp) plus the local-only `c` job (clang-format, debug build + ctest, release build) and `asm` job (a `docker build` of `rpg-asm/Dockerfile`, which assembles, links
   and runs the golden, bot and simulator tests; needs Docker running) for the projects touched by the commits being pushed (`shared/`, root tooling or workflow changes
   run every job). A failing job blocks the push. `bash scripts/ci-local.sh --all` runs everything;
   `SKIP_LOCAL_CI=1 git push` skips it once. Differences from GitHub: one OS (the local one), no `-race` for Go, no
@@ -65,7 +65,7 @@ Elixir 2 spaces because `mix format` supports nothing else).
 ## Commits
 
 [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/), checked by commitlint (husky
-`commit-msg` hook). Allowed scopes: `python`, `typescript`, `golang`, `rust`, `elixir`, `cpp`, `asm`, `shared`, `docs`, `ci`,
+`commit-msg` hook). Allowed scopes: `python`, `typescript`, `golang`, `rust`, `elixir`, `cpp`, `c`, `asm`, `shared`, `docs`, `ci`,
 `setups`, `deps`, `release`, `repo`.
 
 ```

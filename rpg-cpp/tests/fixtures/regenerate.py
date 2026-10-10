@@ -67,3 +67,7 @@ for save, profile, out in (
 			newline="\n",
 		)
 		print(out, {k: v for k, v in new.items() if k != "stats"})
+
+# The C port keeps a copy of the same fixtures.
+for name in ("python_save_continued.json", "python_save_v1_continued.json"):
+	shutil.copy(fixtures / name, root / "rpg-c/tests/fixtures" / name)

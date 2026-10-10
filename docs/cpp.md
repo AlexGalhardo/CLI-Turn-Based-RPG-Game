@@ -2,7 +2,7 @@
 
 Written from scratch following the Python reference: same layers, file names and behaviour. It passes every
 `shared/golden` scenario, its bot issues exactly the commands recorded by the Python bot, its simulator prints the same
-report byte for byte, and its run state serialises to the same JSON (saves are interchangeable with the other five
+report byte for byte, and its run state serialises to the same JSON (saves are interchangeable with the other six
 implementations; a save written by Python is continued in a test and must end exactly like the Python continuation).
 
 The folder is named `cpp` rather than `c++` because `+` is a metacharacter in GitHub Actions path filters.
@@ -115,6 +115,7 @@ public interface and the matching `.cpp` holds the definitions.
   parses it, exactly like the reference. To refresh the Python fixtures after a save-format change, run the
   reference with the same seeds (archer, hard, seed 2024, auto-equip on, saved at the round 12 merchant) and keep the
   v1 files: they guard the migration. After a **balance** change only the continuations age: regenerate
-  `python_save*_continued.json` with `cd rpg-python && uv run python ../rpg-cpp/tests/fixtures/regenerate.py`.
+  `python_save*_continued.json` with `cd rpg-python && uv run python ../rpg-cpp/tests/fixtures/regenerate.py` (it also refreshes the copies in
+  `rpg-c/tests/fixtures`).
 - **Tests** never touch the real saves: a Catch2 event listener points `RPG_DATA_DIR` at a temporary directory and
   sets `RPG_NO_ANIM=1`; every persistence test uses its own `TempDir`.

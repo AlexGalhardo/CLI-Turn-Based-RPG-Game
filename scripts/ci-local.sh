@@ -17,7 +17,7 @@ for dir in "$HOME/.cargo/bin" "$HOME/go/bin" "$HOME/.local/bin" "$HOME/scoop/shi
 done
 export PATH
 
-ALL_JOBS=(repo python typescript golang rust elixir cpp asm)
+ALL_JOBS=(repo python typescript golang rust elixir cpp c asm)
 
 changed_jobs() {
 	local base="$1" files
@@ -28,7 +28,7 @@ changed_jobs() {
 		printf '%s\n' "${ALL_JOBS[@]}"
 		return
 	fi
-	for job in python typescript golang rust elixir cpp asm; do
+	for job in python typescript golang rust elixir cpp c asm; do
 		grep -q "^rpg-$job/" <<<"$files" && jobs+=("$job")
 	done
 	printf '%s\n' "${jobs[@]}"
@@ -125,6 +125,22 @@ job_cpp() {
 	run cmake --preset release -DCMAKE_CXX_COMPILER="$cxx"
 	run cmake --build --preset release
 	run ./build/release/rpg-cpp --simulate 1 --vocation mage --difficulty easy >/dev/null
+}
+
+job_c() {
+	require cmake c
+	# A bare name: CMake on Windows can't use the MSYS-style path `command -v` prints.
+	local cc=gcc
+	command -v clang >/dev/null 2>&1 && cc=clang
+	cd rpg-c
+	# shellcheck disable=SC2046
+	run clang-format --dry-run --Werror $(find src tests -name '*.c' -o -name '*.h')
+	run cmake --preset debug -DCMAKE_C_COMPILER="$cc"
+	run cmake --build --preset debug
+	run ctest --preset debug
+	run cmake --preset release -DCMAKE_C_COMPILER="$cc"
+	run cmake --build --preset release
+	run ./build/release/rpg-c --simulate 1 --vocation mage --difficulty easy >/dev/null
 }
 
 job_asm() {

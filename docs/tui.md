@@ -2,12 +2,12 @@
 
 Full-screen TUI with equivalent frameworks: **Textual** (Python), **Ink** (TypeScript/React), **Bubble Tea + Lip
 Gloss** (Go), **ratatui + crossterm** (Rust), a **hand-written ANSI renderer** with raw keyboard input (Elixir, no
-dependencies) and **FTXUI** (C++). The layout below is the spec; the six must look practically identical at 100 × 30.
+dependencies), **FTXUI** (C++) and another **hand-written ANSI renderer** (C, no dependencies). The layout below is the spec; the seven must look practically identical at 100 × 30.
 
 ## UI controller (shared design)
 
 The screens, their options, key bindings and texts live in a **framework-independent controller**
-(`presentation/controller.py` in Python; the same module name in the other five languages). The TUI framework only
+(`presentation/controller.py` in Python; the same module name in the other six languages). The TUI framework only
 renders the controller's state: `header()`, `monster_view()`, `player_view()`, the combat log, `title()`,
 `body_lines()`, `options()` and `input_prompt()`, and forwards key presses to `press(key)`. Porting the UI = porting the
 controller (unit-testable without a terminal) + a thin renderer.
@@ -106,7 +106,7 @@ Modelled on Diablo IV / Last Epoch: the character's slots at a glance, then a co
   yellow, death grey.
 - `--no-anim` (or `RPG_NO_ANIM=1`) disables timers: first frame only. Tests always run without animation.
 
-## CLI flags (identical in the six implementations)
+## CLI flags (identical in the seven implementations)
 
 ```
 --seed <n>          deterministic run

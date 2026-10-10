@@ -200,7 +200,12 @@ within target ± `vocationTolerancePct` (5) and **currently fails** on the Arche
 
 - [x] Docker: `rpg-*/Dockerfile` (multi-stage, pinned tags, non-root) + root `compose.yml`, one service per
       implementation, shared `saves` volume; each image's `--simulate 5 --seed 42` equals the host Python report
-- [ ] `rpg-c/`: C port at full parity (engine, golden files, bot, simulator, saves, ANSI TUI), no third-party libraries
+- [x] `rpg-c/`: C17 port at full parity (engine, golden files, bot, simulator, interchangeable saves, controller,
+      ANSI TUI), no third-party libraries: 172 tests on Windows (LLVM-MinGW) and Linux (GCC 14 in Docker), `c` job in
+      `scripts/ci-local.sh`, `c` service in `compose.yml`
+- [ ] `rpg-c` follow-ups: play the TUI by hand in a real Windows console and on macOS (only the Linux pty and the
+      plain-text e2e tests ran); release binaries (`rpg-c-*` in `scripts/release-local.sh` + the asset table of
+      `docs/ci-cd.md`); a coverage preset
 - [x] `rpg-asm/`: x86-64 Linux NASM + libc port for teaching: engine at rule parity validated by the golden files
       (26/26: prng, 12 replays comparing every event field and the whole final state, 9 bot parity runs), simulator
       byte-identical to Python, content generated from `shared/data`, simple line-based UI (no TUI layout, saves,

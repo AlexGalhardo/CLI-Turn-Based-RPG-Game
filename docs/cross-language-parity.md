@@ -1,6 +1,6 @@
 # Cross-Language Parity
 
-The six implementations must produce the **same game**: same seed + same commands ⇒ same events, byte for byte
+The seven implementations must produce the **same game**: same seed + same commands ⇒ same events, byte for byte
 after JSON normalisation. This is what makes the project a fair side-by-side comparison of Python, TypeScript, Go,
 Rust, Elixir and C++, and it is enforced by the golden tests.
 

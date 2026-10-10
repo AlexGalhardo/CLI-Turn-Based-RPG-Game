@@ -1,10 +1,10 @@
 # Assembly Implementation (`rpg-asm/`)
 
-A seventh implementation written for **didactic purposes**: the same game rules in hand-written x86-64 assembly, so a
+An eighth implementation written for **didactic purposes**: the same game rules in hand-written x86-64 assembly, so a
 reader can see what `step(command) → events` looks like when there is no language underneath. It is not a full port:
 the **engine has full rule parity** (it replays every `shared/golden` scenario, its bot issues exactly the commands
 recorded by the Python bot and its simulator prints the same report byte for byte), and the interface is a **simple
-line-based text UI** instead of the TUI of the other six implementations.
+line-based text UI** instead of the TUI of the other seven implementations.
 
 ## Scope
 

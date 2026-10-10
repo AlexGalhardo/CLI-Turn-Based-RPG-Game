@@ -11,6 +11,7 @@ module.exports = {
 				"rust",
 				"elixir",
 				"cpp",
+				"c",
 				"asm",
 				"shared",
 				"docs",

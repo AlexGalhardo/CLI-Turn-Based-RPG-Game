@@ -1,7 +1,7 @@
 # Contributing
 
 Thanks for your interest! This is a didactic project: the same game in Python, TypeScript, Go, Rust, Elixir and C++.
-Contributions that keep the six implementations **identical in behaviour** and easy to read are the most valuable.
+Contributions that keep the seven implementations **identical in behaviour** and easy to read are the most valuable.
 
 ## Before you start
 
@@ -20,7 +20,7 @@ Contributions that keep the six implementations **identical in behaviour** and e
 ## Making changes
 
 - **Game rules** — change [`docs/game-design.md`](docs/game-design.md) first, implement in Python, regenerate the golden
-  files (`cd rpg-python && uv run rpg-golden`), then port to the other five languages in the same PR (or open
+  files (`cd rpg-python && uv run rpg-golden`), then port to the other six languages in the same PR (or open
   follow-up issues).
 - **Content and balance** — edit `shared/data/*.json`, keep `shared/i18n/en.json` and `pt-BR.json` in sync, run
   `bun run check:shared` and the simulator (`uv run rpg --simulate 2000`).
