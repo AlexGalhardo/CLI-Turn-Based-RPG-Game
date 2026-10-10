@@ -196,6 +196,14 @@ within target ± `vocationTolerancePct` (5) and **currently fails** on the Arche
       `N`/`P`, slots always visible), implement in Python, then port in parallel worktrees (`port-feature` skill).
 - [ ] Optional: automated tests for the real-terminal auto-battle timer loops; play each TUI by hand once.
 
+## M10 — Docker, C and Assembly
+
+- [x] Docker: `rpg-*/Dockerfile` (multi-stage, pinned tags, non-root) + root `compose.yml`, one service per
+      implementation, shared `saves` volume; each image's `--simulate 5 --seed 42` equals the host Python report
+- [ ] `rpg-c/`: C port at full parity (engine, golden files, bot, simulator, saves, ANSI TUI), no third-party libraries
+- [ ] `rpg-asm/`: x86-64 Linux NASM + libc port for teaching: engine at rule parity validated by the golden files,
+      content generated from `shared/data`, simple line-based UI (no TUI layout, saves or i18n)
+
 ## Skills (`.claude/skills/`) — created when a flow repeats
 
 - [x] `add-game-content` — add monster/item/spell/boss/achievement to shared data (+ i18n, art, checks)

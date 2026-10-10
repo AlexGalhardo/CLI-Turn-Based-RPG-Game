@@ -5,7 +5,7 @@
 <p align="center">
 	<a href="https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/actions/workflows/ci.yml/badge.svg?branch=main"></a>
 	<a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
-	<a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-1.5.0-green.svg"></a>
+	<a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-1.6.0-green.svg"></a>
 </p>
 
 ## About
@@ -175,6 +175,20 @@ No toolchain? Download a ready-to-run TypeScript, Go, Rust or C++ executable for
 from the [latest release](https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/releases/latest) (checksums in
 `SHA256SUMS.txt`). On macOS/Linux, `chmod +x` it first. The release also ships the Elixir escript, a single file that
 runs anywhere Erlang/OTP is installed (`escript rpg-elixir` on Windows).
+
+### With Docker
+
+Only Docker is needed: every implementation has a `Dockerfile` and a service in [`compose.yml`](compose.yml)
+(`python`, `typescript`, `golang`, `rust`, `elixir`, `cpp`).
+
+```bash
+docker compose run --rm python                       # builds the image on first use, then plays
+docker compose run --rm rust --seed 42 --lang pt-BR  # game flags go after the service name
+docker compose run --rm -T golang --simulate 100     # no TTY for non-interactive output
+```
+
+Saves, history and profile are kept in the `saves` volume, shared by all services (the formats are the same, so a
+run started in one language continues in another). `docker compose down -v` deletes them.
 
 Use a terminal of at least 100 × 30. Useful flags (same in the six versions): `--seed 42`, `--lang pt-BR`,
 `--no-anim`, `--simulate 1000`.

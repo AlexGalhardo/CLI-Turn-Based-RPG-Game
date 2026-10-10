@@ -26,6 +26,8 @@ Open-source endless turn-based RPG for the terminal, implemented **six times wit
    (TS/JSON), Ruff (Python), gofmt (Go), rustfmt (Rust), `mix format` (Elixir), clang-format (C++).
 7. TypeScript: strict, no `any` (use `unknown` + narrowing), explicit return types on exports.
 8. Dependencies pinned to exact latest **stable** versions (never beta/rc/canary).
+   Docker: every `rpg-*/Dockerfile` builds from the repository root (it needs `shared/`), multi-stage, exact image
+   tags, non-root user, saves in `/data`; a new implementation also gets a service in `compose.yml`.
 9. Tests never touch real saves (`RPG_DATA_DIR` = temp dir) and run with a fixed seed and `--no-anim`.
 
 ## Workflow
@@ -63,4 +65,5 @@ cd rpg-golang && go test ./...            # Go
 cd rpg-rust && cargo test                 # Rust
 cd rpg-elixir && mix test                 # Elixir
 cd rpg-cpp && cmake --preset debug && cmake --build --preset debug && ctest --preset debug   # C++
+docker compose run --rm python            # any implementation in Docker (services in compose.yml)
 ```

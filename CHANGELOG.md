@@ -13,6 +13,15 @@ commit.
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-10
+
+### Added
+
+- Docker support for every implementation: a multi-stage `Dockerfile` per project (exact image tags, non-root user,
+  built from the repository root because of `shared/`) and a root `compose.yml` with one service per language
+  (`docker compose run --rm python|typescript|golang|rust|elixir|cpp [game flags]`). Saves, history and profile live
+  in the `saves` volume shared by all services. `.dockerignore` keeps build outputs and local files out of the context.
+
 ## [1.5.0] - 2026-10-10
 
 ### Changed
@@ -498,7 +507,8 @@ First stable release: the same game in Python, TypeScript and Go, proven equival
 - General-purpose agent skills, agents and reference checklists in `.claude/`.
 - The 2016 Python and 2022 TypeScript code is not carried over; the originals remain in their own repositories.
 
-[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.4.2...v1.5.0
 [1.4.2]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.4.0...v1.4.1

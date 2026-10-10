@@ -1,0 +1,35 @@
+# Play any implementation without installing its toolchain:
+#   docker compose run --rm python            # or typescript, golang, rust, elixir, cpp
+#   docker compose run --rm rust --seed 42 --lang pt-BR
+# Saves, history and profile live in the `saves` volume, shared by every implementation (the formats are the same).
+x-game: &game
+  stdin_open: true
+  tty: true
+  environment:
+    TERM: ${TERM:-xterm-256color}
+    COLORTERM: truecolor
+  volumes:
+    - saves:/data
+
+services:
+  python:
+    <<: *game
+    build: { context: ., dockerfile: rpg-python/Dockerfile }
+  typescript:
+    <<: *game
+    build: { context: ., dockerfile: rpg-typescript/Dockerfile }
+  golang:
+    <<: *game
+    build: { context: ., dockerfile: rpg-golang/Dockerfile }
+  rust:
+    <<: *game
+    build: { context: ., dockerfile: rpg-rust/Dockerfile }
+  elixir:
+    <<: *game
+    build: { context: ., dockerfile: rpg-elixir/Dockerfile }
+  cpp:
+    <<: *game
+    build: { context: ., dockerfile: rpg-cpp/Dockerfile }
+
+volumes:
+  saves:
