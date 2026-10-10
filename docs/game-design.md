@@ -78,8 +78,8 @@ win rates, not the multipliers. Drop rarities do not depend on the difficulty.
 
 ## 4. Character
 
-Vocations: **Warrior, Archer, Mage** (`vocations.json`). Per level: Warrior +15 HP / +5 MP, Archer +10 HP / +15 MP,
-Mage +5 HP / +15 MP.
+Vocations: **Warrior, Archer, Mage** (`vocations.json`). Per level: Warrior +15 HP / +5 MP, Archer +8 HP / +15 MP,
+Mage +6 HP / +15 MP.
 
 - Start: level 1, magic level 1, `vocation.startHp/startMp`, `balance.startingGold`, `balance.startingPotions`, the
   vocation's `starterWeapon` equipped (common rarity, no affixes).

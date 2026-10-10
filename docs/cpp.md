@@ -114,6 +114,7 @@ public interface and the matching `.cpp` holds the definitions.
 - **Migrations.** `infrastructure/migrations` upgrades the raw JSON (version 1 → 2) before the application layer
   parses it, exactly like the reference. To refresh the Python fixtures after a save-format change, run the
   reference with the same seeds (archer, hard, seed 2024, auto-equip on, saved at the round 12 merchant) and keep the
-  v1 files: they guard the migration.
+  v1 files: they guard the migration. After a **balance** change only the continuations age: regenerate
+  `python_save*_continued.json` with `cd rpg-python && uv run python ../rpg-cpp/tests/fixtures/regenerate.py`.
 - **Tests** never touch the real saves: a Catch2 event listener points `RPG_DATA_DIR` at a temporary directory and
   sets `RPG_NO_ANIM=1`; every persistence test uses its own `TempDir`.

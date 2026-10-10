@@ -5,7 +5,7 @@
 <p align="center">
 	<a href="https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/actions/workflows/ci.yml/badge.svg?branch=main"></a>
 	<a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
-	<a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-1.6.0-green.svg"></a>
+	<a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-1.6.1-green.svg"></a>
 </p>
 
 ## About
@@ -234,14 +234,10 @@ The [`docs/`](docs) folder explains the project by area (it is also the context 
 - [Terminal UI](docs/tui.md)
 - [Testing](docs/testing.md)
 - [CI/CD and versioning](docs/ci-cd.md)
+- [Docker](docs/docker.md)
 - [Architecture decision records](docs/adr)
 - Implementation guides: [Python](docs/python.md) · [TypeScript](docs/typescript.md) · [Go](docs/golang.md) ·
   [Rust](docs/rust.md) · [Elixir](docs/elixir.md) · [C++](docs/cpp.md)
-
-## Previous versions
-
-- 2016 — [Python-CLI-Turn-Based-RPG](https://github.com/AlexGalhardo/Python-CLI-Turn-Based-RPG)
-- 2022 — [TypeScript-CLI-Turn-Based-RPG](https://github.com/AlexGalhardo/TypeScript-CLI-Turn-Based-RPG)
 
 ## Contributing
 

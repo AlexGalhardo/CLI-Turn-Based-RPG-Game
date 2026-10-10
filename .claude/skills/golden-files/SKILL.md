@@ -34,6 +34,11 @@ Any change that alters, for a fixed seed and command list, the events or the fin
 ## Gotchas learned
 
 - Never hand-edit golden files; always regenerate.
+- After regenerating, two derived copies age too: Go embeds a git-ignored copy of `shared/` (`cd rpg-golang && go
+  generate ./...`, or every Go golden test fails against stale data) and the C++ save-continuation fixtures
+  (`cd rpg-python && uv run python ../rpg-cpp/tests/fixtures/regenerate.py`).
+- Tests that read the monster after one hit break when a balance change lets that hit kill it: read the monster (or
+  defend) before attacking.
 - `rng.chance(p)` with `p <= 0` or `p >= 100` consumes **no** number — changing a 0% effect to a small % shifts every
   later roll.
 - Item generation with no candidate items consumes no randomness; adding a new item to a tier changes drops.

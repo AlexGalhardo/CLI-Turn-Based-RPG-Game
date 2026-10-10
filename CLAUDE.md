@@ -11,7 +11,7 @@ Open-source endless turn-based RPG for the terminal, implemented **six times wit
 - [Shared data](docs/data-format.md) — JSON files, i18n, ASCII art, adding content
 - [Persistence](docs/persistence.md) — save, history, profile formats (shared by the six implementations)
 - [Terminal UI](docs/tui.md) — layout, screens, keys, animation, CLI flags
-- [Testing](docs/testing.md) · [CI/CD & versioning](docs/ci-cd.md) · [ADRs](docs/adr)
+- [Testing](docs/testing.md) · [CI/CD & versioning](docs/ci-cd.md) · [Docker](docs/docker.md) · [ADRs](docs/adr)
 - Per language: [Python](docs/python.md) · [TypeScript](docs/typescript.md) · [Go](docs/golang.md) ·
   [Rust](docs/rust.md) · [Elixir](docs/elixir.md) · [C++](docs/cpp.md)
 

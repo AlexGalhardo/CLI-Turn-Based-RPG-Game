@@ -13,6 +13,25 @@ commit.
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-10-10
+
+### Added
+
+- `docs/docker.md` (services, images, how the images are built and checked), linked from the README and the agent
+  guide.
+- `rpg-cpp/tests/fixtures/regenerate.py`: rewrites the `python_save*_continued.json` expectations with the reference
+  after a balance change.
+
+### Changed
+
+- Docs brought in line with 1.5.0 and 1.6.0: per-level HP in `docs/game-design.md` §4 (Archer +8, Mage +6),
+  `compose.yml` in the monorepo layout, the derived copies to refresh after regenerating golden files (`golden-files`
+  skill, `docs/cpp.md`), the Windows Go temp-directory flake in `docs/ci-cd.md`.
+
+### Removed
+
+- README: the "Previous versions" section.
+
 ## [1.6.0] - 2026-10-10
 
 ### Added
@@ -507,7 +526,8 @@ First stable release: the same game in Python, TypeScript and Go, proven equival
 - General-purpose agent skills, agents and reference checklists in `.claude/`.
 - The 2016 Python and 2022 TypeScript code is not carried over; the originals remain in their own repositories.
 
-[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.6.1...HEAD
+[1.6.1]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.4.2...v1.5.0
 [1.4.2]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.4.1...v1.4.2

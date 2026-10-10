@@ -9,7 +9,8 @@ The GitHub workflows below are kept in the repository but **disabled** on GitHub
   rust, elixir, cpp) for the projects touched by the commits being pushed (`shared/`, root tooling or workflow changes
   run every job). A failing job blocks the push. `bash scripts/ci-local.sh --all` runs everything;
   `SKIP_LOCAL_CI=1 git push` skips it once. Differences from GitHub: one OS (the local one), no `-race` for Go, no
-  C++ coverage gate.
+  C++ coverage gate. Known flake on Windows: a Go test can fail with `TempDir RemoveAll cleanup: ... directory not
+  empty` (a different test each time; something outside the code still holds a freshly written save) — push again.
 - `.husky/post-commit` creates the per-commit release tag `vX.Y.Z` (annotated, message = the commit's CHANGELOG
   section) when the commit bumped the version; with `git config push.followTags true` the tag is pushed with the
   commit. `release.yml` is disabled, so the GitHub Release page and its binaries are made locally (next section).

@@ -17,6 +17,7 @@
 ├── rpg-elixir/             # Phase 5 — port (Elixir, hand-written ANSI TUI, escript)
 ├── rpg-cpp/                # Phase 6 — port (C++23, CMake, FTXUI)
 ├── setups/                 # one-command play scripts per OS/implementation
+├── compose.yml             # one Docker service per implementation (each rpg-*/ has its Dockerfile, docs/docker.md)
 ├── docs/                   # this documentation (also the context for AI agents)
 └── .github/workflows/      # CI per language + shared data checks + release
 ```
