@@ -17,7 +17,7 @@ for dir in "$HOME/.cargo/bin" "$HOME/go/bin" "$HOME/.local/bin" "$HOME/scoop/shi
 done
 export PATH
 
-ALL_JOBS=(repo python typescript golang rust elixir cpp)
+ALL_JOBS=(repo python typescript golang rust elixir cpp asm)
 
 changed_jobs() {
 	local base="$1" files
@@ -28,7 +28,7 @@ changed_jobs() {
 		printf '%s\n' "${ALL_JOBS[@]}"
 		return
 	fi
-	for job in python typescript golang rust elixir cpp; do
+	for job in python typescript golang rust elixir cpp asm; do
 		grep -q "^rpg-$job/" <<<"$files" && jobs+=("$job")
 	done
 	printf '%s\n' "${jobs[@]}"
@@ -125,6 +125,13 @@ job_cpp() {
 	run cmake --preset release -DCMAKE_CXX_COMPILER="$cxx"
 	run cmake --build --preset release
 	run ./build/release/rpg-cpp --simulate 1 --vocation mage --difficulty easy >/dev/null
+}
+
+job_asm() {
+	require docker asm
+	# The image build assembles, links and runs the golden replay, bot parity and simulator tests (x86-64 Linux only).
+	run docker build -q -f rpg-asm/Dockerfile -t rpg-asm .
+	run docker run --rm rpg-asm --simulate 1 --vocation mage --difficulty easy >/dev/null
 }
 
 main() {

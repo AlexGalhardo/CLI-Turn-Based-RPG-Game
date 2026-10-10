@@ -16,6 +16,7 @@
 ├── rpg-rust/               # Phase 4 — port (Rust, ratatui)
 ├── rpg-elixir/             # Phase 5 — port (Elixir, hand-written ANSI TUI, escript)
 ├── rpg-cpp/                # Phase 6 — port (C++23, CMake, FTXUI)
+├── rpg-asm/                # teaching port (x86-64 Linux NASM + libc): engine at rule parity, line-based UI, Docker
 ├── setups/                 # one-command play scripts per OS/implementation
 ├── compose.yml             # one Docker service per implementation (each rpg-*/ has its Dockerfile, docs/docker.md)
 ├── docs/                   # this documentation (also the context for AI agents)
@@ -68,3 +69,5 @@ Every implementation has the same four layer folders (`domain/`, `application/`,
 
 File and type names mirror each other (`snake_case.py` / `kebab-case.ts` / `snake_case.go` / `snake_case.rs` /
 `snake_case.ex` / `snake_case.{hpp,cpp}`) so a reader can open the same concept in six languages side by side.
+`rpg-asm/src/` uses the same four folders and file names (`rng.asm`, `formulas.asm`, `battle.asm`, `engine.asm`, …) for
+the parts it implements; it has no persistence and no TUI (see [asm.md](asm.md)).

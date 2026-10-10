@@ -1,0 +1,9 @@
+# Build context = repository root: send only what the Assembly build reads.
+*
+!shared/data
+!shared/i18n
+!shared/golden
+!rpg-python/src
+!rpg-asm
+rpg-asm/build
+**/__pycache__

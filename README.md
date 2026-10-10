@@ -5,7 +5,7 @@
 <p align="center">
 	<a href="https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/actions/workflows/ci.yml/badge.svg?branch=main"></a>
 	<a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
-	<a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-1.6.1-green.svg"></a>
+	<a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-1.7.0-green.svg"></a>
 </p>
 
 ## About
@@ -13,7 +13,8 @@
 This project started in 2016 as my first Python program to learn object-oriented programming, got a TypeScript
 version in 2022 to learn TypeScript, and in 2026 it became a didactic monorepo: the **same game** written in Python,
 TypeScript, Go, Rust, Elixir and C++, side by side, with the same architecture, the same data and tests that prove the
-six implementations behave exactly the same.
+six implementations behave exactly the same. One more, in x86-64 **Assembly**, exists for teaching: the same engine,
+proven by the same golden files, with a simple line-based interface ([docs/asm.md](docs/asm.md)).
 
 - Pick a vocation (Warrior, Archer or Mage), a difficulty (Easy, Normal, Hard) and a language (English or
   Português)
@@ -149,6 +150,7 @@ same UI controller. A regular fight:
 | [`rpg-rust`](rpg-rust)                 | [Rust](https://www.rust-lang.org) 1.99, edition 2024 (executable)                     | [ratatui](https://ratatui.rs) + crossterm                | rustfmt, clippy, cargo test, cargo-llvm-cov       |
 | [`rpg-elixir`](rpg-elixir)             | [Elixir](https://elixir-lang.org) 1.20 + Erlang/OTP 29 (escript), no Hex dependencies | hand-written ANSI renderer                               | mix format, ExUnit, `mix test --cover`            |
 | [`rpg-cpp`](rpg-cpp)                   | C++23 + [CMake](https://cmake.org) and Ninja (executable)                             | [FTXUI](https://github.com/ArthurSonzogni/FTXUI)         | clang-format, `-Werror`, Catch2 + ctest, llvm-cov |
+| [`rpg-asm`](rpg-asm) (engine + text UI) | x86-64 Linux [NASM](https://www.nasm.us) 2.16 + libc, built and run in Docker | line-based text UI | golden replay, bot parity and simulator diff in the image build |
 | [`shared`](shared)                     | JSON data, i18n, ASCII art, golden files                                              | —                                                        | JSON Schema                                       |
 
 ## Playing locally
@@ -164,6 +166,7 @@ the game:
 | Rust           | [`play-on-windows-version-rust.sh`](setups/play-on-windows-version-rust.sh)             | [`play-on-unix-version-rust.sh`](setups/play-on-unix-version-rust.sh)             |
 | Elixir         | [`play-on-windows-version-elixir.sh`](setups/play-on-windows-version-elixir.sh)         | [`play-on-unix-version-elixir.sh`](setups/play-on-unix-version-elixir.sh)         |
 | C++            | [`play-on-windows-version-cpp.sh`](setups/play-on-windows-version-cpp.sh)               | [`play-on-unix-version-cpp.sh`](setups/play-on-unix-version-cpp.sh)               |
+| Assembly       | [`play-on-windows-version-asm.sh`](setups/play-on-windows-version-asm.sh) (Docker) | [`play-on-unix-version-asm.sh`](setups/play-on-unix-version-asm.sh) (Docker) |
 
 ```bash
 git clone https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game.git
@@ -179,7 +182,7 @@ runs anywhere Erlang/OTP is installed (`escript rpg-elixir` on Windows).
 ### With Docker
 
 Only Docker is needed: every implementation has a `Dockerfile` and a service in [`compose.yml`](compose.yml)
-(`python`, `typescript`, `golang`, `rust`, `elixir`, `cpp`).
+(`python`, `typescript`, `golang`, `rust`, `elixir`, `cpp`, `asm`).
 
 ```bash
 docker compose run --rm python                       # builds the image on first use, then plays
@@ -219,6 +222,9 @@ mix format --check-formatted && mix compile --warnings-as-errors && mix test --c
 # C++
 cd rpg-cpp && cmake --preset release && cmake --build --preset release && ./build/release/rpg-cpp
 cmake --preset debug && cmake --build --preset debug && ctest --preset debug
+
+# Assembly (x86-64 Linux; the image build assembles, links and runs the parity tests)
+docker build -f rpg-asm/Dockerfile -t rpg-asm . && docker run --rm -it rpg-asm --seed 42
 ```
 
 ## Documentation
@@ -237,7 +243,7 @@ The [`docs/`](docs) folder explains the project by area (it is also the context 
 - [Docker](docs/docker.md)
 - [Architecture decision records](docs/adr)
 - Implementation guides: [Python](docs/python.md) · [TypeScript](docs/typescript.md) · [Go](docs/golang.md) ·
-  [Rust](docs/rust.md) · [Elixir](docs/elixir.md) · [C++](docs/cpp.md)
+  [Rust](docs/rust.md) · [Elixir](docs/elixir.md) · [C++](docs/cpp.md) · [Assembly](docs/asm.md)
 
 ## Contributing
 

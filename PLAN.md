@@ -201,8 +201,12 @@ within target ± `vocationTolerancePct` (5) and **currently fails** on the Arche
 - [x] Docker: `rpg-*/Dockerfile` (multi-stage, pinned tags, non-root) + root `compose.yml`, one service per
       implementation, shared `saves` volume; each image's `--simulate 5 --seed 42` equals the host Python report
 - [ ] `rpg-c/`: C port at full parity (engine, golden files, bot, simulator, saves, ANSI TUI), no third-party libraries
-- [ ] `rpg-asm/`: x86-64 Linux NASM + libc port for teaching: engine at rule parity validated by the golden files,
-      content generated from `shared/data`, simple line-based UI (no TUI layout, saves or i18n)
+- [x] `rpg-asm/`: x86-64 Linux NASM + libc port for teaching: engine at rule parity validated by the golden files
+      (26/26: prng, 12 replays comparing every event field and the whole final state, 9 bot parity runs), simulator
+      byte-identical to Python, content generated from `shared/data`, simple line-based UI (no TUI layout, saves,
+      auto-battle or pt-BR). `asm` job in `scripts/ci-local.sh`, `asm` service in `compose.yml`
+- [ ] `rpg-asm` follow-ups: play the text UI once in a real TTY (`-it`) and reach its victory menu by hand (both only
+      exercised through piped input / the golden engine tests so far)
 
 ## Skills (`.claude/skills/`) — created when a flow repeats
 

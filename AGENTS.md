@@ -1,7 +1,8 @@
 # Agent Guide (AGENTS.md = CLAUDE.md)
 
 Open-source endless turn-based RPG for the terminal, implemented **six times with identical rules**: Python
-(reference), TypeScript, Go, Rust, Elixir and C++. Content is in `shared/`; plan and progress in [`PLAN.md`](PLAN.md).
+(reference), TypeScript, Go, Rust, Elixir and C++, plus a teaching port in x86-64 Assembly (`rpg-asm/`: engine at rule
+parity + line-based UI, Docker only). Content is in `shared/`; plan and progress in [`PLAN.md`](PLAN.md).
 
 ## Read before changing anything
 
@@ -13,14 +14,15 @@ Open-source endless turn-based RPG for the terminal, implemented **six times wit
 - [Terminal UI](docs/tui.md) — layout, screens, keys, animation, CLI flags
 - [Testing](docs/testing.md) · [CI/CD & versioning](docs/ci-cd.md) · [Docker](docs/docker.md) · [ADRs](docs/adr)
 - Per language: [Python](docs/python.md) · [TypeScript](docs/typescript.md) · [Go](docs/golang.md) ·
-  [Rust](docs/rust.md) · [Elixir](docs/elixir.md) · [C++](docs/cpp.md)
+  [Rust](docs/rust.md) · [Elixir](docs/elixir.md) · [C++](docs/cpp.md) · [Assembly](docs/asm.md)
 
 ## Non-negotiable rules
 
 1. English everywhere (code, comments, docs, commits). Portuguese only in `shared/i18n/pt-BR.json`.
 2. No balance numbers in code: everything tunable goes in `shared/data/*.json`.
 3. Engine is pure and deterministic: shared mulberry32 PRNG, integer math with explicit floor, no clock/I/O.
-4. Rule change order: `docs/game-design.md` → Python → regenerate `shared/golden` → port to the other five languages.
+4. Rule change order: `docs/game-design.md` → Python → regenerate `shared/golden` → port to the other languages
+   (and to the `rpg-asm` engine).
 5. Same names and layers in the six languages (`domain`, `application`, `infrastructure`, `presentation`).
 6. Formatting: `.editorconfig` tabs width 4 (YAML and Elixir 2 spaces: `mix format` only supports spaces). Biome
    (TS/JSON), Ruff (Python), gofmt (Go), rustfmt (Rust), `mix format` (Elixir), clang-format (C++).
@@ -32,7 +34,7 @@ Open-source endless turn-based RPG for the terminal, implemented **six times wit
 
 ## Workflow
 
-- Conventional Commits, scopes `python|typescript|golang|rust|elixir|cpp|shared|docs|ci|setups|deps|release|repo`.
+- Conventional Commits, scopes `python|typescript|golang|rust|elixir|cpp|asm|shared|docs|ci|setups|deps|release|repo`.
 - Before committing: format, lint, type-check and test the touched project (commands in the per-language docs).
 - Record relevant changes in [`CHANGELOG.md`](CHANGELOG.md) (Keep a Changelog) and tick `PLAN.md` checkboxes.
 - Each commit on `main` is a release: fill `[Unreleased]`, run `bun run release:prepare "<subject>"` (`release` skill).
@@ -66,4 +68,5 @@ cd rpg-rust && cargo test                 # Rust
 cd rpg-elixir && mix test                 # Elixir
 cd rpg-cpp && cmake --preset debug && cmake --build --preset debug && ctest --preset debug   # C++
 docker compose run --rm python            # any implementation in Docker (services in compose.yml)
+docker build -f rpg-asm/Dockerfile -t rpg-asm .   # Assembly: assembles, links and runs its parity tests
 ```

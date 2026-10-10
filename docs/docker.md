@@ -5,7 +5,7 @@ Every implementation runs in Docker, so playing or comparing them needs no toolc
 ## Playing
 
 ```bash
-docker compose run --rm python                       # python | typescript | golang | rust | elixir | cpp
+docker compose run --rm python                       # python | typescript | golang | rust | elixir | cpp | asm
 docker compose run --rm rust --seed 42 --lang pt-BR  # game flags go after the service name
 docker compose run --rm -T golang --simulate 100     # -T: no TTY, for the simulator or piped output
 docker compose build cpp                             # rebuild one image after a change
@@ -28,7 +28,9 @@ Without compose: `docker build -f rpg-rust/Dockerfile -t rpg-rust . && docker ru
   | `rust` | `rust:1.99.0-bookworm` | `debian:12.14-slim` | `cargo build --release --locked` binary |
   | `elixir` | `elixir:1.20.4-otp-27-slim` | `erlang:27.3.4.3-slim` | the escript (needs Erlang/OTP) |
   | `cpp` | `gcc:14.4.0` | `debian:13.4-slim` | binary with static libstdc++/libgcc; same Debian release as the build image for glibc |
+  | `asm` | `python:3.14.8-slim-trixie` + nasm 2.16.03 (generator, assembler, tests) | `debian:trixie-20261005-slim` | dynamically linked binary; no saves (`/data` unused) |
 
+- The `asm` image runs its parity tests during the build and has its own `rpg-asm/Dockerfile.dockerignore`.
 - The game runs as the non-root user `rpg` (uid 1000) with `RPG_DATA_DIR=/data`.
 - `compose.yml` mounts the named volume `saves` on `/data` for every service: save, history and profile formats are
   shared (see [persistence](persistence.md)), so a run started in one language continues in another.

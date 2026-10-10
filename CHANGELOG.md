@@ -13,6 +13,18 @@ commit.
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-10-10
+
+### Added
+
+- `rpg-asm/`: a teaching port in x86-64 Linux Assembly (NASM + libc, ~6300 lines). The engine has full rule parity:
+  it replays every `shared/golden` scenario comparing every event field and the whole final state, its bot issues the
+  recorded commands and `--simulate` prints the Python report byte for byte. Game content is generated from
+  `shared/data` at build time (no JSON parser, no numbers in code). The interface is a line-based text UI; there is no
+  TUI layout, persistence, auto-battle or pt-BR (`docs/asm.md`). It builds, tests and runs in Docker
+  (`docker compose run --rm asm`, `setups/play-on-*-version-asm.sh`).
+- `asm` job in `scripts/ci-local.sh`, `asm` commit scope, `rpg-asm/src/version.inc` in the release version files.
+
 ## [1.6.1] - 2026-10-10
 
 ### Added
@@ -526,7 +538,8 @@ First stable release: the same game in Python, TypeScript and Go, proven equival
 - General-purpose agent skills, agents and reference checklists in `.claude/`.
 - The 2016 Python and 2022 TypeScript code is not carried over; the originals remain in their own repositories.
 
-[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.6.1...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.6.1...v1.7.0
 [1.6.1]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.4.2...v1.5.0

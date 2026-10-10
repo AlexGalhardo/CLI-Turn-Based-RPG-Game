@@ -38,6 +38,7 @@ const VERSION_FILES: readonly VersionFile[] = [
 	{ path: "rpg-elixir/lib/rpg/version.ex", pattern: new RegExp(`(@version ")(${SEMVER})`) },
 	{ path: "rpg-cpp/CMakeLists.txt", pattern: new RegExp(`(project\\(rpg_cpp VERSION )(${SEMVER})`) },
 	{ path: "rpg-cpp/src/version.hpp", pattern: new RegExp(`(version = ")(${SEMVER})`) },
+	{ path: "rpg-asm/src/version.inc", pattern: new RegExp(`(%define VERSION ")(${SEMVER})`) },
 ];
 
 type Bump = "major" | "minor" | "patch";

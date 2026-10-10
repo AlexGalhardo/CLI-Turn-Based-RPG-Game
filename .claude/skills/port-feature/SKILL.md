@@ -110,6 +110,23 @@ and the UI controller behaves the same. Ports: TypeScript, Go, Rust, Elixir, C++
   tools; Python edit scripts need `newline=""` and UTF-8 stdin; never share `/tmp` between parallel agents.
 - Tests that must keep a fight going need a huge monster HP: after a balance change monsters often die in one hit.
 
+## Lessons from the Assembly port (engine only)
+
+- A port without a JSON parser: generate its tables from `shared/data` at build time and give the binary a `--replay`
+  mode printing one canonical line per event plus a flattened final state; an external tool turns each golden file
+  into script + expected lines and diffs. Compare `finalRun` too: it shows bag, affixes, stock and statuses that
+  `finalState` hides. A `@bot` replay mode checks bot parity against the same files.
+- When everything passes on the first run, tamper with a copy of a golden file and check the comparison tool fails.
+- The reference `potions` dict keeps a key with quantity 0 after the last potion is drunk; an array-based port needs a
+  "seen" flag to reproduce `finalRun`.
+- "Sorted by id" lists can be pre-sorted by the generator (Python `sorted` is code-point order); only the bot
+  tie-breakers need a runtime string compare.
+- The reference simulator runs with the standard library alone (`PYTHONPATH=rpg-python/src python -m rpg --simulate …`),
+  so the byte-for-byte diff works inside any Docker image with Python.
+- Worktrees have no `.husky/_`, so hooks do not run on commits made there: lint and commit checks happen at merge.
+- NASM 2.16.03: `alignb` fails under `-w+all -w+error` (use `section .bss align=16`); `%if` cannot evaluate
+  `$ - label` (check table sizes with a `times` count that goes negative).
+
 ## Done when
 
 - `shared/golden` replay passes, unit/integration/e2e suites pass, coverage floors met (see `docs/testing.md`).
