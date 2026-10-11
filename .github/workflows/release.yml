@@ -115,7 +115,7 @@ jobs:
       - name: Smoke test (native target only)
         if: matrix.target == 'bun-linux-x64'
         run: ./dist/${{ matrix.asset }} --version
-      - uses: actions/upload-artifact@v7.0.1
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: ${{ matrix.asset }}
           path: rpg-typescript/dist/${{ matrix.asset }}
@@ -158,7 +158,7 @@ jobs:
       - name: Smoke test (native target only)
         if: matrix.goos == 'linux'
         run: ./dist/${{ matrix.asset }} --version
-      - uses: actions/upload-artifact@v7.0.1
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: ${{ matrix.asset }}
           path: rpg-golang/dist/${{ matrix.asset }}
@@ -193,7 +193,7 @@ jobs:
         run: cargo build --release --locked && mkdir -p dist && cp target/release/${{ matrix.binary }} dist/${{ matrix.asset }}
       - name: Smoke test
         run: ./dist/${{ matrix.asset }} --version
-      - uses: actions/upload-artifact@v7.0.1
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: ${{ matrix.asset }}
           path: rpg-rust/dist/${{ matrix.asset }}
@@ -252,7 +252,7 @@ jobs:
           mkdir -p dist && cp build/release/${{ matrix.binary }} dist/${{ matrix.asset }}
       - name: Smoke test
         run: ./dist/${{ matrix.asset }} --version
-      - uses: actions/upload-artifact@v7.0.1
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: ${{ matrix.asset }}
           path: rpg-cpp/dist/${{ matrix.asset }}
@@ -277,7 +277,7 @@ jobs:
         run: MIX_ENV=prod mix escript.build && mkdir -p dist && cp bin/rpg-elixir dist/rpg-elixir-escript
       - name: Smoke test
         run: ./dist/rpg-elixir-escript --version
-      - uses: actions/upload-artifact@v7.0.1
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: rpg-elixir-escript
           path: rpg-elixir/dist/rpg-elixir-escript
