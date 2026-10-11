@@ -13,6 +13,27 @@ commit.
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-10-11
+
+### Added
+
+- `rpg-lua/`: a Lua 5.5 port at full parity with the reference and **no Lua library** (own JSON module, ANSI TUI
+  renderer and test harness; ~7 600 lines of Lua + ~4 800 of tests). Standard Lua cannot read single keys or create
+  directories, so a C host of under 500 lines (`host/rpg_host.c`) adds those calls and CMake compiles it with the
+  official Lua 5.5.0 source (pinned by SHA-256), the Lua modules and `shared/` into one executable. It replays every
+  `shared/golden` scenario, its bot issues the recorded commands, `--simulate` prints the Python report byte for byte
+  (seed 0 included) and Python saves (schema 1 and 2) re-serialise to the same bytes and continue identically. 200
+  tests on Windows (LLVM-MinGW) and Linux (GCC 14, run by the Docker image build). Docs in `docs/lua.md`,
+  `setups/play-on-*-version-lua.sh`, `docker compose run --rm lua`.
+- `lua` job in `scripts/ci-local.sh` (StyLua, luacheck, clang-format of the host, debug build + ctest, release
+  build), `lua` commit scope, `rpg-lua` version files in the release tooling, and `rpg-lua-linux-x64` /
+  `rpg-lua-windows-x64.exe` in `scripts/release-local.sh`.
+
+### Changed
+
+- README subtitle and docs: eight full implementations plus the Assembly teaching port. No coverage floor for Lua
+  (the standard distribution has no coverage tool and the port takes no dependency; `docs/testing.md`).
+
 ## [1.8.1] - 2026-10-10
 
 ### Fixed
@@ -563,7 +584,8 @@ First stable release: the same game in Python, TypeScript and Go, proven equival
 - General-purpose agent skills, agents and reference checklists in `.claude/`.
 - The 2016 Python and 2022 TypeScript code is not carried over; the originals remain in their own repositories.
 
-[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.8.1...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.6.1...v1.7.0

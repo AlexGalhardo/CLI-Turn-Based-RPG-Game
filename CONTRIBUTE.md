@@ -1,7 +1,7 @@
 # Contributing
 
 Thanks for your interest! This is a didactic project: the same game in Python, TypeScript, Go, Rust, Elixir and C++.
-Contributions that keep the seven implementations **identical in behaviour** and easy to read are the most valuable.
+Contributions that keep the eight implementations **identical in behaviour** and easy to read are the most valuable.
 
 ## Before you start
 

@@ -40,6 +40,8 @@ const VERSION_FILES: readonly VersionFile[] = [
 	{ path: "rpg-cpp/src/version.hpp", pattern: new RegExp(`(version = ")(${SEMVER})`) },
 	{ path: "rpg-c/CMakeLists.txt", pattern: new RegExp(`(project\\(rpg_c VERSION )(${SEMVER})`) },
 	{ path: "rpg-c/src/version.h", pattern: new RegExp(`(#define RPG_VERSION ")(${SEMVER})`) },
+	{ path: "rpg-lua/CMakeLists.txt", pattern: new RegExp(`(project\\(rpg_lua VERSION )(${SEMVER})`) },
+	{ path: "rpg-lua/src/rpg/version.lua", pattern: new RegExp(`(local VERSION = ")(${SEMVER})`) },
 	{ path: "rpg-asm/src/version.inc", pattern: new RegExp(`(%define VERSION ")(${SEMVER})`) },
 ];
 

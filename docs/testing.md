@@ -21,6 +21,7 @@ Where each level lives:
 | Elixir (ExUnit) | `test/unit/` | `test/integration/` | `test/golden/` | `test/e2e/` (pure `App` + `render_plain/1`) |
 | C++ (Catch2 + ctest) | `tests/unit/` (`[unit]`) | `tests/integration/` (`[integration]`) | `tests/golden/` (`[golden]`) | `tests/e2e/` (`[e2e]`, FTXUI component rendered into a `Screen`) |
 | C (in-tree harness + ctest) | `tests/unit/` | `tests/integration/` | `tests/golden/` | `tests/e2e/` (pure `App` rendered as plain text) |
+| Lua (in-tree harness + ctest) | `tests/unit/` | `tests/integration/` | `tests/golden/` | `tests/e2e/` (pure `App` rendered as plain text, plus the compiled binary driven through a pipe) |
 | Assembly (Python tools in the Docker build) | — | — | `tools/golden_test.py` (replay + bot parity), `tools/simulator_test.py` | — |
 
 ## Commands
@@ -41,6 +42,8 @@ cd rpg-cpp && cmake --preset debug && cmake --build --preset debug && ctest --pr
 cmake --preset coverage && cmake --build --preset coverage && ctest --preset coverage   # then llvm-profdata + llvm-cov
 # C
 cd rpg-c && cmake --preset debug && cmake --build --preset debug && ctest --preset debug
+# Lua (ctest runs tests/run.lua with the built interpreter; `lua tests/run.lua` works with a system Lua)
+cd rpg-lua && cmake --preset debug && cmake --build --preset debug && ctest --preset debug
 # Assembly (the image build runs the tests)
 docker build -f rpg-asm/Dockerfile -t rpg-asm .
 # Shared data (root)
@@ -60,6 +63,8 @@ bun run check:shared
   there is no separate domain/application floor.
 - C++: CI builds the `coverage` preset with Clang, merges the profiles with `llvm-profdata` and checks the
   `llvm-cov export` line totals: ≥ 80% for `src`, ≥ 90% for `src/domain` + `src/application`.
+- Lua: no coverage tool is used (the standard distribution has none and the port takes no dependency); the suite
+  mirrors the reference test files case by case instead, and there is no numeric floor.
 - Never delete or skip a failing test to get green; fix the cause or open an issue and mark it `xfail`/`skip` with the
   issue link.
 - A bug fix starts with a failing test that reproduces it.

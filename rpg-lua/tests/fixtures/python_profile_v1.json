@@ -1,0 +1,60 @@
+{
+	"schemaVersion": 1,
+	"bestiary": {
+		"amazon": {
+			"kills": 1,
+			"firstKilledAt": "2026-09-27T12:18:20Z"
+		},
+		"bug": {
+			"kills": 1,
+			"firstKilledAt": "2026-09-27T12:08:30Z"
+		},
+		"cave_rat": {
+			"kills": 1,
+			"firstKilledAt": "2026-09-27T12:04:50Z"
+		},
+		"deer": {
+			"kills": 1,
+			"firstKilledAt": "2026-09-27T12:09:50Z"
+		},
+		"dwarf": {
+			"kills": 1,
+			"firstKilledAt": "2026-09-27T12:20:20Z"
+		},
+		"goblin": {
+			"kills": 1,
+			"firstKilledAt": "2026-09-27T12:02:40Z"
+		},
+		"munster": {
+			"kills": 1,
+			"firstKilledAt": "2026-09-27T12:15:30Z"
+		},
+		"rat": {
+			"kills": 2,
+			"firstKilledAt": "2026-09-27T12:01:10Z"
+		},
+		"snake": {
+			"kills": 1,
+			"firstKilledAt": "2026-09-27T12:07:30Z"
+		},
+		"wolf": {
+			"kills": 2,
+			"firstKilledAt": "2026-09-27T12:04:10Z"
+		}
+	},
+	"achievements": {
+		"boss_slayer": {
+			"unlockedAt": "2026-09-27T12:15:30Z",
+			"runId": "20260927T120010Z-2024"
+		},
+		"first_blood": {
+			"unlockedAt": "2026-09-27T12:01:10Z",
+			"runId": "20260927T120010Z-2024"
+		},
+		"round_10": {
+			"unlockedAt": "2026-09-27T12:12:30Z",
+			"runId": "20260927T120010Z-2024"
+		}
+	},
+	"hallOfFame": []
+}

@@ -6,7 +6,8 @@ The GitHub workflows below are kept in the repository but **disabled** on GitHub
 `release.yml`; re-enable with `gh workflow enable`). The same checks run on the developer's machine:
 
 - `.husky/pre-push` runs `scripts/ci-local.sh`, which mirrors `ci.yml` job by job (repo, python, typescript, golang,
-  rust, elixir, cpp) plus the local-only `c` job (clang-format, debug build + ctest, release build) and `asm` job (a `docker build` of `rpg-asm/Dockerfile`, which assembles, links
+  rust, elixir, cpp) plus the local-only `c` job (clang-format, debug build + ctest, release build), `lua` job (StyLua, luacheck,
+  clang-format of `host/`, debug build + ctest, release build) and `asm` job (a `docker build` of `rpg-asm/Dockerfile`, which assembles, links
   and runs the golden, bot and simulator tests; needs Docker running) for the projects touched by the commits being pushed (`shared/`, root tooling or workflow changes
   run every job). A failing job blocks the push. `bash scripts/ci-local.sh --all` runs everything;
   `SKIP_LOCAL_CI=1 git push` skips it once. Differences from GitHub: one OS (the local one), no `-race` for Go, no
@@ -31,6 +32,8 @@ release commit, so the latest release always has binaries.
 | `rpg-elixir-escript` | host `MIX_ENV=prod mix escript.build` (portable; players need Erlang/OTP) |
 | `rpg-rust-windows-x64.exe`, `rpg-cpp-windows-x64.exe` | host `cargo` and LLVM-MinGW `clang++` (**Windows host only**) |
 | `rpg-rust-linux-x64`, `rpg-cpp-linux-x64` | Docker `rust:1.99.0-bookworm` and `gcc:14` (static libstdc++/libgcc) |
+| `rpg-lua-windows-x64.exe` | host LLVM-MinGW `clang` (**Windows host only**) |
+| `rpg-lua-linux-x64` | Docker `gcc:14` (CMake downloads the pinned Lua source; needs glibc ≥ 2.38 like `rpg-cpp-linux-x64`) |
 | `rpg-rust-darwin-arm64`, `rpg-cpp-darwin-arm64` | Docker `ghcr.io/rust-cross/cargo-zigbuild:0.23.4` (`cargo zigbuild`, `zig c++ -target aarch64-macos`) |
 
 The Docker cross-builds of `rpg-rust-linux-x64`, `rpg-rust-darwin-arm64` and `rpg-cpp-darwin-arm64` are optional: a failure only warns and the asset is missing from the release (they were not validated yet; first verified build: `rpg-cpp-linux-x64`). State after v1.8.0: both Rust cross-builds work; `rpg-cpp-darwin-arm64` still fails (`zig c++`: `unknown cpu architecture`), and `rpg-cpp-linux-x64` needs glibc ≥ 2.38 because `gcc:14` is Debian trixie (it does not start on Debian 12 / Ubuntu 22.04). Never start the script twice at once: the runs share `dist-release/` and race on the upload. Docker Desktop can hang when several multi-GB images are pulled at once: pull them one by one (`docker pull -q <image>`) before the first run.
@@ -51,13 +54,13 @@ smoke tests of the executable. A language job is skipped while its project does 
 
 ## Tooling per language
 
-| Concern | Python | TypeScript | Go | Rust | Elixir | C++ |
-|---|---|---|---|---|---|---|
-| Formatter | Ruff (`indent-style = "tab"`) | Biome | gofmt (tabs by default) | rustfmt (`hard_tabs`) | `mix format` (2 spaces) | clang-format (tabs) |
-| Linter | Ruff | Biome | go vet + golangci-lint | clippy (pedantic) | compiler warnings as errors | `-Wall -Wextra -Wpedantic -Werror` |
-| Types | mypy (strict) | tsc 7 (`strict`) | compiler | compiler | — (dynamic) | compiler |
-| Tests | pytest + pytest-cov | bun:test | go test | cargo test + cargo-llvm-cov | ExUnit (`--cover`) | Catch2 + ctest + llvm-cov |
-| Build | — (runs with `uv run`) | `bun build --compile` | `go build` | `cargo build --release` | `mix escript.build` | CMake presets + Ninja |
+| Concern | Python | TypeScript | Go | Rust | Elixir | C++ | Lua |
+|---|---|---|---|---|---|---|---|
+| Formatter | Ruff (`indent-style = "tab"`) | Biome | gofmt (tabs by default) | rustfmt (`hard_tabs`) | `mix format` (2 spaces) | clang-format (tabs) | StyLua (tabs) |
+| Linter | Ruff | Biome | go vet + golangci-lint | clippy (pedantic) | compiler warnings as errors | `-Wall -Wextra -Wpedantic -Werror` | luacheck |
+| Types | mypy (strict) | tsc 7 (`strict`) | compiler | compiler | — (dynamic) | compiler | — (dynamic) |
+| Tests | pytest + pytest-cov | bun:test | go test | cargo test + cargo-llvm-cov | ExUnit (`--cover`) | Catch2 + ctest + llvm-cov | in-tree harness + ctest |
+| Build | — (runs with `uv run`) | `bun build --compile` | `go build` | `cargo build --release` | `mix escript.build` | CMake presets + Ninja | CMake presets + Ninja (interpreter + host + embedded sources) |
 
 `.editorconfig` at the root: tabs, width 4, LF, final newline, 120 columns (YAML uses 2 spaces as the spec requires,
 Elixir 2 spaces because `mix format` supports nothing else).
@@ -65,7 +68,7 @@ Elixir 2 spaces because `mix format` supports nothing else).
 ## Commits
 
 [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/), checked by commitlint (husky
-`commit-msg` hook). Allowed scopes: `python`, `typescript`, `golang`, `rust`, `elixir`, `cpp`, `c`, `asm`, `shared`, `docs`, `ci`,
+`commit-msg` hook). Allowed scopes: `python`, `typescript`, `golang`, `rust`, `elixir`, `cpp`, `c`, `lua`, `asm`, `shared`, `docs`, `ci`,
 `setups`, `deps`, `release`, `repo`.
 
 ```
@@ -92,7 +95,8 @@ The commit itself carries its version, so the tag points at the commit that made
 2. Run `bun run release:prepare "<commit subject>"`. It computes the next version from the current one and the
    subject, writes it in every version file (root and README badge, Python `pyproject.toml` + `__init__.py` +
    `uv.lock`, TypeScript `package.json`, Go `version.go`, Rust `Cargo.toml` + `Cargo.lock` + `version.rs`, Elixir
-   `mix.exs` + `version.ex`, C++ `CMakeLists.txt` + `version.hpp`) and turns `[Unreleased]` into
+   `mix.exs` + `version.ex`, C++ `CMakeLists.txt` + `version.hpp`, C `CMakeLists.txt` + `version.h`, Lua
+   `CMakeLists.txt` + `version.lua`, Assembly `version.inc`) and turns `[Unreleased]` into
    `## [X.Y.Z] - YYYY-MM-DD` with its compare link.
 3. Commit with exactly that subject and push. CI (`bun run release:check`) fails if the version files disagree or the
    section is missing; `release.yml` tags the commit `vX.Y.Z` and publishes the release.

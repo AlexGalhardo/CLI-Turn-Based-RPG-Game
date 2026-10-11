@@ -5,8 +5,8 @@ description: Use when a change alters deterministic game outcomes (rules, formul
 
 # Golden files (cross-language parity)
 
-`shared/golden/*.json` are recorded by the **Python reference** and replayed by the test suites of all seven
-implementations. They are the proof that the seven implementations are the same game.
+`shared/golden/*.json` are recorded by the **Python reference** and replayed by the test suites of all eight
+implementations. They are the proof that the eight implementations are the same game.
 
 ## When a regeneration is required
 

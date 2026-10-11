@@ -1,5 +1,5 @@
 # Play any implementation without installing its toolchain:
-#   docker compose run --rm python            # or typescript, golang, rust, elixir, cpp, c, asm
+#   docker compose run --rm python            # or typescript, golang, rust, elixir, cpp, c, lua, asm
 #   docker compose run --rm rust --seed 42 --lang pt-BR
 # Saves, history and profile live in the `saves` volume, shared by every implementation (the formats are the same).
 x-game: &game
@@ -33,6 +33,9 @@ services:
   c:
     <<: *game
     build: { context: ., dockerfile: rpg-c/Dockerfile }
+  lua:
+    <<: *game
+    build: { context: ., dockerfile: rpg-lua/Dockerfile }
   # Engine at rule parity with a line-based UI: no saves, so the volume is unused (docs/asm.md).
   asm:
     <<: *game

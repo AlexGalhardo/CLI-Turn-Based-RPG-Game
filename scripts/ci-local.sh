@@ -17,7 +17,7 @@ for dir in "$HOME/.cargo/bin" "$HOME/go/bin" "$HOME/.local/bin" "$HOME/scoop/shi
 done
 export PATH
 
-ALL_JOBS=(repo python typescript golang rust elixir cpp c asm)
+ALL_JOBS=(repo python typescript golang rust elixir cpp c lua asm)
 
 changed_jobs() {
 	local base="$1" files
@@ -28,7 +28,7 @@ changed_jobs() {
 		printf '%s\n' "${ALL_JOBS[@]}"
 		return
 	fi
-	for job in python typescript golang rust elixir cpp c asm; do
+	for job in python typescript golang rust elixir cpp c lua asm; do
 		grep -q "^rpg-$job/" <<<"$files" && jobs+=("$job")
 	done
 	printf '%s\n' "${jobs[@]}"
@@ -141,6 +141,26 @@ job_c() {
 	run cmake --preset release -DCMAKE_C_COMPILER="$cc"
 	run cmake --build --preset release
 	run ./build/release/rpg-c --simulate 1 --vocation mage --difficulty easy >/dev/null
+}
+
+job_lua() {
+	require cmake lua
+	require stylua lua
+	require luacheck lua
+	# A bare name: CMake on Windows can't use the MSYS-style path `command -v` prints.
+	local cc=gcc
+	command -v clang >/dev/null 2>&1 && cc=clang
+	cd rpg-lua
+	run stylua --check src tests
+	run luacheck --quiet src tests
+	run clang-format --dry-run --Werror host/main.c host/rpg_host.c host/no_embedded.c host/embedded.h host/rpg_host.h
+	# The build compiles the pinned Lua interpreter and the C host; ctest runs the Lua tests with them.
+	run cmake --preset debug -DCMAKE_C_COMPILER="$cc"
+	run cmake --build --preset debug
+	run ctest --preset debug
+	run cmake --preset release -DCMAKE_C_COMPILER="$cc"
+	run cmake --build --preset release
+	run ./build/release/rpg-lua --simulate 1 --vocation mage --difficulty easy >/dev/null
 }
 
 job_asm() {

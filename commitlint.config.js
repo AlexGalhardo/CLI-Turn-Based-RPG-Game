@@ -12,6 +12,7 @@ module.exports = {
 				"elixir",
 				"cpp",
 				"c",
+				"lua",
 				"asm",
 				"shared",
 				"docs",

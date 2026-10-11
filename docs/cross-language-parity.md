@@ -1,8 +1,8 @@
 # Cross-Language Parity
 
-The seven implementations must produce the **same game**: same seed + same commands ⇒ same events, byte for byte
+The eight implementations must produce the **same game**: same seed + same commands ⇒ same events, byte for byte
 after JSON normalisation. This is what makes the project a fair side-by-side comparison of Python, TypeScript, Go,
-Rust, Elixir and C++, and it is enforced by the golden tests.
+Rust, Elixir, C++, C and Lua, and it is enforced by the golden tests.
 
 ## 1. Rules that make parity possible
 
@@ -10,7 +10,8 @@ Rust, Elixir and C++, and it is enforced by the golden tests.
 2. **Integer math only** in the engine. Percentages use `pct(v, p) = floor(v * p / 100)` with non-negative operands.
    - Python: `v * p // 100` · TypeScript: `Math.floor((v * p) / 100)` · Go: `v * p / 100` on `int` (64-bit)
    - Rust: `v * p / 100` on `i64` · Elixir: `div(v * p, 100)` · C++: `v * p / 100` on `std::int64_t` (`pct()`
-     rejects negative operands, since C++ division truncates towards zero)
+     rejects negative operands, since C++ division truncates towards zero) · Lua: `v * p // 100` on 64-bit integers
+     (never `/`, which always produces a float)
    - Never use floats, `round()` or language-specific division of negative numbers.
 3. **One PRNG** (below), never the language's own random generator (`random`, `Math.random`, `math/rand`, the `rand`
    crate, `:rand`, `<random>`) in the engine.
@@ -33,8 +34,8 @@ next():
 
 `imul` is 32-bit wrapping multiplication (`Math.imul` in JS; `uint32` multiply in Go; `(a * b) & 0xFFFFFFFF` in
 Python; `u32::wrapping_mul` / `wrapping_add` in Rust; `Bitwise` operators with every intermediate masked by
-`band(…, 0xFFFFFFFF)` in Elixir; `std::uint32_t` arithmetic, which wraps, in C++). All intermediate values are masked
-to 32 bits.
+`band(…, 0xFFFFFFFF)` in Elixir; `std::uint32_t` arithmetic, which wraps, in C++; `(a * b) & 0xFFFFFFFF` on Lua's
+64-bit integers). All intermediate values are masked to 32 bits.
 
 Derived helpers (the only ones the engine may use):
 

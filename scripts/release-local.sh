@@ -67,8 +67,12 @@ if $windows_host; then
 	(cd "$SRC/rpg-rust" && cargo build --release --locked && cp target/release/rpg-rust.exe "$OUT_DIR/rpg-rust-windows-x64.exe")
 	(cd "$SRC/rpg-cpp" && cmake --preset release -DCMAKE_CXX_COMPILER=clang++ >/dev/null && cmake --build --preset release &&
 		cp build/release/rpg-cpp.exe "$OUT_DIR/rpg-cpp-windows-x64.exe")
+	step "lua windows-x64 (host)"
+	# CMake downloads the pinned Lua source and compiles interpreter, host and game into one static .exe.
+	(cd "$SRC/rpg-lua" && cmake --preset release -DCMAKE_C_COMPILER=clang >/dev/null && cmake --build --preset release &&
+		cp build/release/rpg-lua.exe "$OUT_DIR/rpg-lua-windows-x64.exe")
 else
-	echo "warning: not a Windows host; rpg-rust/rpg-cpp windows-x64 are not built" >&2
+	echo "warning: not a Windows host; rpg-rust/rpg-cpp/rpg-lua windows-x64 are not built" >&2
 fi
 
 # The containers copy shared/ next to the project (build.rs and embed_shared.cmake read ../shared) and drop the build
@@ -83,6 +87,12 @@ docker_run "$CPP_IMAGE" bash -c 'set -e; apt-get update -qq >/dev/null && apt-ge
 	mkdir /w && cp -r /src/shared /src/rpg-cpp /w/ && cd /w/rpg-cpp && rm -rf build &&
 	cmake --preset release "-DCMAKE_EXE_LINKER_FLAGS=-static-libstdc++ -static-libgcc" >/dev/null &&
 	cmake --build --preset release && cp build/release/rpg-cpp /out/rpg-cpp-linux-x64'
+
+step "lua linux-x64 (docker)"
+docker_run "$CPP_IMAGE" bash -c 'set -e; apt-get update -qq >/dev/null && apt-get install -y -qq cmake ninja-build >/dev/null
+	mkdir /w && cp -r /src/shared /src/rpg-lua /w/ && cd /w/rpg-lua && rm -rf build &&
+	cmake --preset release "-DCMAKE_EXE_LINKER_FLAGS=-static-libgcc" >/dev/null &&
+	cmake --build --preset release && cp build/release/rpg-lua /out/rpg-lua-linux-x64'
 
 step "rust darwin-arm64 (docker, cargo-zigbuild)"
 optional docker_run "$ZIG_IMAGE" bash -c 'set -e; rustup toolchain install 1.99.0 --profile minimal -t aarch64-apple-darwin >/dev/null
@@ -102,7 +112,7 @@ optional docker_run "$ZIG_IMAGE" bash -c 'set -e; apt-get update -qq >/dev/null 
 step "smoke tests"
 # Only the binaries this machine (or a linux container) can execute; darwin ones are checked by file type.
 native=(rpg-typescript rpg-golang)
-$windows_host && native+=(rpg-rust rpg-cpp)
+$windows_host && native+=(rpg-rust rpg-cpp rpg-lua)
 for name in "${native[@]}"; do
 	if $windows_host; then bin="$OUT_DIR/$name-windows-x64.exe"; else bin="$OUT_DIR/$name-linux-x64"; fi
 	"$bin" --version | grep -q "$VERSION" || { echo "$bin does not report $VERSION" >&2; exit 1; }
@@ -110,11 +120,11 @@ done
 docker_run "$CPP_IMAGE" bash -c "for b in /out/*-linux-x64; do
 	\$b --version | grep -q '$VERSION' || { echo \"\$b bad\"; exit 1; }; done"
 expected=(rpg-typescript-{linux-x64,darwin-arm64,windows-x64.exe} rpg-golang-{linux-x64,darwin-arm64,windows-x64.exe}
-	rpg-cpp-linux-x64 rpg-elixir-escript)
+	rpg-cpp-linux-x64 rpg-lua-linux-x64 rpg-elixir-escript)
 for asset in rpg-rust-linux-x64 rpg-rust-darwin-arm64 rpg-cpp-darwin-arm64; do
 	[ -s "$OUT_DIR/$asset" ] || echo "warning: $asset not built" >&2
 done
-$windows_host && expected+=(rpg-rust-windows-x64.exe rpg-cpp-windows-x64.exe)
+$windows_host && expected+=(rpg-rust-windows-x64.exe rpg-cpp-windows-x64.exe rpg-lua-windows-x64.exe)
 for asset in "${expected[@]}"; do [ -s "$OUT_DIR/$asset" ] || { echo "missing $asset" >&2; exit 1; }; done
 
 (cd "$OUT_DIR" && sha256sum rpg-* > SHA256SUMS.txt)

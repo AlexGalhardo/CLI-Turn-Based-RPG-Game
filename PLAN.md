@@ -1,4 +1,4 @@
-# PLAN — CLI Turn-Based RPG (Python · TypeScript · Go · Rust · Elixir · C++)
+# PLAN — CLI Turn-Based RPG (Python · TypeScript · Go · Rust · Elixir · C++ · C · Lua)
 
 Master plan of the project. Check items off (`[x]`) in the same commit that completes them. Rules and formulas are in
 [`docs/game-design.md`](docs/game-design.md); decisions in [`docs/adr/`](docs/adr); the confirmed idea in
@@ -18,6 +18,7 @@ Master plan of the project. Check items off (`[x]`) in the same commit that comp
 | 1.0.0 | M6 — Release 1.0 (three binaries/implementations) | done |
 | 1.1.0–1.3.x | M7 — Rust, Elixir and C++ at parity, per-commit releases | done |
 | 1.4.0 | M8 — ARPG update (elites, rarities, auto-equip, auto-battle, win at round 100) | done |
+| 1.9.0 | M11 — Lua at parity | done |
 | next | M9 — Vocation balance, equipment screen paging | planned |
 
 ---
@@ -214,6 +215,16 @@ within target ± `vocationTolerancePct` (5) and **currently fails** on the Arche
       auto-battle or pt-BR). `asm` job in `scripts/ci-local.sh`, `asm` service in `compose.yml`
 - [ ] `rpg-asm` follow-ups: play the text UI once in a real TTY (`-it`) and reach its victory menu by hand (both only
       exercised through piped input / the golden engine tests so far)
+
+## M11 — Lua
+
+- [x] `rpg-lua/`: Lua 5.5 port at full parity (engine, golden files, bot, simulator, interchangeable saves,
+      controller, ANSI TUI), no Lua libraries; one executable = pinned interpreter + a small C host (raw keyboard,
+      directories) + embedded sources and `shared/`. 200 tests on Windows (LLVM-MinGW) and Linux (GCC 14 in Docker),
+      `lua` job in `scripts/ci-local.sh`, `lua` service in `compose.yml`, linux-x64 and windows-x64 release binaries
+- [ ] `rpg-lua` follow-ups: play the TUI by hand in a real Windows console and on macOS (only the Linux pty, the
+      line-input mode and the plain-text e2e tests ran); `rpg-lua-darwin-arm64` release binary; line coverage (a
+      `debug.sethook` counter would do it without a dependency)
 
 ## Skills (`.claude/skills/`) — created when a flow repeats
 

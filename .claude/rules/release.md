@@ -7,7 +7,7 @@
   authenticated). It builds from the tag, smoke-tests, writes `SHA256SUMS.txt`, creates the Release page if missing and
   uploads with `--clobber`. `--no-upload` builds into `dist-release/` only.
 - To check whether GitHub is behind: `git describe --tags --exact-match HEAD` vs `gh release list --limit 3`; every
-  missing tag needs its Release page, and the newest one (marked Latest) must list the 14 binaries + `SHA256SUMS.txt`
+  missing tag needs its Release page, and the newest one (marked Latest) must list the 15 binaries + `SHA256SUMS.txt` (14 while `rpg-cpp-darwin-arm64` still fails to build)
   (`gh release view vX.Y.Z --json assets -q '.assets[].name'`).
 - Rust linux/darwin and C++ darwin (Docker, zig) are optional steps not validated yet; when one is missing, fix it
   and record the result in `docs/ci-cd.md`. Pull images one at a time: parallel pulls hung Docker Desktop.

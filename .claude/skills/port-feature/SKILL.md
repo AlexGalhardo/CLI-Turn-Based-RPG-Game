@@ -1,13 +1,13 @@
 ---
 name: port-feature
-description: Use when porting the Python reference implementation (rpg-python) of the CLI Turn-Based RPG to any port (rpg-typescript, rpg-golang, rpg-rust, rpg-elixir, rpg-cpp, rpg-c, rpg-asm), when adding a new language port, or when a rule/UI change made in Python must be replicated in the other languages.
+description: Use when porting the Python reference implementation (rpg-python) of the CLI Turn-Based RPG to any port (rpg-typescript, rpg-golang, rpg-rust, rpg-elixir, rpg-cpp, rpg-c, rpg-lua, rpg-asm), when adding a new language port, or when a rule/UI change made in Python must be replicated in the other languages.
 ---
 
 # Porting a feature from the Python reference
 
 Python is the reference (ADR 0005). A port is correct when **all `shared/golden/*.json` files replay identically**,
 its bot issues the same commands, its `--simulate` report is byte-identical to Python's, saves are interchangeable,
-and the UI controller behaves the same. Ports: TypeScript, Go, Rust, Elixir, C++, C (and the `rpg-asm` engine).
+and the UI controller behaves the same. Ports: TypeScript, Go, Rust, Elixir, C++, C, Lua (and the `rpg-asm` engine).
 
 ## Order of work (per feature or per layer)
 
@@ -129,6 +129,30 @@ and the UI controller behaves the same. Ports: TypeScript, Go, Rust, Elixir, C++
 - Windows: a Bash heredoc turned `'\0'` into a NUL byte inside a `.c` file (edit sources with Write/Edit only);
   `rmdir` right after deleting files fails intermittently, so remove temp dirs with a retry.
 - A `Dockerfile.dockerignore` next to the Dockerfile keeps the host's `build/` out without touching the root file.
+
+## Lessons from the Lua port
+
+- A language whose standard library lacks something essential (Lua: no raw keyboard, no `mkdir`, no directory
+  listing, no JSON) does not need third-party packages: write the pure parts in the language (JSON, renderer, test
+  harness) and put only the missing system calls in a tiny C host module compiled together with the pinned
+  interpreter source and the embedded sources. One binary, same UX as the other ports; a plain interpreter still runs
+  everything through fallbacks (shell for directories, line input for the TUI), which keeps the edit-test loop fast.
+- Tables have no key order and cannot tell `[]` from `{}`: keep both in weak-keyed side tables inside the JSON module
+  (`json.object({ { k, v }, … })`, `json.array(list)`), so saves come out byte for byte like `json.dumps(indent="\t")`.
+- `/` and `^` always produce floats: use `//` and repeated multiplication (`level * level * level` in the XP curve).
+  Decode JSON numbers with `tonumber` (integer subtype for integer literals) and reject floats in `json_int`.
+- `table.sort` is not stable and Python's `sorted` is: decorate with the original index (the Hall of Fame order with
+  equal keys depends on it). Sort the "sorted by id" lists once when the data is loaded.
+- 1-based lists: only the wire formats stay 0-based (`buy_stock_item.index`, `list_key`, PRNG `pick` =
+  `items[roll(0, n - 1) + 1]`, `weighted` returning a position). Write those conversions once, at the edge.
+- A table cannot hold `nil`: `player.potions[id] = 0` keeps the key (the reference keeps it too, good), JSON `null`
+  needs a sentinel, and a list parallel to another (`body_colors`) uses `false` for "none".
+- Typed errors: raise a table `{ kind, message }` and catch by kind; never let `pcall` swallow unknown errors.
+- The winnt.h macro `KEY_READ` collides with an enum member of the same name: prefix host enums.
+- Bash heredocs on Windows collapse backslashes and choke on quotes inside Lua/TypeScript text: write files with the
+  Write/Edit tools and run multi-file doc edits from a script file with asserted replacements.
+- Porting the test files is independent of the rest once the harness and helpers exist: three agents (engine units,
+  controller/TUI, integration/persistence) worked in parallel on separate files while Docker, CI and docs were wired.
 
 ## Lessons from the Assembly port (engine only)
 

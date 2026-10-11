@@ -1,0 +1,7 @@
+# Used instead of the root .dockerignore when building rpg-lua/Dockerfile: only shared/ and rpg-lua/ are needed
+# (shared/golden included: the image build runs the tests), and a host build directory (another platform's CMake
+# cache) must never reach the image.
+*
+!shared
+!rpg-lua
+**/build
