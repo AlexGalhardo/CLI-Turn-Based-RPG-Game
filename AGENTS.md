@@ -74,4 +74,5 @@ cd rpg-c && cmake --preset debug && cmake --build --preset debug && ctest --pres
 cd rpg-lua && cmake --preset debug && cmake --build --preset debug && ctest --preset debug   # Lua
 docker compose run --rm python            # any implementation in Docker (services in compose.yml)
 docker build -f rpg-asm/Dockerfile -t rpg-asm .   # Assembly: assembles, links and runs its parity tests
+bash scripts/record-gameplay.sh                   # re-record the README gameplay GIFs (VHS in Docker)
 ```

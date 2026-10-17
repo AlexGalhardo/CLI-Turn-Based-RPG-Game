@@ -119,3 +119,18 @@ Modelled on Diablo IV / Last Epoch: the character's slots at a glance, then a co
   --difficulty <id> (simulator) restrict to one difficulty
 --version / --help
 ```
+
+## Gameplay GIFs
+
+The four GIFs in the README (`docs/media/{start,combat,boss,menus}.gif`) are recorded from the Go version by
+[VHS](https://github.com/charmbracelet/vhs) tapes in `scripts/gameplay/` (`settings.tape` and `new-run.tape` are shared
+by the others). `bash scripts/record-gameplay.sh [start|combat|boss|menus ...]` builds `scripts/gameplay/Dockerfile`
+(the Go binary on top of the pinned `ghcr.io/charmbracelet/vhs` image) and records every tape, or only the named ones.
+
+- Every run uses `--seed 42` and a fresh profile, so the recordings are reproducible; the tapes after `start` pass
+  `--lang en`, which skips the language screen.
+- To show a later round, a tape plays the earlier rounds hidden with `--no-anim` and auto-battle, saves and quits at the
+  merchant, then resumes the run with animation (`Continue`) before `Show`.
+- Re-record after a change to the UI, the balance or the RNG: the key sequences assume the outcome of seed 42 (for
+  example, which round has the boss and that the Warrior survives it). Check the result frame by frame
+  (`ffmpeg -i docs/media/boss.gif -vf "fps=1/3,tile=2x4" sheet.png`).

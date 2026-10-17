@@ -13,6 +13,19 @@ commit.
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-10-17
+
+### Added
+
+- README **Gameplay** section with four GIFs recorded from the Go version (seed 42, Warrior, Normal): starting a run, a
+  regular fight, the tier 1 boss fight and the menus between fights (`docs/media/*.gif`).
+- `scripts/record-gameplay.sh` and the [VHS](https://github.com/charmbracelet/vhs) tapes in `scripts/gameplay/`, which
+  record the GIFs reproducibly in Docker (`ghcr.io/charmbracelet/vhs:v0.12.1`); documented in `docs/tui.md`.
+
+### Removed
+
+- The README **Screenshots** section (text captures of the battle and merchant screens), replaced by the GIFs.
+
 ## [1.9.0] - 2026-10-11
 
 ### Added
@@ -584,7 +597,8 @@ First stable release: the same game in Python, TypeScript and Go, proven equival
 - General-purpose agent skills, agents and reference checklists in `.claude/`.
 - The 2016 Python and 2022 TypeScript code is not carried over; the originals remain in their own repositories.
 
-[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.9.0...HEAD
+[Unreleased]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.9.1...HEAD
+[1.9.1]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.9.0...v1.9.1
 [1.9.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/AlexGalhardo/CLI-Turn-Based-RPG-Game/compare/v1.7.0...v1.8.0
