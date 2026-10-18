@@ -180,7 +180,7 @@ jobs:
         run: cargo clippy --all-targets --locked -- -D warnings
       - name: Install cargo-llvm-cov
         if: runner.os == 'Linux'
-        uses: taiki-e/install-action@v2.87.23
+        uses: taiki-e/install-action@v2.87.28
         with:
           tool: cargo-llvm-cov
       - name: Tests (unit, integration, golden, e2e) + coverage floors (80% overall, 90% domain + application)
