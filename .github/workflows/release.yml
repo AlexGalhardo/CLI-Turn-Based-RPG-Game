@@ -188,7 +188,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ needs.plan.outputs.ref }}
-      - uses: dtolnay/rust-toolchain@1.99.0
+      - uses: dtolnay/rust-toolchain@1.120.0
       - name: Build
         run: cargo build --release --locked && mkdir -p dist && cp target/release/${{ matrix.binary }} dist/${{ matrix.asset }}
       - name: Smoke test
