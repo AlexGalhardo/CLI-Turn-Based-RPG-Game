@@ -17,9 +17,9 @@
     "test:scripts": "bun test scripts"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.14",
-    "@commitlint/cli": "21.2.3",
-    "@commitlint/config-conventional": "21.2.3",
+    "@biomejs/biome": "2.6.2",
+    "@commitlint/cli": "21.2.4",
+    "@commitlint/config-conventional": "21.2.4",
     "ajv": "8.20.0",
     "husky": "9.1.7",
     "lint-staged": "17.6.0"
